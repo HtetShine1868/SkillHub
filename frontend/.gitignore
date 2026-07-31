@@ -1,0 +1,19 @@
+# Environment
+.env
+
+# Java
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Node
+node_modules/
+dist/
+
+# Logs
+*.log
