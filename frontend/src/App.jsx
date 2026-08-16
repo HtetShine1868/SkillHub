@@ -3,6 +3,7 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import Dashboard from './components/Dashboard'
 import ProtectedRoute from './components/routing/ProtectedRoute'
+import PersonalizedRoadmapPage from './pages/PersonalizedRoadmapPage'
 
 export default function App() {
   return (
@@ -20,7 +21,14 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/roadmap"
+        element={
+          <ProtectedRoute>
+            <PersonalizedRoadmapPage />
+          </ProtectedRoute>
+        }
+      />
       {/* Default redirect */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
