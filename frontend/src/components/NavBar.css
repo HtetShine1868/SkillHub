@@ -1,0 +1,92 @@
+/* =============================================
+   NAVBAR — SkillHub Premium Navigation
+   ============================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&display=swap');
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 64px;
+  background: rgba(10, 12, 20, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(108, 92, 231, 0.18);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+}
+
+.navbar__logo {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.navbar__links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar__links li a {
+  display: block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: color 0.2s, background 0.2s;
+}
+
+.navbar__links li a:hover {
+  color: #fff;
+  background: rgba(167, 139, 250, 0.15);
+}
+
+.navbar__links li a.active {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.navbar__cta {
+  padding: 0.45rem 1.1rem !important;
+  background: linear-gradient(135deg, #7c3aed, #2563eb) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.navbar__cta:hover {
+  background: linear-gradient(135deg, #6d28d9, #1d4ed8) !important;
+  color: #fff !important;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 1rem;
+  }
+  .navbar__links {
+    gap: 0;
+  }
+  .navbar__links li a {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+  }
+}

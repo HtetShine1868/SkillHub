@@ -1,0 +1,236 @@
+/* =============================================
+   CAREER LIST PAGE
+   ============================================= */
+
+.careerlist {
+  position: relative;
+  min-height: calc(100vh - 64px);
+  background: #080b14;
+  padding: 3rem 1.5rem;
+  overflow: hidden;
+}
+
+.careerlist__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.22;
+  pointer-events: none;
+}
+.careerlist__blob--1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+  top: -200px; left: -120px;
+}
+.careerlist__blob--2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+  bottom: -100px; right: -80px;
+}
+
+.careerlist__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1160px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Header */
+.careerlist__header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  animation: fadeSlideUp 0.6s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.careerlist__badge {
+  display: inline-block;
+  background: rgba(124,58,237,0.15);
+  border: 1px solid rgba(124,58,237,0.35);
+  color: #c4b5fd;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+}
+
+.careerlist__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  color: #f0f2ff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.careerlist__hl {
+  background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.careerlist__subtitle {
+  color: rgba(200,210,240,0.6);
+  font-size: 1rem;
+  line-height: 1.65;
+  max-width: 520px;
+}
+
+/* Toolbar */
+.careerlist__toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.careerlist__search {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 0.75rem 1.2rem;
+  color: #f0f2ff;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+  max-width: 420px;
+  transition: border-color 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+.careerlist__search::placeholder { color: rgba(200,210,240,0.35); }
+.careerlist__search:focus { border-color: rgba(167,139,250,0.5); }
+
+.careerlist__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.careerlist__filter {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 999px;
+  color: rgba(200,210,240,0.6);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.38rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.careerlist__filter:hover {
+  border-color: rgba(167,139,250,0.4);
+  color: #f0f2ff;
+}
+.careerlist__filter--active {
+  background: rgba(124,58,237,0.2);
+  border-color: #7c3aed;
+  color: #c4b5fd;
+}
+
+/* Grid */
+.careerlist__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  animation: fadeSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.careerlist__card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 1.6rem;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.careerlist__card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(167,139,250,0.35);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+}
+
+.careerlist__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.careerlist__card-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.careerlist__card-cat {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+}
+.careerlist__card-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0f2ff;
+  margin: 0;
+}
+.careerlist__card-desc {
+  color: rgba(200,210,240,0.58);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  flex: 1;
+}
+.careerlist__card-arrow {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #a78bfa;
+  margin-top: 0.25rem;
+}
+
+/* Loading & empty */
+.careerlist__loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+}
+.careerlist__spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(167,139,250,0.2);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.careerlist__empty {
+  text-align: center;
+  padding: 4rem;
+  color: rgba(200,210,240,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+}
+.careerlist__empty span { font-size: 2.5rem; }
+
+@media (max-width: 640px) {
+  .careerlist__grid {
+    grid-template-columns: 1fr;
+  }
+}
