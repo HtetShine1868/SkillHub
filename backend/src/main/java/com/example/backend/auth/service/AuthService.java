@@ -4,6 +4,7 @@ import com.example.backend.auth.dto.*;
 import com.example.backend.auth.security.JwtService;
 import com.example.backend.user.entity.AuthProvider;
 import com.example.backend.user.entity.User;
+import com.example.backend.user.entity.Role;
 import com.example.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -56,6 +57,7 @@ public class AuthService {
                 .providerId(null)
                 .profileImage(null)
                 .emailVerified(false)
+                .role(Role.USER)
                 .build();
 
         userRepository.save(user);
@@ -137,6 +139,7 @@ public class AuthService {
                 .providerId(googleId)
                 .profileImage(profileImage)
                 .emailVerified(true)
+                .role(Role.USER)
                 .build();
 
         return userRepository.save(newUser);
@@ -162,6 +165,7 @@ public class AuthService {
                 .emailVerified(
                         user.isEmailVerified()
                 )
+                .role(user.getRole().name())
                 .build();
     }
 }

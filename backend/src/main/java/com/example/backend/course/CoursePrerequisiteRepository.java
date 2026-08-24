@@ -11,4 +11,8 @@ public interface CoursePrerequisiteRepository extends JpaRepository<CoursePrereq
     List<CoursePrerequisite> findByCourseId(Long courseId);
 
     List<CoursePrerequisite> findByRequiredCourseId(Long requiredCourseId);
+
+    void deleteByCourseId(Long courseId);
+
+    void deleteByRequiredCourseId(Long requiredCourseId);
 }

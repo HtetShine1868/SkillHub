@@ -10,4 +10,6 @@ public interface LessonRepository
     List<Lesson> findByCourseIdOrderByLessonOrder(
             Long courseId
     );
+
+    void deleteByCourseId(Long courseId);
 }

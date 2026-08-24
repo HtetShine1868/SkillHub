@@ -107,3 +107,8 @@ INSERT INTO lessons (id, course_id, title, lesson_order, estimated_minutes, cont
 (3, 2, 'REST Fundamentals & HTTP', 1, 15, '# REST API Fundamentals\n\nRepresentational State Transfer (REST) is an architectural style for providing standards between computer systems on the web, making it easier for systems to communicate with each other.') ON CONFLICT (id) DO NOTHING;
 INSERT INTO lessons (id, course_id, title, lesson_order, estimated_minutes, content) VALUES
 (4, 2, 'Creating REST Controllers', 2, 25, '# Creating REST Controllers\n\nLearn to build REST endpoints using `@RestController` and routing mappings like `@GetMapping` and `@PostMapping`.') ON CONFLICT (id) DO NOTHING;
+
+-- Seed Admin User (password is admin123)
+INSERT INTO users (id, name, email, password, provider, email_verified, role, created_at, updated_at) VALUES
+(99, 'Admin User', 'admin@skillhub.com', '$2a$10$gRstLHCeF4wX9Xv.G2pMwe2d7oI2oW7p1Q9VwU5XvL7jQG43yK2a.', 'LOCAL', true, 'ADMIN', NOW(), NOW()) ON CONFLICT (email) DO NOTHING;
+

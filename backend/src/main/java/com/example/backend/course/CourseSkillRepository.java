@@ -11,4 +11,6 @@ public interface CourseSkillRepository extends JpaRepository<CourseSkill, Long> 
     List<CourseSkill> findByCourseId(Long courseId);
 
     List<CourseSkill> findBySkillId(Long skillId);
+
+    void deleteByCourseId(Long courseId);
 }

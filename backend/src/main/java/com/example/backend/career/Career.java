@@ -32,4 +32,9 @@ public class Career {
     /** Comma-separated list of typical responsibilities for the career detail page */
     @Column(columnDefinition = "TEXT")
     private String responsibilities;
+
+    /** Whether this career is visible to users */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
 }

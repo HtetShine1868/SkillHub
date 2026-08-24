@@ -9,4 +9,7 @@ import java.util.List;
 public interface CareerSkillRepository extends JpaRepository<CareerSkill, Long> {
 
     List<CareerSkill> findByCareerId(Long careerId);
+
+    void deleteByCareerId(Long careerId);
 }
+

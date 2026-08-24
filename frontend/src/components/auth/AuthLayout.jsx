@@ -1,3 +1,5 @@
+import './Auth.css';
+
 export default function AuthLayout({
     title,
     subtitle,

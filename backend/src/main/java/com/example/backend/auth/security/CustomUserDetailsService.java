@@ -34,7 +34,7 @@ public class CustomUserDetailsService
                                 ? ""
                                 : user.getPassword()
                 )
-                .authorities("ROLE_USER")
+                .authorities("ROLE_" + user.getRole().name())
                 .build();
     }
 }

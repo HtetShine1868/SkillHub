@@ -4,8 +4,10 @@ package com.example.backend.course.lesson;
 import com.example.backend.course.Course;
 import com.example.backend.course.CourseRepository;
 import com.example.backend.course.lesson.dto.LessonResponse;
+import com.example.backend.course.lesson.dto.LessonRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,6 +36,17 @@ public class LessonService {
             );
         }
 
+        return lessonRepository
+                .findByCourseIdOrderByLessonOrder(courseId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /** Admin version: bypasses the published check */
+    public List<LessonResponse> getLessonsByCourseAdmin(Long courseId) {
+        courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
         return lessonRepository
                 .findByCourseIdOrderByLessonOrder(courseId)
                 .stream()
@@ -93,5 +106,45 @@ public class LessonService {
 
                 lesson.getContent()
         );
+    }
+
+    public LessonResponse createLesson(Long courseId, LessonRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Lesson lesson = Lesson.builder()
+                .course(course)
+                .title(request.getTitle())
+                .lessonOrder(request.getLessonOrder())
+                .estimatedMinutes(request.getEstimatedMinutes())
+                .content(request.getContent())
+                .build();
+        return toResponse(lessonRepository.save(lesson));
+    }
+
+    public LessonResponse updateLesson(Long courseId, Long lessonId, LessonRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+        if (!lesson.getCourse().getId().equals(courseId)) {
+            throw new RuntimeException("Lesson does not belong to this course");
+        }
+        lesson.setTitle(request.getTitle());
+        lesson.setLessonOrder(request.getLessonOrder());
+        lesson.setEstimatedMinutes(request.getEstimatedMinutes());
+        lesson.setContent(request.getContent());
+        return toResponse(lessonRepository.save(lesson));
+    }
+
+    @Transactional
+    public void deleteLesson(Long courseId, Long lessonId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+        if (!lesson.getCourse().getId().equals(courseId)) {
+            throw new RuntimeException("Lesson does not belong to this course");
+        }
+        lessonRepository.delete(lesson);
     }
 }

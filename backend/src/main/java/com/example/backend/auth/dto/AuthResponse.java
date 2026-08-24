@@ -20,4 +20,6 @@ public class AuthResponse {
     private String provider;
 
     private boolean emailVerified;
+
+    private String role;
 }

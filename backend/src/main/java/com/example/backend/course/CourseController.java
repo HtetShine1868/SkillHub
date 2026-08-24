@@ -1,11 +1,14 @@
 package com.example.backend.course;
 
 import com.example.backend.course.dto.CourseResponse;
+import com.example.backend.course.dto.CourseRequest;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -46,5 +49,24 @@ public class CourseController {
     ) {
 
         return courseService.getCourseById(id);
+    }
+
+    @PostMapping
+    public CourseResponse createCourse(@RequestBody CourseRequest request) {
+        return courseService.createCourse(request);
+    }
+
+    @PutMapping("/{id}")
+    public CourseResponse updateCourse(
+            @PathVariable Long id,
+            @RequestBody CourseRequest request
+    ) {
+        return courseService.updateCourse(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteCourse(@PathVariable Long id) {
+        courseService.deleteCourse(id);
+        return ResponseEntity.ok(Map.of("message", "Course deleted successfully"));
     }
 }

@@ -55,6 +55,10 @@ public class User {
     @Column(nullable = false)
     private boolean emailVerified;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -68,6 +72,10 @@ public class User {
 
         createdAt = now;
         updatedAt = now;
+
+        if (role == null) {
+            role = Role.USER;
+        }
     }
 
     @PreUpdate
