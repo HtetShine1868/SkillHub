@@ -3,71 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getAssessmentQuestions, submitAssessment } from '../services/assessmentService'
 import './SkillAssessmentPage.css'
 
-/* Mock questions per skill used as fallback */
-const MOCK_QUESTIONS = [
-  {
-    id: 1, skillId: 1, skillName: 'Programming Logic', difficulty: 1,
-    question: 'What does a function return if no return statement is present in JavaScript?',
-    type: 'MCQ',
-    optionsJson: JSON.stringify([
-      { label: 'null', value: 0 },
-      { label: 'undefined', value: 1 },
-      { label: '0', value: 2 },
-      { label: 'An error is thrown', value: 3 },
-    ]),
-    correctValue: 1,
-  },
-  {
-    id: 2, skillId: 1, skillName: 'Programming Logic', difficulty: 2,
-    question: 'Which data structure uses LIFO (Last In, First Out) ordering?',
-    type: 'MCQ',
-    optionsJson: JSON.stringify([
-      { label: 'Queue', value: 0 },
-      { label: 'Stack', value: 1 },
-      { label: 'Linked List', value: 2 },
-      { label: 'Tree', value: 3 },
-    ]),
-    correctValue: 1,
-  },
-  {
-    id: 3, skillId: 2, skillName: 'Database Knowledge', difficulty: 2,
-    question: 'What SQL clause is used to filter grouped results?',
-    type: 'MCQ',
-    optionsJson: JSON.stringify([
-      { label: 'WHERE', value: 0 },
-      { label: 'FILTER', value: 1 },
-      { label: 'HAVING', value: 2 },
-      { label: 'GROUP BY', value: 3 },
-    ]),
-    correctValue: 2,
-  },
-  {
-    id: 4, skillId: 3, skillName: 'System Design', difficulty: 3,
-    question: 'Which of the following best describes horizontal scaling?',
-    type: 'MCQ',
-    optionsJson: JSON.stringify([
-      { label: 'Upgrading server hardware', value: 0 },
-      { label: 'Adding more servers to distribute load', value: 1 },
-      { label: 'Increasing RAM on existing servers', value: 2 },
-      { label: 'Optimizing database queries', value: 3 },
-    ]),
-    correctValue: 1,
-  },
-  {
-    id: 5, skillId: 3, skillName: 'System Design', difficulty: 3,
-    question: 'What is the main purpose of a load balancer?',
-    type: 'MCQ',
-    optionsJson: JSON.stringify([
-      { label: 'Store user sessions', value: 0 },
-      { label: 'Encrypt network traffic', value: 1 },
-      { label: 'Distribute incoming traffic across servers', value: 2 },
-      { label: 'Cache database queries', value: 3 },
-    ]),
-    correctValue: 2,
-  },
-]
-
-const DIFF_LABEL = { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced' }
+const DIFF_LABEL = { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced', BEGINNER: 'Beginner', INTERMEDIATE: 'Intermediate', ADVANCED: 'Advanced', EXPERT: 'Expert' }
 
 const SkillAssessmentPage = () => {
   const navigate = useNavigate()
@@ -76,16 +12,17 @@ const SkillAssessmentPage = () => {
 
   const [questions, setQuestions]   = useState([])
   const [current, setCurrent]       = useState(0)
-  const [answers, setAnswers]       = useState({})      // { questionId: selectedValue }
+  const [answers, setAnswers]       = useState({})
   const [selected, setSelected]     = useState(null)
   const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [results, setResults]       = useState(null)
 
   useEffect(() => {
     getAssessmentQuestions(careerId)
-      .then(data => setQuestions(data?.length ? data : MOCK_QUESTIONS))
-      .catch(() => setQuestions(MOCK_QUESTIONS))
+      .then(data => setQuestions(data || []))
+      .catch(() => setError('Failed to load assessment questions. Please try again.'))
       .finally(() => setLoading(false))
   }, [careerId])
 

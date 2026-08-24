@@ -66,7 +66,7 @@ public class CourseService {
     }
 
 
-    private CourseResponse toResponse(Course course) {
+    public CourseResponse toResponse(Course course) {
 
         return new CourseResponse(
 

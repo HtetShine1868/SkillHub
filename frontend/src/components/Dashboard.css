@@ -1,0 +1,226 @@
+/* =============================================
+   USER DASHBOARD — SkillHub Dark Space Theme
+   ============================================= */
+
+.dash {
+  min-height: 100vh;
+  background: var(--f-bg, #080b14);
+  color: var(--f-text-dark, #f0f2ff);
+  font-family: var(--sans, 'Inter', sans-serif);
+}
+
+/* ── Hero Banner ──────────────────────────── */
+.dash__hero {
+  background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(8,11,20,0.8) 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 2.5rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.dash__hero-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.dash__greeting {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.dash__greeting h1 {
+  font-size: 1.8rem;
+  font-family: var(--heading);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.dash__greeting p {
+  color: var(--f-text-muted);
+  font-size: 0.9rem;
+}
+
+.dash__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.dash__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Decorative orbs */
+.dash__orbs { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+.dash__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.4;
+}
+
+.dash__orb--1 {
+  width: 280px; height: 280px;
+  background: rgba(124,58,237,0.4);
+  top: -80px; right: 10%;
+}
+
+.dash__orb--2 {
+  width: 200px; height: 200px;
+  background: rgba(56,189,248,0.3);
+  bottom: -60px; right: 25%;
+}
+
+/* ── Body ─────────────────────────────────── */
+.dash__body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+}
+
+.dash__section-header {
+  margin-bottom: 2rem;
+}
+
+.dash__section-header h2 {
+  font-size: 1.4rem;
+  font-family: var(--heading);
+  margin-bottom: 0.4rem;
+}
+
+.dash__section-header p {
+  color: var(--f-text-muted);
+  font-size: 0.92rem;
+}
+
+/* ── Journey Cards ────────────────────────── */
+.dash__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.dash__card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 1.75rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.dash__card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-color, #7c3aed);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.dash__card:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+}
+
+.dash__card:hover::before { opacity: 1; }
+
+.dash__card-num {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--card-color, #7c3aed);
+  opacity: 0.7;
+}
+
+.dash__card-icon { font-size: 1.8rem; }
+
+.dash__card h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f0f2ff;
+  margin: 0;
+}
+
+.dash__card p {
+  font-size: 0.88rem;
+  color: var(--f-text-muted);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.dash__card-cta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--card-color, #a78bfa);
+  margin-top: 0.5rem;
+  transition: gap 0.2s;
+}
+
+.dash__card:hover .dash__card-cta { letter-spacing: 0.02em; }
+
+/* ── Profile Strip ────────────────────────── */
+.dash__profile-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+}
+
+.dash__profile-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.dash__profile-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--f-text-light);
+}
+
+.dash__profile-val {
+  font-size: 0.92rem;
+  color: #f0f2ff;
+  font-weight: 500;
+}
+
+/* ── Responsive ───────────────────────────── */
+@media (max-width: 768px) {
+  .dash__hero { padding: 1.5rem 1rem; }
+  .dash__body { padding: 1.5rem 1rem; }
+  .dash__greeting h1 { font-size: 1.4rem; }
+  .dash__cards { grid-template-columns: 1fr; }
+}
