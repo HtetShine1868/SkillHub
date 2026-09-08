@@ -1,6 +1,7 @@
 export default function SelectedCareerCard({
   career,
   onStart,
+  onSkip,
 }) {
   return (
     <div className="career-card">
@@ -54,12 +55,21 @@ export default function SelectedCareerCard({
         className="primary-button career-start-button"
         onClick={onStart}
       >
-        Start Skill Assessment
+        🚀 Start Skill Assessment
         <span>→</span>
       </button>
 
+      {onSkip && (
+        <button
+          className="quick-skip-roadmap-btn"
+          onClick={onSkip}
+        >
+          ⚡ Skip Quiz & Generate Roadmap Now
+        </button>
+      )}
+
       <p className="career-note">
-        Takes about 2–3 minutes
+        Takes about 2 minutes · Or skip to get instant recommendations
       </p>
     </div>
   )

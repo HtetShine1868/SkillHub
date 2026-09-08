@@ -13,7 +13,7 @@ import StatusBadge from '../components/StatusBadge'
 import ProgressBar from '../components/ProgressBar'
 import JoinModal from '../components/JoinModal'
 import { getProjectById, addComment, toggleCommentLike } from '../services/forumApi'
-import { MOCK_CURRENT_USER } from '../data/forumData'
+import { useAuth } from '../../context/AuthContext'
 import '../forum.css'
 
 function timeAgo(dateStr) {
@@ -33,6 +33,7 @@ function formatDeadline(dateStr) {
 }
 
 export default function ProjectDetails() {
+  const { user: currentUser } = useAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const [project, setProject] = useState(null)
@@ -102,7 +103,7 @@ export default function ProjectDetails() {
           <div className="forum-empty__icon">🔍</div>
           <h3>Project not found</h3>
           <p>This project may have been removed or doesn't exist.</p>
-          <Link to="/forum" className="btn btn-primary" style={{ marginTop: 16 }}>
+          <Link to="/skill-exchange" className="btn btn-primary" style={{ marginTop: 16 }}>
             Back to Forum
           </Link>
         </div>
@@ -317,7 +318,7 @@ export default function ProjectDetails() {
                         {/* Reply input */}
                         {replyingTo === comment.id && (
                           <form onSubmit={(e) => handleAddReply(e, comment.id)} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                            <MemberAvatar name={MOCK_CURRENT_USER.name} initials={MOCK_CURRENT_USER.initials} size="sm" />
+                            <MemberAvatar name={currentUser?.name} initials={currentUser?.initials} size="sm" />
                             <div style={{ flex: 1, display: 'flex', gap: 8 }}>
                               <textarea
                                 className="form-textarea"
@@ -343,7 +344,7 @@ export default function ProjectDetails() {
 
               {/* New comment */}
               <form onSubmit={handleAddComment} className="discussion-input-area">
-                <MemberAvatar name={MOCK_CURRENT_USER.name} initials={MOCK_CURRENT_USER.initials} size="sm" />
+                <MemberAvatar name={currentUser?.name} initials={currentUser?.initials} size="sm" />
                 <div style={{ flex: 1 }}>
                   <textarea
                     placeholder="Write a comment..."
@@ -398,7 +399,7 @@ export default function ProjectDetails() {
                   {isOwner ? (
                     <>
                       <Link
-                        to={`/forum/project/${project.id}/requests`}
+                        to={`/skill-exchange/project/${project.id}/requests`}
                         className="btn btn-primary btn-full"
                       >
                         Manage Requests

@@ -15,4 +15,8 @@ public class CourseRequest {
     private Integer durationHours;
     private String thumbnailUrl;
     private Boolean published;
+    private String status;
+    private String rejectionReason;
+    private Long instructorId;
+    private String instructorName;
 }

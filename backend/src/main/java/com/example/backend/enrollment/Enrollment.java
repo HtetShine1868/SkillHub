@@ -36,13 +36,15 @@ public class Enrollment {
             name = "user_id",
             nullable = false
     )
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "course_id",
             nullable = false
     )
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "lessons", "prerequisites"})
     private Course course;
 
     @Column(nullable = false)

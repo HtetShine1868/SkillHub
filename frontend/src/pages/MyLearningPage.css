@@ -13,12 +13,90 @@
 .mylearn__hl { background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .mylearn__subtitle { color: rgba(200,210,240,0.6); font-size: 1rem; }
 
+/* Sub-tabs */
+.mylearn__nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(15, 23, 42, 0.6);
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  width: fit-content;
+  backdrop-filter: blur(10px);
+}
+
+.mylearn__tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mylearn__tab-btn:hover {
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mylearn__tab-btn--active {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+}
+
 /* Stats */
 .mylearn__stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
 .mylearn__stat-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; text-align: center; }
 .mylearn__stat-icon { font-size: 1.6rem; }
 .mylearn__stat-value { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 800; color: #f0f2ff; }
 .mylearn__stat-label { font-size: 0.78rem; color: rgba(200,210,240,0.5); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Filter bar */
+.mylearn__filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mylearn__filter-label {
+  font-size: 0.85rem;
+  color: rgba(200, 210, 240, 0.5);
+  font-weight: 600;
+}
+
+.mylearn__filter-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mylearn__filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.mylearn__filter-btn--active {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(167, 139, 250, 0.4);
+  color: #a78bfa;
+  font-weight: 600;
+}
 
 /* Sections */
 .mylearn__section { display: flex; flex-direction: column; gap: 1.1rem; }

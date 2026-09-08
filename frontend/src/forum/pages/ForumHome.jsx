@@ -107,7 +107,7 @@ export default function ForumHome() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <Link to="/forum/create" className="btn btn-primary btn-lg">
+            <Link to="/skill-exchange/create" className="btn btn-primary btn-lg">
               <Plus size={18} />
               Create Project
             </Link>
@@ -233,7 +233,7 @@ export default function ForumHome() {
             <div className="forum-empty__icon" aria-hidden="true">🔍</div>
             <h3>No projects found</h3>
             <p>Try adjusting your search or filters, or be the first to create one!</p>
-            <Link to="/forum/create" className="btn btn-primary" style={{ marginTop: 20 }}>
+            <Link to="/skill-exchange/create" className="btn btn-primary" style={{ marginTop: 20 }}>
               <Plus size={16} />
               Create a Project
             </Link>

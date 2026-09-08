@@ -8,11 +8,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findByPublishedTrue();
 
-    List<Course> findByCategoryIgnoreCaseAndPublishedTrue(
-            String category
-    );
+    List<Course> findByCategoryIgnoreCaseAndPublishedTrue(String category);
 
-    List<Course> findByTitleContainingIgnoreCaseAndPublishedTrue(
-            String title
-    );
+    List<Course> findByTitleContainingIgnoreCaseAndPublishedTrue(String title);
+
+    List<Course> findByInstructorId(Long instructorId);
+
+    List<Course> findByStatus(String status);
 }

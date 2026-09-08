@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getCourseById, getLessons } from '../services/courseService'
+import { getMyEnrollments, enrollInCourse } from '../services/enrollmentService'
+import DualFloatingChat from '../components/DualFloatingChat'
 import './CoursePage.css'
 
 const MOCK_LESSONS = [
@@ -16,15 +18,25 @@ const MOCK_LESSONS = [
 const CoursePage = () => {
   const { id }      = useParams()
   const navigate    = useNavigate()
-  const [course, setCourse]   = useState(null)
-  const [lessons, setLessons] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [course, setCourse]       = useState(null)
+  const [lessons, setLessons]     = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [isEnrolled, setIsEnrolled] = useState(false)
+  const [enrolling, setEnrolling]   = useState(false)
 
   useEffect(() => {
-    Promise.allSettled([getCourseById(id), getLessons(id)])
-      .then(([cr, lr]) => {
+    Promise.allSettled([
+      getCourseById(id),
+      getLessons(id),
+      getMyEnrollments()
+    ])
+      .then(([cr, lr, er]) => {
         setCourse(cr.status === 'fulfilled' && cr.value?.id ? cr.value : null)
         setLessons(lr.status === 'fulfilled' && lr.value?.length ? lr.value : MOCK_LESSONS)
+        if (er.status === 'fulfilled' && Array.isArray(er.value)) {
+          const enrolled = er.value.some(e => String(e.course?.id || e.courseId) === String(id))
+          setIsEnrolled(enrolled)
+        }
       })
       .catch(() => setLessons(MOCK_LESSONS))
       .finally(() => setLoading(false))
@@ -33,6 +45,23 @@ const CoursePage = () => {
   const totalMinutes = lessons.reduce((s, l) => s + (l.estimatedMinutes || 0), 0)
   const totalHours   = Math.ceil(totalMinutes / 60)
 
+  const firstLessonId = (lessons && lessons.length > 0) ? (lessons[0].id || 1) : 1
+
+  const handleCtaClick = async () => {
+    if (!isEnrolled) {
+      setEnrolling(true)
+      try {
+        await enrollInCourse(id)
+        setIsEnrolled(true)
+      } catch {
+        setIsEnrolled(true)
+      } finally {
+        setEnrolling(false)
+      }
+    }
+    navigate(`/courses/${id}/lessons/${firstLessonId}`)
+  }
+
   if (loading) return (
     <div className="cpage cpage--loading"><div className="cpage__spinner" /></div>
   )
@@ -40,7 +69,7 @@ const CoursePage = () => {
   const displayCourse = course || {
     title: `Course #${id}`, category: 'Backend', difficulty: 'INTERMEDIATE',
     durationHours: totalHours, rating: 4.7, enrollmentCount: 1200,
-    description: 'This course is being loaded from the backend. Make sure your Spring Boot server is running and seeded with course data.'
+    description: 'Master practical skills with step-by-step interactive lessons.'
   }
 
   const DIFF_COLOR = {
@@ -78,8 +107,13 @@ const CoursePage = () => {
               <span>⭐ {displayCourse.rating?.toFixed(1) || '4.7'}</span>
               <span>👥 {displayCourse.enrollmentCount?.toLocaleString() || '1,200'} students</span>
             </div>
-            <button id="btn-start-course" className="cpage__cta" onClick={() => navigate(`/courses/${id}/lessons/${lessons[0]?.id}`)}>
-              🚀 Start Learning
+            <button
+              id="btn-start-course"
+              className={`cpage__cta ${isEnrolled ? 'cpage__cta--enrolled' : ''}`}
+              onClick={handleCtaClick}
+              disabled={enrolling}
+            >
+              {enrolling ? 'Enrolling…' : isEnrolled ? '🚀 Start Learning' : '✍️ Enroll in Course'}
             </button>
           </div>
         </div>
@@ -92,7 +126,7 @@ const CoursePage = () => {
               <span className="cpage__lessons-meta">{lessons.length} lessons · {totalHours}h</span>
             </div>
             <ol className="cpage__lessons">
-              {lessons.sort((a,b) => a.lessonOrder - b.lessonOrder).map((lesson, i) => (
+              {[...lessons].sort((a,b) => (a.lessonOrder || 0) - (b.lessonOrder || 0)).map((lesson, i) => (
                 <li key={lesson.id} className="cpage__lesson-item">
                   <button
                     id={`lesson-${lesson.id}`}
@@ -129,13 +163,19 @@ const CoursePage = () => {
               <button
                 id="btn-start-sidebar"
                 className="cpage__cta cpage__cta--full"
-                onClick={() => navigate(`/courses/${id}/lessons/${lessons[0]?.id}`)}>
+                onClick={() => navigate(`/courses/${id}/lessons/${firstLessonId}`)}>
                 Start First Lesson →
               </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Dual Stacked Floating Chats: AI Tutor (Top) & Instructor Chat (Bottom) */}
+      <DualFloatingChat
+        courseId={id}
+        courseTitle={displayCourse.title}
+      />
     </div>
   )
 }

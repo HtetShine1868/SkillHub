@@ -7,8 +7,22 @@ import {
     toggleCareerActive,
 } from '../../services/adminService'
 
+const DEFAULT_CATEGORIES = [
+    'Engineering',
+    'Data',
+    'Data & AI',
+    'Cloud',
+    'DevOps',
+    'Security',
+    'Database',
+    'Mobile',
+    'Design',
+    'Product',
+    'General',
+]
+
 const EMPTY = {
-    name: '', category: '', shortDescription: '',
+    name: '', category: 'Engineering', shortDescription: '',
     fullDescription: '', active: true,
 }
 
@@ -21,44 +35,115 @@ export default function AdminCareersPage() {
     const [form, setForm] = useState(EMPTY)
     const [editId, setEditId] = useState(null)
     const [saving, setSaving] = useState(false)
+    const [isCustomCategory, setIsCustomCategory] = useState(false)
+    const [customCategory, setCustomCategory] = useState('')
 
     const load = () => {
         setLoading(true)
         getAdminCareers()
-            .then(setCareers)
+            .then(res => setCareers(Array.isArray(res) ? res : []))
             .catch(() => setError('Failed to load careers'))
             .finally(() => setLoading(false))
     }
 
     useEffect(() => { load() }, [])
 
-    const openCreate = () => { setForm(EMPTY); setEditId(null); setModal('edit') }
-    const openEdit = c => { setForm({ ...c }); setEditId(c.id); setModal('edit') }
+    // Derive category list from DB careers merged with defaults
+    const dbCategories = Array.from(new Set((Array.isArray(careers) ? careers : []).map(c => c.category).filter(Boolean)))
+    const categoryOptions = Array.from(new Set([...DEFAULT_CATEGORIES, ...dbCategories]))
+
+    const openCreate = () => {
+        setForm({ ...EMPTY })
+        setEditId(null)
+        setIsCustomCategory(false)
+        setCustomCategory('')
+        setModal('create')
+    }
+
+    const openEdit = c => {
+        const isCustom = !categoryOptions.includes(c.category)
+        setForm({
+            name: c.name || '',
+            category: c.category || 'Engineering',
+            shortDescription: c.shortDescription || c.description || '',
+            fullDescription: c.fullDescription || '',
+            active: c.active !== undefined ? c.active : true,
+        })
+        setEditId(c.id)
+        setIsCustomCategory(isCustom)
+        setCustomCategory(isCustom ? c.category : '')
+        setModal('edit')
+    }
+
+    const handleCategoryChange = e => {
+        const val = e.target.value
+        if (val === '__custom__') {
+            setIsCustomCategory(true)
+            setForm(f => ({ ...f, category: customCategory || '' }))
+        } else {
+            setIsCustomCategory(false)
+            setForm(f => ({ ...f, category: val }))
+        }
+    }
 
     const handleSave = async e => {
         e.preventDefault()
+        setError('')
+        const trimmedName = (form.name || '').trim()
+        if (!trimmedName) {
+            setError('Career name is required.')
+            return
+        }
+
+        const isDuplicate = (careers || []).some(c =>
+            c.name?.trim().toLowerCase() === trimmedName.toLowerCase() &&
+            (!editId || Number(c.id) !== Number(editId))
+        )
+        if (isDuplicate) {
+            setError(`A career with the name "${trimmedName}" already exists. Duplicate careers are not allowed.`)
+            return
+        }
+
         setSaving(true)
+        const finalCategory = isCustomCategory ? customCategory.trim() || 'General' : form.category
+        const payload = {
+            ...form,
+            name: trimmedName,
+            category: finalCategory,
+        }
         try {
-            if (editId) await updateCareer(editId, form)
-            else await createCareer(form)
+            if (editId) await updateCareer(editId, payload)
+            else await createCareer(payload)
             setModal(null)
             load()
-        } catch { setError('Save failed') }
-        finally { setSaving(false) }
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || 'Failed to save career'
+            setError(msg)
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleDelete = async id => {
         if (!window.confirm('Delete this career?')) return
-        try { await deleteCareer(id); load() }
-        catch { setError('Delete failed') }
+        try {
+            await deleteCareer(id)
+            load()
+        } catch {
+            setError('Delete failed')
+        }
     }
 
     const handleToggle = async id => {
-        try { await toggleCareerActive(id); load() }
-        catch { setError('Toggle failed') }
+        try {
+            await toggleCareerActive(id)
+            load()
+        } catch {
+            setError('Toggle failed')
+        }
     }
 
-    const filtered = careers.filter(c =>
+    const filtered = (Array.isArray(careers) ? careers : []).filter(c =>
         c.name?.toLowerCase().includes(search.toLowerCase()) ||
         c.category?.toLowerCase().includes(search.toLowerCase())
     )
@@ -109,7 +194,9 @@ export default function AdminCareersPage() {
                             {filtered.map(c => (
                                 <tr key={c.id}>
                                     <td><strong>{c.name}</strong></td>
-                                    <td>{c.category}</td>
+                                    <td>
+                                        <span className="admin-badge admin-badge--blue">{c.category || 'General'}</span>
+                                    </td>
                                     <td>
                                         <span className={`admin-badge ${c.active ? 'admin-badge--green' : 'admin-badge--red'}`}>
                                             {c.active ? 'Active' : 'Inactive'}
@@ -138,25 +225,65 @@ export default function AdminCareersPage() {
                             <div className="admin-form-row">
                                 <div className="admin-field">
                                     <label>Name *</label>
-                                    <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                                    <input
+                                        required
+                                        value={form.name || ''}
+                                        placeholder="e.g. Backend Developer"
+                                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                    />
                                 </div>
                                 <div className="admin-field">
                                     <label>Category *</label>
-                                    <input required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
+                                    <select
+                                        required
+                                        value={isCustomCategory ? '__custom__' : form.category}
+                                        onChange={handleCategoryChange}
+                                    >
+                                        <option value="">— Select Category —</option>
+                                        {categoryOptions.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                        <option value="__custom__">+ Add New Category...</option>
+                                    </select>
+                                    {isCustomCategory && (
+                                        <input
+                                            required
+                                            style={{ marginTop: '0.5rem' }}
+                                            placeholder="Enter new category name…"
+                                            value={customCategory}
+                                            onChange={e => {
+                                                setCustomCategory(e.target.value)
+                                                setForm(f => ({ ...f, category: e.target.value }))
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             </div>
                             <div className="admin-field">
                                 <label>Short Description</label>
-                                <input value={form.shortDescription || ''} onChange={e => setForm(f => ({ ...f, shortDescription: e.target.value }))} />
+                                <input
+                                    value={form.shortDescription || ''}
+                                    placeholder="Brief summary of this career role"
+                                    onChange={e => setForm(f => ({ ...f, shortDescription: e.target.value }))}
+                                />
                             </div>
                             <div className="admin-field">
                                 <label>Full Description</label>
-                                <textarea rows={4} value={form.fullDescription || ''} onChange={e => setForm(f => ({ ...f, fullDescription: e.target.value }))} />
+                                <textarea
+                                    rows={4}
+                                    value={form.fullDescription || ''}
+                                    placeholder="Key responsibilities and skills in detail"
+                                    onChange={e => setForm(f => ({ ...f, fullDescription: e.target.value }))}
+                                />
                             </div>
                             <div className="admin-field">
-                                <label>
-                                    <input type="checkbox" checked={!!form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} />
-                                    {' '}Active
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={!!form.active}
+                                        onChange={e => setForm(f => ({ ...f, active: e.target.checked }))}
+                                    />
+                                    Active Career
                                 </label>
                             </div>
                             <div className="admin-modal-actions">
@@ -172,3 +299,4 @@ export default function AdminCareersPage() {
         </div>
     )
 }
+

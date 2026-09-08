@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Layers, FileText, Tag, Users,
-  Clock, Calendar, Zap, CheckCircle
+  Clock, CheckCircle
 } from 'lucide-react'
 import ForumNavbar from '../components/ForumNavbar'
 import SkillChip from '../components/SkillChip'
@@ -94,7 +94,7 @@ export default function CreateProject() {
       const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
       const project = await createProject({ ...form, skills, tags })
       setSuccess(true)
-      setTimeout(() => navigate(`/forum/project/${project.id}`), 1200)
+      setTimeout(() => navigate(`/skill-exchange/project/${project.id}`), 1200)
     } catch {
       setErrors({ submit: 'Failed to create project. Please try again.' })
     } finally {
@@ -133,7 +133,7 @@ export default function CreateProject() {
       {/* Page header */}
       <div className="page-header">
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <Link to="/forum" className="project-details__back">
+          <Link to="/skill-exchange" className="project-details__back">
             <ArrowLeft size={16} />
             Back to Forum
           </Link>
@@ -422,7 +422,7 @@ export default function CreateProject() {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => navigate('/forum')}
+            onClick={() => navigate('/skill-exchange')}
           >
             Cancel
           </button>

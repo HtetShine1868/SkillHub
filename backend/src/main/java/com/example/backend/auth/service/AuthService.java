@@ -6,10 +6,15 @@ import com.example.backend.user.entity.AuthProvider;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.entity.Role;
 import com.example.backend.user.repository.UserRepository;
+import com.example.backend.skill.UserSkillRepository;
+import com.example.backend.skill.UserSkill;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +25,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
+
+    private final UserSkillRepository userSkillRepository;
 
     public AuthResponse register(
             RegisterRequest request
@@ -45,29 +52,32 @@ public class AuthService {
             );
         }
 
-        User user = User.builder()
-                .name(request.getName().trim())
-                .email(email)
-                .password(
-                        passwordEncoder.encode(
-                                request.getPassword()
+        Role assignedRole = Role.USER;
+        if (request.getRole() != null) {
+            String r = request.getRole().trim().toUpperCase();
+            if (r.contains("INSTRUCTOR")) {
+                assignedRole = Role.INSTRUCTOR;
+            }
+        }
+
+        User newUser =
+                User.builder()
+                        .name(request.getName().trim())
+                        .email(email)
+                        .password(
+                                passwordEncoder.encode(
+                                        request.getPassword()
+                                )
                         )
-                )
-                .provider(AuthProvider.LOCAL)
-                .providerId(null)
-                .profileImage(null)
-                .emailVerified(false)
-                .role(Role.USER)
-                .build();
+                        .provider(AuthProvider.LOCAL)
+                        .role(assignedRole)
+                        .emailVerified(false)
+                        .build();
 
-        userRepository.save(user);
-
-        return toResponse(user);
+        return toResponse(userRepository.save(newUser));
     }
 
-    public AuthResponse login(
-            LoginRequest request
-    ) {
+    public AuthResponse login(LoginRequest request) {
 
         String email =
                 request.getEmail()
@@ -78,15 +88,16 @@ public class AuthService {
                 userRepository
                         .findByEmail(email)
                         .orElseThrow(
-                                () -> new IllegalArgumentException(
-                                        "Invalid email or password"
-                                )
+                                () ->
+                                        new IllegalArgumentException(
+                                                "Invalid email or password"
+                                        )
                         );
 
         if (user.getPassword() == null) {
 
             throw new IllegalArgumentException(
-                    "This account uses Google login"
+                    "This account uses social login. Please sign in with Google."
             );
         }
 
@@ -103,46 +114,44 @@ public class AuthService {
         return toResponse(user);
     }
 
-    public User findOrCreateGoogleUser(
+    public AuthResponse loginOAuth2(
             String email,
             String name,
-            String googleId,
+            String providerId,
             String profileImage
     ) {
 
-        String normalizedEmail =
-                email.trim().toLowerCase();
-
         User user =
                 userRepository
-                        .findByEmail(normalizedEmail)
+                        .findByEmail(email.toLowerCase())
                         .orElse(null);
 
-        if (user != null) {
+        if (user == null) {
 
-            user.setProviderId(googleId);
+            user =
+                    User.builder()
+                            .email(email.toLowerCase())
+                            .name(name)
+                            .provider(AuthProvider.GOOGLE)
+                            .providerId(providerId)
+                            .profileImage(profileImage)
+                            .emailVerified(true)
+                            .role(Role.USER)
+                            .build();
 
-            if (profileImage != null) {
-                user.setProfileImage(profileImage);
-            }
+            user = userRepository.save(user);
 
+        } else {
+
+            user.setName(name);
+            user.setProviderId(providerId);
+            user.setProfileImage(profileImage);
             user.setEmailVerified(true);
 
-            return userRepository.save(user);
+            user = userRepository.save(user);
         }
 
-        User newUser = User.builder()
-                .name(name)
-                .email(normalizedEmail)
-                .password(null)
-                .provider(AuthProvider.GOOGLE)
-                .providerId(googleId)
-                .profileImage(profileImage)
-                .emailVerified(true)
-                .role(Role.USER)
-                .build();
-
-        return userRepository.save(newUser);
+        return toResponse(user);
     }
 
     public String generateToken(User user) {
@@ -152,7 +161,74 @@ public class AuthService {
         );
     }
 
+    /**
+     * Finds or creates a Google OAuth2 user and returns the User entity.
+     * Used by OAuth2SuccessHandler and OAuth2Service.
+     */
+    public User findOrCreateGoogleUser(
+            String email,
+            String name,
+            String providerId,
+            String profileImage
+    ) {
+        User user = userRepository.findByEmail(email.toLowerCase()).orElse(null);
+
+        if (user == null) {
+            user = User.builder()
+                    .email(email.toLowerCase())
+                    .name(name)
+                    .provider(AuthProvider.GOOGLE)
+                    .providerId(providerId)
+                    .profileImage(profileImage)
+                    .emailVerified(true)
+                    .role(Role.USER)
+                    .build();
+            user = userRepository.save(user);
+        } else {
+            user.setName(name);
+            user.setProviderId(providerId);
+            user.setProfileImage(profileImage);
+            user.setEmailVerified(true);
+            user = userRepository.save(user);
+        }
+
+        return user;
+    }
+
     public AuthResponse toResponse(User user) {
+        List<UserSkill> userSkills = userSkillRepository.findByUserId(user.getId());
+        List<String> skillNames = userSkills.stream()
+                .map(us -> us.getSkill().getName())
+                .collect(Collectors.toList());
+
+        double avgLevel = userSkills.stream()
+                .mapToInt(UserSkill::getCurrentLevel)
+                .average()
+                .orElse(0.0);
+
+        String overallLevel = "Intermediate";
+        if (userSkills.isEmpty()) {
+            overallLevel = "Beginner";
+        } else if (avgLevel < 1.5) {
+            overallLevel = "Beginner";
+        } else if (avgLevel < 3.5) {
+            overallLevel = "Intermediate";
+        } else {
+            overallLevel = "Advanced";
+        }
+
+        // Get initials
+        String initials = "";
+        if (user.getName() != null && !user.getName().isBlank()) {
+            String[] parts = user.getName().trim().split("\\s+");
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < Math.min(parts.length, 2); i++) {
+                if (!parts[i].isEmpty()) {
+                    sb.append(parts[i].substring(0, 1).toUpperCase());
+                }
+            }
+            initials = sb.toString();
+        }
 
         return AuthResponse.builder()
                 .id(user.getId())
@@ -165,7 +241,10 @@ public class AuthService {
                 .emailVerified(
                         user.isEmailVerified()
                 )
-                .role(user.getRole().name())
+                .role("ROLE_" + user.getRole().name())
+                .initials(initials)
+                .skills(skillNames)
+                .level(overallLevel)
                 .build();
     }
 }

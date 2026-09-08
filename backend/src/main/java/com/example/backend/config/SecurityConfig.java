@@ -84,14 +84,33 @@ public class SecurityConfig {
                                 "/login/oauth2/**"
                         ).permitAll()
 
-                        // Public course browsing (GET) and Admin write access (POST, PUT, DELETE)
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/courses/**").hasRole("ADMIN")
-                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/courses/**").hasRole("ADMIN")
+                        // WebSocket handshake
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Chat API (authenticated below via JWT filter)
+                        .requestMatchers("/api/chat/**").authenticated()
+
+                        // Course Reviews
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/courses/*/reviews").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/courses/**").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/courses/**").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/courses/**").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/courses/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/careers/**").permitAll()
+                        .requestMatchers("/api/discovery/**").permitAll()
+                        .requestMatchers("/api/assessments/**").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll()
+                        .requestMatchers("/api/roadmap/**").permitAll()
+                        .requestMatchers("/api/enrollments/**").permitAll()
+
+                        // Instructor endpoints
+                        .requestMatchers("/api/instructor/**").hasAnyRole("INSTRUCTOR", "ADMIN")
 
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Skill Exchange (authenticated users)
+                        .requestMatchers("/api/skill-exchange/**").authenticated()
 
                         // Everything else protected
                         .anyRequest()

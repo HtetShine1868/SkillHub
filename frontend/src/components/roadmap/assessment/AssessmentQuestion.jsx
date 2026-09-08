@@ -30,9 +30,10 @@ export default function AssessmentQuestion({
       </p>
 
       <div className="assessment-options">
-        {question.options.map((option) => (
+        {question.options.map((option, index) => (
           <AssessmentOption
             key={option.value}
+            index={index}
             option={option}
             selected={selectedAnswer === option.value}
             onClick={() => onSelect(option.value)}

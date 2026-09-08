@@ -21,7 +21,7 @@ export default function AdminDiscoveryQuestionsPage() {
     const load = () => {
         setLoading(true)
         getDiscoveryQuestions()
-            .then(setQuestions)
+            .then(res => setQuestions(Array.isArray(res) ? res : []))
             .catch(() => setError('Failed to load questions'))
             .finally(() => setLoading(false))
     }
@@ -35,14 +35,17 @@ export default function AdminDiscoveryQuestionsPage() {
     }
 
     const openEdit = q => {
+        const rawOptions = Array.isArray(q.options) ? q.options : []
+        const parsedOptions = rawOptions.map((o, idx) => ({
+            optionText: o.optionText || o.text || o.label || '',
+            optionOrder: o.optionOrder || o.order || idx + 1,
+            weights: o.weights || {}
+        }))
+
         setForm({
-            questionText: q.questionText,
-            questionOrder: q.questionOrder,
-            options: (q.options || []).map(o => ({
-                optionText: o.optionText,
-                optionOrder: o.optionOrder,
-                weights: o.weights || {}
-            }))
+            questionText: q.questionText || q.question || '',
+            questionOrder: q.questionOrder || q.orderIndex || 1,
+            options: parsedOptions.length > 0 ? parsedOptions : [{ ...EMPTY_OPT }]
         })
         setEditId(q.id)
         setModal(true)
@@ -50,33 +53,54 @@ export default function AdminDiscoveryQuestionsPage() {
 
     const addOption = () => setForm(f => ({
         ...f,
-        options: [...f.options, { optionText: '', optionOrder: f.options.length + 1, weights: {} }]
+        options: [...(f.options || []), { optionText: '', optionOrder: (f.options || []).length + 1, weights: {} }]
     }))
 
-    const removeOption = i => setForm(f => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
+    const removeOption = i => setForm(f => ({
+        ...f,
+        options: (f.options || []).filter((_, idx) => idx !== i)
+    }))
 
     const setOption = (i, key, val) => setForm(f => ({
         ...f,
-        options: f.options.map((o, idx) => idx === i ? { ...o, [key]: val } : o)
+        options: (f.options || []).map((o, idx) => idx === i ? { ...o, [key]: val } : o)
     }))
 
     const handleSave = async e => {
         e.preventDefault()
+        setError('')
         setSaving(true)
+        const payload = {
+            ...form,
+            question: form.questionText,
+            questionText: form.questionText,
+            orderIndex: form.questionOrder,
+            questionOrder: form.questionOrder,
+            options: (form.options || []).filter(o => o.optionText && o.optionText.trim() !== '')
+        }
         try {
-            if (editId) await updateDiscoveryQuestion(editId, form)
-            else await createDiscoveryQuestion(form)
+            if (editId) await updateDiscoveryQuestion(editId, payload)
+            else await createDiscoveryQuestion(payload)
             setModal(false)
             load()
-        } catch { setError('Save failed') }
-        finally { setSaving(false) }
+        } catch {
+            setError('Failed to save discovery question')
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleDelete = async id => {
         if (!window.confirm('Delete this question?')) return
-        try { await deleteDiscoveryQuestion(id); load() }
-        catch { setError('Delete failed') }
+        try {
+            await deleteDiscoveryQuestion(id)
+            load()
+        } catch {
+            setError('Delete failed')
+        }
     }
+
+    const safeQuestions = Array.isArray(questions) ? [...questions] : []
 
     return (
         <div>
@@ -92,7 +116,7 @@ export default function AdminDiscoveryQuestionsPage() {
 
             {loading ? (
                 <div className="admin-loading">Loading…</div>
-            ) : questions.length === 0 ? (
+            ) : safeQuestions.length === 0 ? (
                 <div className="admin-empty">
                     <div className="admin-empty-icon">🔍</div>
                     <h3>No questions yet</h3>
@@ -110,10 +134,10 @@ export default function AdminDiscoveryQuestionsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {questions.sort((a, b) => a.questionOrder - b.questionOrder).map(q => (
+                            {safeQuestions.sort((a, b) => (a.questionOrder || a.orderIndex || 0) - (b.questionOrder || b.orderIndex || 0)).map(q => (
                                 <tr key={q.id}>
-                                    <td style={{ color: 'var(--f-text-muted)', fontSize: '0.85rem' }}>{q.questionOrder}</td>
-                                    <td style={{ maxWidth: 340 }}>{q.questionText}</td>
+                                    <td style={{ color: 'var(--f-text-muted)', fontSize: '0.85rem' }}>{q.questionOrder || q.orderIndex || 1}</td>
+                                    <td style={{ maxWidth: 340 }}>{q.questionText || q.question || '—'}</td>
                                     <td>
                                         <span className="admin-badge admin-badge--blue">{(q.options || []).length} options</span>
                                     </td>
@@ -136,13 +160,21 @@ export default function AdminDiscoveryQuestionsPage() {
                             <div className="admin-form-row">
                                 <div className="admin-field" style={{ flex: 3 }}>
                                     <label>Question Text *</label>
-                                    <input required value={form.questionText}
-                                        onChange={e => setForm(f => ({ ...f, questionText: e.target.value }))} />
+                                    <input
+                                        required
+                                        value={form.questionText || ''}
+                                        placeholder="e.g. What area of software engineering excites you the most?"
+                                        onChange={e => setForm(f => ({ ...f, questionText: e.target.value }))}
+                                    />
                                 </div>
                                 <div className="admin-field">
                                     <label>Order</label>
-                                    <input type="number" min={1} value={form.questionOrder}
-                                        onChange={e => setForm(f => ({ ...f, questionOrder: Number(e.target.value) }))} />
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={form.questionOrder ?? 1}
+                                        onChange={e => setForm(f => ({ ...f, questionOrder: Number(e.target.value) }))}
+                                    />
                                 </div>
                             </div>
 
@@ -151,16 +183,18 @@ export default function AdminDiscoveryQuestionsPage() {
                                     <label style={{ fontSize: '0.85rem', color: 'var(--f-text-muted)', fontWeight: 500 }}>Answer Options</label>
                                     <button type="button" className="admin-btn admin-btn--sm admin-btn--secondary" onClick={addOption}>+ Option</button>
                                 </div>
-                                {form.options.map((opt, i) => (
+                                {(form.options || []).map((opt, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                                         <input
                                             placeholder={`Option ${i + 1} text`}
-                                            value={opt.optionText}
+                                            value={opt.optionText || ''}
                                             onChange={e => setOption(i, 'optionText', e.target.value)}
                                             style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.6rem 0.9rem', color: '#f0f2ff', fontSize: '0.88rem', fontFamily: 'var(--sans)' }}
                                         />
-                                        <input type="number" min={1}
-                                            value={opt.optionOrder}
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            value={opt.optionOrder ?? (i + 1)}
                                             onChange={e => setOption(i, 'optionOrder', Number(e.target.value))}
                                             style={{ width: 60, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.6rem', color: '#f0f2ff', fontSize: '0.88rem', textAlign: 'center' }}
                                             title="Order"
@@ -181,3 +215,4 @@ export default function AdminDiscoveryQuestionsPage() {
         </div>
     )
 }
+

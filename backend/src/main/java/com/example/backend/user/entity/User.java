@@ -60,6 +60,9 @@ public class User {
     private Role role;
 
     @Column(nullable = false)
+    private Boolean enabled;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
@@ -75,6 +78,10 @@ public class User {
 
         if (role == null) {
             role = Role.USER;
+        }
+
+        if (enabled == null) {
+            enabled = true;
         }
     }
 

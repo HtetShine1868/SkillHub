@@ -12,7 +12,7 @@ export default function ProjectCard({ project }) {
   const spotsLeft = project.maxMembers - project.currentMembers
 
   function handleClick() {
-    navigate(`/forum/project/${project.id}`)
+    navigate(`/skill-exchange/project/${project.id}`)
   }
 
   function handleKeyDown(e) {

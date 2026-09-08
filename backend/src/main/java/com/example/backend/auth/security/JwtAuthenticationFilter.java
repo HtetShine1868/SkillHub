@@ -44,32 +44,25 @@ public class JwtAuthenticationFilter
                         .getContext()
                         .getAuthentication() == null
         ) {
+            try {
+                String email = jwtService.extractEmail(token);
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            String email =
-                    jwtService.extractEmail(token);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
-            UserDetails userDetails =
-                    userDetailsService
-                            .loadUserByUsername(email);
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
 
-            UsernamePasswordAuthenticationToken
-                    authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
-
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource()
-                            .buildDetails(request)
-            );
-
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(
-                            authentication
-                    );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(
@@ -81,16 +74,17 @@ public class JwtAuthenticationFilter
     private String extractToken(
             HttpServletRequest request
     ) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return authHeader.substring(7);
+        }
 
         if (request.getCookies() == null) {
             return null;
         }
 
         for (Cookie cookie : request.getCookies()) {
-
-            if ("SKILLHUB_TOKEN"
-                    .equals(cookie.getName())) {
-
+            if ("SKILLHUB_TOKEN".equals(cookie.getName()) || "token".equals(cookie.getName()) || "jwt".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }

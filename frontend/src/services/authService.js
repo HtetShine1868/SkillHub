@@ -4,7 +4,8 @@ export const registerUser = async ({
     name,
     email,
     password,
-    confirmPassword
+    confirmPassword,
+    role
 }) => {
 
     const response =
@@ -14,7 +15,8 @@ export const registerUser = async ({
                 name,
                 email,
                 password,
-                confirmPassword
+                confirmPassword,
+                role
             }
         );
 

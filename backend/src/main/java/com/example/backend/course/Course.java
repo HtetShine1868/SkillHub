@@ -45,12 +45,25 @@ public class Course {
     @Column(nullable = false)
     private Boolean published;
 
+    @Column(length = 30)
+    private String status; // DRAFT, PENDING_APPROVAL, PUBLISHED, REJECTED, ARCHIVED
+
+    @Column(columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    private Long instructorId;
+
+    @Column(length = 100)
+    private String instructorName;
+
+    @Column(nullable = false)
+    private Integer reviewCount;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-
         createdAt = LocalDateTime.now();
 
         if (rating == null) {
@@ -63,6 +76,14 @@ public class Course {
 
         if (published == null) {
             published = true;
+        }
+
+        if (status == null) {
+            status = published ? "PUBLISHED" : "DRAFT";
+        }
+
+        if (reviewCount == null) {
+            reviewCount = 0;
         }
     }
 }

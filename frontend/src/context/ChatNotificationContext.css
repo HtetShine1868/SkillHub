@@ -1,0 +1,68 @@
+/* =============================================
+   GLOBAL CHAT NOTIFICATION TOAST
+   ============================================= */
+
+.chat-global-toast {
+    position: fixed;
+    top: 80px;
+    right: 24px;
+    max-width: 360px;
+    background: linear-gradient(135deg, #0284c7, #6366f1);
+    color: #ffffff;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 100000;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: chatToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes chatToastIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-global-toast__icon {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+}
+
+.chat-global-toast__text {
+    flex: 1;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.chat-global-toast__close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    opacity: 0.8;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.chat-global-toast__close:hover {
+    opacity: 1;
+}
+
+@media (max-width: 600px) {
+    .chat-global-toast {
+        left: 16px;
+        right: 16px;
+        max-width: none;
+        top: 72px;
+    }
+}

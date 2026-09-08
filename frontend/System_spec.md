@@ -1,1663 +1,1859 @@
-====================================================================
-PERSONALIZED CAREER LEARNING PLATFORM
-COMPLETE SYSTEM + ALGORITHM + UI + WORKFLOW SPECIFICATION
-====================================================================
+# ============================================================
+# SKILLHUB
+# COMPLETE SYSTEM WORKFLOW AND SYSTEM REQUIREMENTS
+# ============================================================
 
 
-====================================================================
-1. SYSTEM PURPOSE
-====================================================================
+# ============================================================
+# 1. SYSTEM OVERVIEW
+# ============================================================
 
-Build a personalized career learning platform for students.
+SkillHub is a personalized career guidance and learning platform.
 
-The platform helps a student go from:
+The main purpose of the system is to help students:
 
-"I don't know what career I want."
+1. Discover a suitable career.
+2. Select a career if they already know their target career.
+3. Assess their current skills.
+4. Identify missing skills.
+5. Generate a personalized learning roadmap.
+6. Learn through structured roadmap phases.
+7. Find suitable courses for each required skill.
+8. Receive personalized course recommendations.
+9. Learn through lessons.
+10. Get help from an AI Assistant inside lessons.
+11. Complete quizzes and assignments/projects.
+12. Track learning and skill progress.
+13. Update their roadmap dynamically.
+14. Rate and review completed courses.
+15. Earn certificates and badges.
+16. Connect with other students through Skill Exchange.
 
-OR:
+The system contains three main user roles:
 
-"I know what career I want."
-
-to:
-
-"I know what skills I need."
-
-"I know what skills I already have."
-
-"I know what I need to learn."
-
-"I have a personalized roadmap."
-
-"I can learn through structured courses."
-
-"I can ask an AI assistant when I don't understand."
-
-"I can prove my knowledge through assessments."
-
-"I can earn certificates."
-
-"I can build my skills."
-
-"I can find projects and teammates through Skill Exchange."
+1. STUDENT / USER
+2. INSTRUCTOR
+3. ADMIN
 
 
-The platform must NOT depend on AI for every feature.
+# ============================================================
+# 2. MAIN SYSTEM CONCEPT
+# ============================================================
 
-Use normal application logic and algorithms for:
-
-- Career matching
-- Skill assessment
-- Skill gap analysis
-- Roadmap generation
-- Course recommendation
-- Course ordering
-- Progress tracking
-- Assessment scoring
-- Certificate eligibility
-- Skill updates
-- Skill Exchange matching
-
-Use AI mainly for:
-
-- Explaining concepts
-- Explaining code
-- Simplifying difficult topics
-- Summarizing lessons
-- Giving examples
-- Answering questions related to the current lesson
-
-
-====================================================================
-2. HIGH-LEVEL ARCHITECTURE
-====================================================================
-
-FRONTEND
-React + Vite
-
-        |
-        | REST API
-        v
-
-BACKEND
-Spring Boot
-
-        |
-        +----------------------+
-        |                      |
-        v                      v
-
-DATABASE                AI SERVICE
-PostgreSQL              AI Provider
-        |
-        +----------------------------------+
-        |          |          |            |
-        v          v          v            v
-
-Career      Skill       Course       Skill Exchange
-System      System      System       System
-
-
-Main backend modules:
-
-Authentication
-User Profile
-Career Discovery
-Career
-Skill
-Assessment
-Roadmap
-Course
-Learning Progress
-Quiz
-Certificate
-AI Tutor
-Skill Exchange
-Matching
-
-
-====================================================================
-3. MAIN USER FLOW
-====================================================================
-
-NEW USER
-
-        |
-        v
-
-CAREER ONBOARDING
-
-        |
-        +-------------------------+
-        |                         |
-        v                         v
-
-FIND MY CAREER              I KNOW MY CAREER
-
-        |                         |
-        v                         v
-
-CAREER QUESTIONS            CHOOSE CAREER
-
-        |                         |
-        v                         |
-CAREER MATCHING                    |
-        |                         |
-        +------------+------------+
-                     |
-                     v
-              CAREER DETAIL
-                     |
-                     v
-           START ROADMAP PROCESS
-                     |
-                     v
-             SKILL ASSESSMENT
-                     |
-                     v
-             SKILL PROFILE
-                     |
-                     v
-             SKILL GAP ANALYSIS
-                     |
-                     v
-          COURSE RECOMMENDATION
-                     |
-                     v
-             ROADMAP GENERATION
-                     |
-                     v
-                LEARNING
-                     |
-                     v
-          LESSON + AI ASSISTANT
-                     |
-                     v
-             PROGRESS TRACKING
-                     |
-                     v
-                QUIZ
-                     |
-                     v
-           FINAL ASSESSMENT
-                     |
-             +-------+-------+
-             |               |
-            FAIL            PASS
-             |               |
-             v               v
-       CONTINUE LEARNING   COMPLETION
-                             |
-                  +----------+----------+
-                  |          |          |
-                  v          v          v
-                BADGE   CERTIFICATE   SKILL UPDATE
-                                         |
-                                         v
-                                  SKILL EXCHANGE
-                                         |
-                                         v
-                                  MATCHING ALGORITHM
-                                         |
-                         +---------------+---------------+
-                         |                               |
-                         v                               v
-                  PROJECT MATCH                  TEAMMATE MATCH
-                         |                               |
-                         v                               v
-                       APPLY                           INVITE
-                         |                               |
-                         +---------------+---------------+
-                                         |
-                                         v
-                                  ACCEPT / REJECT
-                                         |
-                                         v
-                                      TEAM
-
-
-====================================================================
-4. DATA MODEL
-====================================================================
-
-The personalization system depends heavily on relationships
-between users, careers, skills, courses, and assessments.
-
-
-USER
-
-id
-name
-email
-...
-
-
-USER_SKILL
-
-id
-user_id
-skill_id
-current_level
-confidence
-source
-updated_at
-
-
-SKILL
-
-id
-name
-category
-description
-
+The system is based on the following principle:
 
 CAREER
-
-id
-name
-description
-category
-
-
-CAREER_SKILL
-
-career_id
-skill_id
-required_level
-importance
-
-
-COURSE
-
-id
-title
-description
-difficulty
-duration
-
-
-COURSE_SKILL
-
-course_id
-skill_id
-target_level
-importance
-
-
-COURSE_PREREQUISITE
-
-course_id
-required_course_id
-
-
-LESSON
-
-id
-course_id
-title
-content
-order_index
-
-
-ENROLLMENT
-
-user_id
-course_id
-status
-progress
-started_at
-completed_at
-
-
-LESSON_PROGRESS
-
-user_id
-lesson_id
-completed
-completed_at
-
-
-ASSESSMENT
-
-id
-type
-course_id
-
-
-ASSESSMENT_QUESTION
-
-assessment_id
-question
-correct_answer
-skill_id
-difficulty
-
-
-ASSESSMENT_ATTEMPT
-
-user_id
-assessment_id
-score
-completed_at
-
-
-CERTIFICATE
-
-user_id
-course_id
-certificate_id
-issued_at
-
-
-BADGE
-
-user_id
-course_id
-badge_type
-earned_at
-
-
-PROJECT
-
-id
-owner_id
-title
-description
-
-
-PROJECT_REQUIREMENT
-
-project_id
-skill_id
-required_level
-importance
-role
-
-
-PROJECT_MEMBER
-
-project_id
-user_id
-role
-
-
-PROJECT_APPLICATION
-
-project_id
-user_id
-status
-
-
-PROJECT_INVITATION
-
-project_id
-user_id
-status
-
-
-====================================================================
-5. SKILL SYSTEM
-====================================================================
-
-Skills are the central connection between:
-
-CAREERS
-
-COURSES
-
-USERS
-
-ASSESSMENTS
-
-ROADMAPS
-
-SKILL EXCHANGE
-
-
-Example:
-
-                    Backend Developer
-                           |
-                           |
-          +----------------+----------------+
-          |                |                |
-          v                v                v
-
-         Java         Spring Boot        REST API
-          |                |                |
-          v                v                v
-      Courses          Courses          Courses
-          |                |                |
-          +----------------+----------------+
-                           |
-                           v
-                     User Skills
-                           |
-                           v
-                   Skill Exchange
-
-
-====================================================================
-6. SKILL LEVEL SYSTEM
-====================================================================
-
-Use a consistent skill scale.
-
-0 = No Experience
-
-1 = Beginner
-
-2 = Elementary
-
-3 = Intermediate
-
-4 = Advanced
-
-5 = Expert
-
-
-Do NOT use different scales in different parts of
-the application.
-
-
-Example:
-
-Java = 3
-
-means:
-
-Intermediate
-
-
-====================================================================
-7. CAREER SKILL REQUIREMENTS
-====================================================================
-
-Every career must have required skills.
-
-Example:
-
-
-CAREER:
-
-Backend Developer
-
-
-CAREER SKILLS:
-
-
-Java
-required_level = 4
-importance = 0.90
-
-
-Spring Boot
-required_level = 4
-importance = 1.00
-
-
-REST API
-required_level = 4
-importance = 0.95
-
-
-SQL
-required_level = 3
-importance = 0.80
-
-
-Git
-required_level = 3
-importance = 0.60
-
-
-Docker
-required_level = 2
-importance = 0.40
-
-
-This data is maintained by the system/admin.
-
-It is NOT generated dynamically by AI.
-
-
-====================================================================
-8. CAREER DISCOVERY ALGORITHM
-====================================================================
-
-Purpose:
-
-Recommend careers when the user doesn't know what career
-they want.
-
-
-INPUT:
-
-User answers
-
-
-OUTPUT:
-
-Ranked careers
-
-
-Each question option has career weights.
-
-
-Example:
-
-
-Question:
-
-"What sounds more interesting?"
-
-
-Option:
-
-"Building the system behind an application"
-
-
-Weights:
-
-
-Backend Developer = 5
-
-Software Developer = 4
-
-DevOps Engineer = 2
-
-Data Analyst = 1
-
-
-If the user selects this:
-
-careerScores["Backend Developer"] += 5
-
-careerScores["Software Developer"] += 4
-
-careerScores["DevOps Engineer"] += 2
-
-careerScores["Data Analyst"] += 1
-
-
-Repeat for all questions.
-
-
-====================================================================
-9. CAREER SCORE NORMALIZATION
-====================================================================
-
-Raw scores should be converted into a percentage.
-
-
-Example:
-
-
-Backend Developer = 47 points
-
-Maximum possible score = 50
-
-
-matchPercentage =
-
-47 / 50 * 100
-
-
-Result:
-
-94%
-
-
-Sort careers:
-
-1. Backend Developer - 94%
-2. Software Developer - 86%
-3. Data Analyst - 75%
-
-
-Show top 3-5 careers.
-
-
-====================================================================
-10. CAREER DISCOVERY SHOULD NOT DECIDE FOR THE USER
-====================================================================
-
-The algorithm only recommends.
-
-It should NOT say:
-
-"You must become a Backend Developer."
-
+    |
+    v
+REQUIRED SKILLS
+    |
+    v
+ROADMAP PHASES
+    |
+    v
+REQUIRED SKILLS IN EACH PHASE
+    |
+    v
+AVAILABLE COURSES
+    |
+    v
+COURSE RECOMMENDATION
+    |
+    v
+LEARNING
+    |
+    v
+LESSONS + AI ASSISTANT + QUIZZES
+    |
+    v
+SKILL PROGRESS
+    |
+    v
+ROADMAP UPDATE
+
+
+The roadmap should NOT directly depend on one specific course.
 
 Instead:
 
-"These careers may fit your interests."
+ROADMAP tells the student:
+
+"What should I learn?"
+
+Courses provide:
+
+"How can I learn it?"
 
 
-The user can:
+# ============================================================
+# 3. USER ROLES
+# ============================================================
 
-- Read career information
-- Compare careers
-- Select another career
-- Choose their preferred career
-
-
-Human choice is final.
+The system has three roles.
 
 
-====================================================================
-11. CAREER DETAIL PAGE
-====================================================================
+---------------------------------------------------------------
+3.1 STUDENT / USER
+---------------------------------------------------------------
 
-The user sees:
+A Student is the main learner in the system.
 
-Career description
+Student can:
 
-Responsibilities
-
-Typical skills
-
-Required skills
-
-Learning path
-
-Career match percentage
-
-Recommended roadmap
-
-
-Primary action:
-
-[ Generate My Roadmap ]
-
-
-====================================================================
-12. SKILL ASSESSMENT SYSTEM
-====================================================================
-
-After selecting a career, the user takes a skill assessment.
-
-Purpose:
-
-Determine what the user already knows.
-
-The assessment should prevent the roadmap from teaching
-things the user already understands.
+- Register as a Student
+- Login
+- Find a suitable career
+- Select a known career
+- Take assessments
+- View career recommendations
+- View their skill profile
+- View skill gaps
+- Get a personalized roadmap
+- View roadmap phases
+- View courses inside a phase
+- Receive recommended courses
+- Enroll in courses
+- Learn lessons
+- Use the AI Assistant inside lessons
+- Take quizzes
+- Complete assignments/projects
+- Track course progress
+- Track skill progress
+- Track roadmap progress
+- Rate courses
+- Review courses
+- Receive certificates
+- Earn badges
+- Use Skill Exchange
+- Manage their profile
 
 
-Use two types of information:
+---------------------------------------------------------------
+3.2 INSTRUCTOR
+---------------------------------------------------------------
+
+An Instructor creates learning content.
+
+Instructor can:
+
+- Register as an Instructor
+- Login
+- Manage instructor profile
+- Create courses
+- Edit courses
+- Create course descriptions
+- Select skills taught by the course
+- Set course difficulty
+- Create lessons
+- Add learning content
+- Create quizzes
+- Create assignments/projects
+- Save course as draft
+- Submit course for admin review
+- Edit rejected courses
+- Resubmit courses
+- View course approval status
+- View published courses
+- View course statistics
+- View student enrollments
+- View ratings
+- View reviews
+- Update course content
+
+IMPORTANT:
+
+Instructor courses are NOT automatically public.
+
+Every course must go through an approval process.
+
+Course workflow:
+
+DRAFT
+    |
+    v
+PENDING REVIEW
+    |
+    v
+ADMIN REVIEW
+    |
+    +----------------------+
+    |                      |
+APPROVED                REJECTED
+    |                      |
+    v                      v
+PUBLISHED            INSTRUCTOR EDITS
+    |                      |
+    |                      v
+    |                  RESUBMIT
+    |                      |
+    +----------------------+
+          
 
 
-TYPE 1:
+---------------------------------------------------------------
+3.3 ADMIN
+---------------------------------------------------------------
 
-SELF-ASSESSMENT
+Admin manages the overall system.
+
+Admin can:
+
+- Login
+- Access Admin Dashboard
+- Manage users
+- Manage instructors
+- Manage student accounts
+- Manage skills
+- Create careers
+- Edit careers
+- Map careers to skills
+- Define required skill levels
+- Define skill importance
+- Manage assessment questions
+- Review instructor courses
+- Approve courses
+- Reject courses
+- Manage published courses
+- Manage inappropriate content
+- Moderate reviews
+- View platform statistics
+- View course statistics
+- Manage system configuration
+
+
+# ============================================================
+# 4. SIGNUP SYSTEM
+# ============================================================
+
+The signup system should allow users to choose their account type.
+
+When a new person enters the registration page:
+
+CREATE ACCOUNT
+
+Choose account type:
+
+[ STUDENT / USER ]
+
+[ INSTRUCTOR ]
+
+
+---------------------------------------------------------------
+4.1 STUDENT SIGNUP
+---------------------------------------------------------------
+
+If the person selects:
+
+STUDENT / USER
+
+They provide basic information.
+
+Example:
+
+- Full Name
+- Email
+- Password
+- Confirm Password
+
+Optional:
+
+- Profile Image
+- Bio
+- Education Level
+- Interests
+
+After successful registration:
+
+Account Role = STUDENT
+
+Student can immediately access the Student Dashboard.
+
+
+Student Signup Flow:
+
+SELECT STUDENT
+        |
+        v
+ENTER BASIC INFORMATION
+        |
+        v
+VALIDATE INFORMATION
+        |
+        v
+CREATE ACCOUNT
+        |
+        v
+ROLE = STUDENT
+        |
+        v
+STUDENT DASHBOARD
+
+
+---------------------------------------------------------------
+4.2 INSTRUCTOR SIGNUP
+---------------------------------------------------------------
+
+If the person selects:
+
+INSTRUCTOR
+
+The system should request more information.
+
+Because an Instructor will create educational content.
+
+Example required information:
+
+Basic Account Information:
+
+- Full Name
+- Email
+- Password
+- Confirm Password
+
+Instructor Information:
+
+- Professional Title
+- Short Biography
+- Expertise / Skills
+- Years of Experience
+- Education Background
+- LinkedIn or Portfolio URL (Optional)
+- Profile Image (Optional)
 
 
 Example:
 
-How comfortable are you with Java?
+Name:
 
+John Smith
 
-TYPE 2:
+Professional Title:
 
-KNOWLEDGE QUESTIONS
+Java Backend Developer
 
+Years of Experience:
 
-Example:
+5 Years
 
-What does dependency injection mean?
-
-
-TYPE 3:
-
-PRACTICAL QUESTIONS
-
-
-Example:
-
-Which code correctly creates a REST endpoint?
-
-
-Use actual questions to verify self-reported knowledge.
-
-
-====================================================================
-13. ASSESSMENT QUESTION -> SKILL MAPPING
-====================================================================
-
-Every assessment question should be connected to a skill.
-
-
-Example:
-
-
-Question:
-
-"What does @RestController do?"
-
-
-skill_id:
-
-SPRING_BOOT
-
-
-difficulty:
-
-2
-
-
-correct_answer:
-
-B
-
-
-Therefore, when the user answers:
-
-
-Correct:
-
-+ evidence for Spring Boot
-
-
-Incorrect:
-
-- no positive evidence
-
-
-The system accumulates evidence across questions.
-
-
-====================================================================
-14. ASSESSMENT SCORING
-====================================================================
-
-For each skill:
-
-
-skillScore =
-
-weightedCorrectAnswers /
-weightedQuestions
-
-
-Example:
-
-
-Spring Boot questions:
-
-Q1 = difficulty 1
-Q2 = difficulty 2
-Q3 = difficulty 3
-
-
-If the user gets:
-
-Q1 correct
-Q2 correct
-Q3 wrong
-
-
-The system calculates a weighted score.
-
-
-Then convert score to level.
-
-
-Example:
-
-
-0-19%  = Level 0
-
-20-39% = Level 1
-
-40-59% = Level 2
-
-60-74% = Level 3
-
-75-89% = Level 4
-
-90-100% = Level 5
-
-
-The exact thresholds can be configured by admin.
-
-
-====================================================================
-15. SELF-ASSESSMENT VS ACTUAL ASSESSMENT
-====================================================================
-
-Do not completely trust self-reported skills.
-
-Example:
-
-
-User says:
-
-Spring Boot = Advanced
-
-
-But assessment result:
-
-Spring Boot = Beginner
-
-
-The verified assessment should have greater weight.
-
-
-Example:
-
-
-finalSkillLevel =
-
-assessmentLevel * 0.75
-
-+
-
-selfReportedLevel * 0.25
-
-
-This creates a more reliable profile.
-
-
-====================================================================
-16. USER SKILL PROFILE
-====================================================================
-
-After assessment:
-
-
-USER:
-
-Htet
-
-
-SKILLS:
-
+Expertise:
 
 Java
-Level 3
-Source: Assessment
-
-
 Spring Boot
-Level 1
-Source: Assessment
-
-
 REST API
-Level 1
-Source: Assessment
+
+Bio:
+
+Experienced backend developer specializing in Java and Spring Boot.
 
 
-SQL
-Level 2
-Source: Assessment
+After successful registration:
+
+Account Role = INSTRUCTOR
+
+The Instructor can access the Instructor Dashboard.
+
+IMPORTANT:
+
+Instructor registration does NOT mean all future courses
+are automatically published.
+
+Every course still requires admin approval.
 
 
-This becomes the starting point for roadmap generation.
+Instructor Signup Flow:
+
+SELECT INSTRUCTOR
+        |
+        v
+ENTER BASIC ACCOUNT INFORMATION
+        |
+        v
+ENTER INSTRUCTOR DETAILS
+        |
+        v
+VALIDATE INFORMATION
+        |
+        v
+CREATE INSTRUCTOR ACCOUNT
+        |
+        v
+ROLE = INSTRUCTOR
+        |
+        v
+INSTRUCTOR DASHBOARD
 
 
-====================================================================
-17. SKILL GAP ALGORITHM
-====================================================================
+# ============================================================
+# 5. LOGIN SYSTEM
+# ============================================================
 
-The system compares:
+The login process should be the same for all roles.
 
+The login page should contain:
 
-CURRENT USER LEVEL
+Email
+Password
 
-
-against:
-
-
-REQUIRED CAREER LEVEL
+[ LOGIN ]
 
 
-Example:
-
-
-CAREER:
-
-Backend Developer
-
-
-Required:
-
-Java = 4
-
-Spring Boot = 4
-
-REST API = 4
-
-SQL = 3
-
-
-User:
-
-Java = 3
-
-Spring Boot = 1
-
-REST API = 1
-
-SQL = 2
-
-
-Calculate:
-
-
-gap = requiredLevel - currentLevel
-
-
-Java:
-
-4 - 3 = 1
-
-
-Spring Boot:
-
-4 - 1 = 3
-
-
-REST API:
-
-4 - 1 = 3
-
-
-SQL:
-
-3 - 2 = 1
-
-
-If:
-
-gap <= 0
-
-then the user already meets the requirement.
-
-
-Do NOT recommend beginner courses unnecessarily.
-
-
-====================================================================
-18. SKILL GAP PRIORITY
-====================================================================
-
-Not all skills are equally important.
-
-Use career importance.
-
+The system should identify the role after authentication.
 
 Example:
 
+User enters:
 
-Spring Boot:
+Email
+Password
 
-gap = 3
+        |
+        v
 
-importance = 1.0
+SYSTEM AUTHENTICATES USER
 
+        |
+        v
 
-REST API:
+GET USER ROLE
 
-gap = 3
+        |
+        +--------------------------+
+        |             |            |
+        v             v            v
 
-importance = 0.95
+     STUDENT      INSTRUCTOR      ADMIN
 
+        |             |            |
+        v             v            v
 
-Java:
-
-gap = 1
-
-importance = 0.90
-
-
-SQL:
-
-gap = 1
-
-importance = 0.80
-
-
-Calculate:
-
-
-priorityScore =
-
-gap * importance
-
-
-Results:
-
-
-Spring Boot:
-
-3 * 1.0 = 3.0
-
-
-REST API:
-
-3 * 0.95 = 2.85
-
-
-Java:
-
-1 * 0.90 = 0.90
-
-
-SQL:
-
-1 * 0.80 = 0.80
+Student         Instructor       Admin
+Dashboard       Dashboard        Dashboard
 
 
 Therefore:
 
-1. Spring Boot
-2. REST API
-3. Java
-4. SQL
+The login UI is shared.
+
+But the dashboard and permissions depend on the role.
 
 
-This determines what the roadmap should focus on.
+# ============================================================
+# 6. ROLE-BASED DASHBOARD
+# ============================================================
+
+After login, users are redirected according to their role.
 
 
-====================================================================
-19. COURSE-SKILL RELATIONSHIP
-====================================================================
+---------------------------------------------------------------
+STUDENT
+---------------------------------------------------------------
 
-Every course must specify:
+Redirect:
 
-- skills it teaches
-- target level
-- difficulty
-- prerequisites
+/student/dashboard
+
+
+Dashboard includes:
+
+- Welcome section
+- Career information
+- Current roadmap
+- Current phase
+- Continue learning
+- Course progress
+- Skill progress
+- Recommended course
+- Recommended career
+- Achievements
+
+
+---------------------------------------------------------------
+INSTRUCTOR
+---------------------------------------------------------------
+
+Redirect:
+
+/instructor/dashboard
+
+
+Dashboard includes:
+
+- My Courses
+- Create Course
+- Course Status
+- Pending Courses
+- Published Courses
+- Rejected Courses
+- Student Enrollments
+- Course Ratings
+- Reviews
+- Course Statistics
+
+
+---------------------------------------------------------------
+ADMIN
+---------------------------------------------------------------
+
+Redirect:
+
+/admin/dashboard
+
+
+Dashboard includes:
+
+- Total Students
+- Total Instructors
+- Total Courses
+- Pending Course Approvals
+- Published Courses
+- Total Careers
+- Total Skills
+- Recent Registrations
+- Course Statistics
+- Platform Statistics
+
+
+# ============================================================
+# 7. AUTHORIZATION SYSTEM
+# ============================================================
+
+The backend must control access based on user roles.
+
+Example:
+
+STUDENT can access:
+
+/student/*
+
+
+INSTRUCTOR can access:
+
+/instructor/*
+
+
+ADMIN can access:
+
+/admin/*
 
 
 Example:
 
+A Student attempts:
 
-COURSE:
+POST /admin/careers
 
-Spring Boot Fundamentals
+Result:
 
+ACCESS DENIED
+
+
+Example:
+
+An Instructor attempts:
+
+DELETE /admin/users
+
+Result:
+
+ACCESS DENIED
+
+
+Role checks must happen on the backend.
+
+Frontend role checks are not enough.
+
+
+# ============================================================
+# 8. SKILL LIBRARY
+# ============================================================
+
+The Skill Library is the central knowledge structure
+of the system.
+
+Skills should be shared across:
+
+- Careers
+- Courses
+- Assessments
+- Student Skill Profiles
+- Roadmap Phases
+
+
+Example Skill Library:
+
+Java
+SQL
+Spring Boot
+REST API
+Git
+Docker
+JPA/Hibernate
+Spring Security
+HTML
+CSS
+JavaScript
+React
+Python
+
+
+Admin manages the Skill Library.
+
+
+---------------------------------------------------------------
+IMPORTANT RULE
+---------------------------------------------------------------
+
+Skills should not be duplicated.
+
+BAD:
+
+Java Basic
+Java Intermediate
+Java Advanced
+
+
+GOOD:
+
+Skill:
+
+Java
+
+
+Courses can have different difficulty levels:
+
+Java for Beginners
+    Difficulty = BEGINNER
+
+Java Programming
+    Difficulty = INTERMEDIATE
+
+Advanced Java
+    Difficulty = ADVANCED
+
+
+All courses can teach:
+
+Java
+
+
+# ============================================================
+# 9. CAREER MANAGEMENT
+# ============================================================
+
+Admin creates careers.
+
+Example careers:
+
+- Java Backend Developer
+- Frontend Developer
+- Full Stack Developer
+- Data Analyst
+- Mobile Developer
+
+
+Example:
+
+Career:
+
+Java Backend Developer
+
+
+Admin selects existing skills.
+
+Example:
+
+Java
+SQL
+Spring Boot
+REST API
+JPA/Hibernate
+Spring Security
+Git
+Docker
+
+
+Each Career-Skill relationship should contain:
+
+- Required Level
+- Importance
+- Priority
+
+
+Example:
+
+Java
+
+Required Level = 80
+Importance = HIGH
+
+
+SQL
+
+Required Level = 70
+Importance = HIGH
+
+
+Spring Boot
+
+Required Level = 70
+Importance = HIGH
+
+
+Docker
+
+Required Level = 40
+Importance = LOW
+
+
+Relationship:
+
+CAREER
+    |
+    v
+CAREER_SKILL
+    |
+    v
+SKILL
+
+
+A career can require many skills.
+
+A skill can belong to many careers.
+
+
+# ============================================================
+# 10. CAREER PHASE STRUCTURE
+# ============================================================
+
+A career roadmap should be divided into phases.
+
+Example:
+
+JAVA BACKEND DEVELOPER ROADMAP
+
+
+PHASE 1
+
+Programming Foundation
 
 Skills:
 
-Spring Boot
-targetLevel = 2
-
-
 Java
-targetLevel = 3
-
-
-REST API
-targetLevel = 1
-
-
-This allows the system to connect courses
-to skill gaps.
-
-
-====================================================================
-20. COURSE RECOMMENDATION ALGORITHM
-====================================================================
-
-For every course:
-
-
-Calculate a recommendation score.
-
-
-Possible factors:
-
-
-Skill Gap Relevance = 40%
-
-
-Career Importance = 20%
-
-
-Skill Level Fit = 15%
-
-
-Prerequisite Availability = 15%
-
-
-Course Difficulty Fit = 10%
-
-
-Example:
-
-
-courseScore =
-
-skillGapRelevance * 0.40
-
-+
-
-careerImportance * 0.20
-
-+
-
-skillLevelFit * 0.15
-
-+
-
-prerequisiteFit * 0.15
-
-+
-
-difficultyFit * 0.10
-
-
-Rank courses by score.
-
-
-====================================================================
-21. COURSE FILTERING
-====================================================================
-
-Before ranking courses, remove courses that:
-
-- teach irrelevant skills
-- are already completed
-- are too advanced for the user's current level
-- have unmet prerequisites
-
-
-Example:
-
-
-User:
-
-Spring Boot = Beginner
-
-
-Course:
-
-Spring Boot Advanced
-
-
-If prerequisite:
-
-Spring Boot Intermediate
-
-
-is not satisfied:
-
-
-DO NOT recommend it as the next course.
-
-
-It can still appear in the general Courses page,
-but should not be recommended as the next roadmap step.
-
-
-====================================================================
-22. COURSE PREREQUISITE SYSTEM
-====================================================================
-
-Example:
-
-
-Java Fundamentals
-
-        ↓
-
 OOP
 
-        ↓
 
-Spring Boot Fundamentals
+PHASE 2
 
-        ↓
+Database Fundamentals
 
-REST API
-
-        ↓
-
-Spring Data
-
-        ↓
-
-Spring Security
-
-
-Represent prerequisites as relationships.
-
-
-Example:
-
-
-REST API course
-
-requires:
-
-Spring Boot Fundamentals
-
-
-Spring Security
-
-requires:
-
-Spring Boot Fundamentals
-
-+
-
-REST API
-
-
-The roadmap should respect these dependencies.
-
-
-====================================================================
-23. ROADMAP GENERATION ALGORITHM
-====================================================================
-
-The roadmap is NOT simply:
-
-"Sort courses by popularity."
-
-
-It should be:
-
-USER SKILLS
-
-+
-
-CAREER REQUIREMENTS
-
-+
-
-SKILL GAPS
-
-+
-
-COURSE SKILLS
-
-+
-
-PREREQUISITES
-
-+
-
-COURSE LEVEL
-
-
-Then generate the learning path.
-
-
-Algorithm:
-
-
-STEP 1:
-
-Get career.
-
-
-STEP 2:
-
-Get required career skills.
-
-
-STEP 3:
-
-Get user skill levels.
-
-
-STEP 4:
-
-Calculate gaps.
-
-
-STEP 5:
-
-Prioritize gaps.
-
-
-STEP 6:
-
-Find courses that address those gaps.
-
-
-STEP 7:
-
-Remove completed courses.
-
-
-STEP 8:
-
-Check prerequisites.
-
-
-STEP 9:
-
-Rank courses.
-
-
-STEP 10:
-
-Build dependency-aware order.
-
-
-STEP 11:
-
-Create roadmap milestones.
-
-
-STEP 12:
-
-Return roadmap.
-
-
-====================================================================
-24. ROADMAP EXAMPLE
-====================================================================
-
-User:
-
-
-Java = 3
-
-Spring Boot = 1
-
-REST API = 1
-
-SQL = 2
-
-
-Goal:
-
-
-Backend Developer
-
-
-System finds:
-
-
-HIGH PRIORITY:
-
-Spring Boot
-
-REST API
-
-
-MEDIUM:
+Skills:
 
 SQL
 
 
-LOWER:
+PHASE 3
+
+Backend Framework
+
+Skills:
+
+Spring Boot
+
+
+PHASE 4
+
+API Development
+
+Skills:
+
+REST API
+
+
+PHASE 5
+
+Data Access
+
+Skills:
+
+JPA/Hibernate
+
+
+PHASE 6
+
+Security
+
+Skills:
+
+Spring Security
+
+
+PHASE 7
+
+Deployment
+
+Skills:
+
+Docker
+
+
+PHASE 8
+
+Real-World Project
+
+Skills:
+
+Java
+Spring Boot
+SQL
+REST API
+
+
+The phase describes a learning stage.
+
+The phase does NOT permanently contain a specific course.
+
+
+# ============================================================
+# 11. INSTRUCTOR COURSE CREATION
+# ============================================================
+
+Instructor logs in.
+
+        |
+        v
+
+INSTRUCTOR DASHBOARD
+
+        |
+        v
+
+CREATE COURSE
+
+
+Instructor enters:
+
+- Course Title
+- Course Description
+- Course Thumbnail
+- Course Difficulty
+- Estimated Duration
+- Learning Objectives
+
+
+Example:
+
+Title:
+
+Spring Boot for Beginners
+
+
+Difficulty:
+
+BEGINNER
+
+
+Duration:
+
+10 Hours
+
+
+Learning Objectives:
+
+- Understand Spring Boot
+- Create REST APIs
+- Use Dependency Injection
+
+
+# ============================================================
+# 12. COURSE SKILL MAPPING
+# ============================================================
+
+After creating course information,
+Instructor selects existing skills.
+
+Example:
+
+Course:
+
+Spring Boot for Beginners
+
+
+Select Skills:
+
+[ Java ]
+
+[ Spring Boot ]
+
+[ REST API ]
+
+
+Instructor selects:
+
+Java
+Spring Boot
+
+
+Relationship:
+
+COURSE
+    |
+    v
+COURSE_SKILL
+    |
+    v
+SKILL
+
+
+A course can teach multiple skills.
+
+Example:
+
+Spring Boot REST API Development
+
+Teaches:
+
+Spring Boot
+REST API
+Java
+
+
+The Instructor does NOT create a new global skill.
+
+Instructor selects skills from the existing Skill Library.
+
+
+# ============================================================
+# 13. COURSE DIFFICULTY
+# ============================================================
+
+Every course should have a difficulty level.
+
+Possible values:
+
+BEGINNER
+
+INTERMEDIATE
+
+ADVANCED
+
+
+Example:
+
+Course:
+
+Java Programming for Beginners
+
+Difficulty:
+
+BEGINNER
+
+
+Another Course:
+
+Advanced Java Programming
+
+Difficulty:
+
+ADVANCED
+
+
+Both courses teach:
 
 Java
 
 
-Roadmap:
+The recommendation system uses difficulty to recommend
+the most suitable course for each student.
 
 
-1. Spring Boot Fundamentals
+# ============================================================
+# 14. COURSE CONTENT CREATION
+# ============================================================
 
-2. REST API with Spring Boot
+Instructor creates course content.
 
-3. Spring Data JPA
+Course:
 
-4. Spring Security
-
-5. Backend Project
-
-
-Notice:
-
-The user doesn't get:
-
-"Java Fundamentals"
+Java Programming for Beginners
 
 
-because they already have enough Java knowledge.
+Lessons:
+
+Lesson 1:
+
+Introduction to Java
 
 
-This is what makes the roadmap personalized.
+Lesson 2:
+
+Variables and Data Types
 
 
-====================================================================
-25. ROADMAP MILESTONE SYSTEM
-====================================================================
+Lesson 3:
 
-Each roadmap item should contain:
+Conditions
 
 
-roadmapItemId
+Lesson 4:
 
-userId
+Loops
 
-courseId
 
-orderIndex
+Lesson 5:
 
-status
+Methods
 
-progress
 
-requiredBefore
+Lesson 6:
 
-reason
+Object-Oriented Programming
 
+
+Lesson 7:
+
+Classes and Objects
+
+
+Lesson 8:
+
+Inheritance
+
+
+Lesson 9:
+
+Polymorphism
+
+
+The Instructor can create:
+
+- Text lessons
+- Code examples
+- Images
+- Exercises
+- Learning materials
+
+
+After lessons:
+
+Instructor creates:
+
+- Quizzes
+- Assignments
+- Projects
+
+
+# ============================================================
+# 15. COURSE STATUS
+# ============================================================
+
+Each course should have a status.
+
+Possible statuses:
+
+DRAFT
+
+PENDING_APPROVAL
+
+PUBLISHED
+
+REJECTED
+
+ARCHIVED
+
+
+---------------------------------------------------------------
+DRAFT
+---------------------------------------------------------------
+
+The Instructor is still editing the course.
+
+The course is not visible to students.
+
+
+---------------------------------------------------------------
+PENDING_APPROVAL
+---------------------------------------------------------------
+
+Instructor finished the course and submits it.
+
+The course is waiting for Admin review.
+
+
+---------------------------------------------------------------
+PUBLISHED
+---------------------------------------------------------------
+
+Admin approves the course.
+
+The course becomes visible to students.
+
+The course can now:
+
+- Appear in search
+- Appear inside roadmap phases
+- Be recommended by the recommendation system
+- Receive enrollments
+
+
+---------------------------------------------------------------
+REJECTED
+---------------------------------------------------------------
+
+Admin rejects the course.
+
+The course is not public.
+
+Admin should provide a rejection reason.
+
+Example:
+
+"Please add learning objectives."
+
+or:
+
+"Course content is incomplete."
+
+
+Instructor can:
+
+Edit Course
+
+        |
+        v
+
+Resubmit
+
+        |
+        v
+
+PENDING_APPROVAL
+
+
+# ============================================================
+# 16. COURSE APPROVAL WORKFLOW
+# ============================================================
+
+INSTRUCTOR
+
+        |
+        v
+
+CREATE COURSE
+
+        |
+        v
+
+ADD COURSE DETAILS
+
+        |
+        v
+
+SELECT SKILLS
+
+        |
+        v
+
+CREATE LESSONS
+
+        |
+        v
+
+CREATE QUIZZES
+
+        |
+        v
+
+ADD ASSIGNMENTS
+
+        |
+        v
+
+SAVE DRAFT
+
+        |
+        v
+
+SUBMIT COURSE
+
+        |
+        v
+
+STATUS:
+
+PENDING_APPROVAL
+
+        |
+        v
+
+ADMIN REVIEWS COURSE
+
+        |
+        +---------------------------+
+        |                           |
+        v                           v
+
+     APPROVE                     REJECT
+
+        |                           |
+        v                           v
+
+STATUS:                     STATUS:
+
+PUBLISHED                   REJECTED
+
+        |                           |
+        v                           v
+
+VISIBLE TO                  INSTRUCTOR
+STUDENTS                    EDITS COURSE
+
+                                    |
+                                    v
+
+                              RESUBMIT COURSE
+
+                                    |
+                                    v
+
+                              PENDING_APPROVAL
+
+
+# ============================================================
+# 17. ADMIN COURSE APPROVAL
+# ============================================================
+
+Admin Dashboard should show:
+
+Pending Course Approvals
+
+
+Example:
+
+Pending Courses:
+
+1. Java Programming for Beginners
+
+Instructor:
+
+John Smith
 
 Status:
 
-
-LOCKED
-
-AVAILABLE
-
-IN_PROGRESS
-
-COMPLETED
+PENDING_APPROVAL
 
 
-Example:
+Admin opens course.
 
 
-Spring Boot Fundamentals
+Admin can review:
 
-status:
-
-IN_PROGRESS
-
-
-REST API
-
-status:
-
-LOCKED
+- Course title
+- Description
+- Difficulty
+- Selected skills
+- Lessons
+- Quiz
+- Assignment
+- Learning objectives
 
 
-reason:
+Admin actions:
 
-"Complete Spring Boot Fundamentals first."
+[ APPROVE ]
 
-
-====================================================================
-26. ROADMAP PROGRESS
-====================================================================
-
-Overall roadmap progress:
+[ REJECT ]
 
 
-completedMilestones /
-totalMilestones * 100
+If rejected:
+
+Admin must provide:
+
+Rejection Reason
 
 
 Example:
 
-
-8 completed
-
-20 total
+"Please complete the quiz section."
 
 
-Progress:
+Instructor receives:
+
+Course Rejected
+
+Reason:
+
+Please complete the quiz section.
+
+
+# ============================================================
+# 18. STUDENT FIRST-TIME EXPERIENCE
+# ============================================================
+
+After Student registers and logs in:
+
+The system determines whether the student has already
+created a learning profile.
+
+
+If no career profile exists:
+
+Show:
+
+WHAT WOULD YOU LIKE TO DO?
+
+
+[ FIND MY CAREER ]
+
+I am not sure which career suits me.
+
+
+[ I KNOW MY CAREER ]
+
+I already know my target career.
+
+
+# ============================================================
+# 19. FIND MY CAREER FLOW
+# ============================================================
+
+Student selects:
+
+FIND MY CAREER
+
+
+        |
+        v
+
+CAREER DISCOVERY ASSESSMENT
+
+
+The assessment should be interactive.
+
+Do NOT show a boring long form.
+
+
+Recommended question categories:
+
+1. Interests
+2. Work Preferences
+3. Problem Solving
+4. Technology Interests
+5. Basic Technical Knowledge
+
+
+Example:
+
+"What would you enjoy doing most?"
+
+
+A.
+
+Building websites
+
+
+B.
+
+Creating backend systems
+
+
+C.
+
+Analyzing data
+
+
+D.
+
+Building mobile applications
+
+
+Student selects an answer.
+
+
+The system records the answer.
+
+
+After multiple questions:
+
+        |
+        v
+
+CALCULATE CAREER MATCH
+
+
+Example result:
+
+Frontend Developer
+
+86% Match
+
+
+Full Stack Developer
+
+74% Match
+
+
+Java Backend Developer
+
+58% Match
+
+
+Student can then:
+
+Select a recommended career.
+
+
+# ============================================================
+# 20. I KNOW MY CAREER FLOW
+# ============================================================
+
+Student selects:
+
+I KNOW MY CAREER
+
+
+        |
+        v
+
+SELECT CAREER
+
+
+Example:
+
+Java Backend Developer
+
+
+        |
+        v
+
+SKILL ASSESSMENT
+
+
+The system still needs to understand:
+
+"What skills does this student already have?"
+
+
+Example:
+
+Java:
+
+75%
+
+
+SQL:
 
 40%
 
 
-Course progress should also contribute
-to milestone completion where appropriate.
+Spring Boot:
+
+20%
 
 
-====================================================================
-27. DYNAMIC ROADMAP UPDATE
-====================================================================
+REST API:
 
-The roadmap should not be permanently fixed.
-
-When the user:
-
-- completes courses
-- passes assessments
-- improves skills
-- changes career
+10%
 
 
-the system can recalculate future recommendations.
+Git:
+
+60%
+
+
+The system uses this information to personalize
+the roadmap.
+
+
+# ============================================================
+# 21. SKILL ASSESSMENT
+# ============================================================
+
+Assessment questions are mapped to skills.
+
+
+Example:
+
+Question:
+
+"What is inheritance?"
+
+
+Skill:
+
+Java / OOP
+
+
+Difficulty:
+
+INTERMEDIATE
+
+
+Another Question:
+
+"What is SQL JOIN?"
+
+
+Skill:
+
+SQL
+
+
+Difficulty:
+
+INTERMEDIATE
+
+
+Relationship:
+
+QUESTION
+    |
+    v
+SKILL
+
+
+Student answers questions.
+
+
+The system calculates:
+
+Student Skill Profile.
+
+
+Example:
+
+JAVA
+
+75%
+
+
+SQL
+
+40%
+
+
+SPRING BOOT
+
+20%
+
+
+REST API
+
+10%
+
+
+GIT
+
+60%
+
+
+# ============================================================
+# 22. STUDENT SKILL PROFILE
+# ============================================================
+
+The Student Skill Profile represents
+the student's estimated knowledge.
+
+Example:
+
+Student:
+
+John
+
+
+Skills:
+
+Java
+
+████████░░
+
+80%
+
+
+SQL
+
+████░░░░░░
+
+40%
+
+
+Spring Boot
+
+██░░░░░░░░
+
+20%
+
+
+REST API
+
+█░░░░░░░░░
+
+10%
+
+
+The skill profile should update continuously.
+
+
+# ============================================================
+# 23. SKILL GAP ANALYSIS
+# ============================================================
+
+The system compares:
+
+STUDENT SKILL LEVEL
+
+with:
+
+CAREER REQUIRED LEVEL
 
 
 Example:
 
 
-Initial:
+JAVA
 
-Spring Boot = Beginner
+Student:
 
-
-After course:
-
-
-Spring Boot = Intermediate
+75
 
 
-The next recommendation may change.
+Required:
+
+80
 
 
-The system should NOT delete historical achievements.
+Gap:
 
-Instead update only future roadmap items.
-
-
-====================================================================
-28. COURSE LEARNING SYSTEM
-====================================================================
-
-Courses are reading-based.
+5
 
 
-Each course contains:
+SQL
+
+Student:
+
+40
 
 
-Course Information
+Required:
 
-        ↓
-
-Learning Objectives
-
-        ↓
-
-Lessons
-
-        ↓
-
-Examples
-
-        ↓
-
-Code Examples
-
-        ↓
-
-Exercises
-
-        ↓
-
-Quizzes
-
-        ↓
-
-Final Assessment
-
-        ↓
-
-Certificate
+70
 
 
-====================================================================
-29. LESSON CONTENT
-====================================================================
+Gap:
 
-Each lesson can contain:
+30
 
 
-Title
+SPRING BOOT
 
-Introduction
+Student:
 
-Concept Explanation
+20
 
-Code Example
 
-Real-world Example
+Required:
 
-Practice
+70
 
-Key Takeaways
+
+Gap:
+
+50
+
+
+REST API
+
+Student:
+
+10
+
+
+Required:
+
+60
+
+
+Gap:
+
+50
+
+
+The system identifies the skills
+that the student needs to improve.
+
+
+# ============================================================
+# 24. PERSONALIZED ROADMAP GENERATION
+# ============================================================
+
+Input:
+
+Student Skill Profile
+
++
+
+Selected Career
+
++
+
+Career Required Skills
+
++
+
+Skill Importance
+
++
+
+Skill Dependencies
+
+
+Output:
+
+Personalized Roadmap
 
 
 Example:
 
+Target Career:
 
-Lesson:
-
-Dependency Injection
-
-
-Section 1:
-
-What is Dependency Injection?
+Java Backend Developer
 
 
-Section 2:
+Student already knows:
 
-Why is it useful?
-
-
-Section 3:
-
-How Spring implements it
+Java
 
 
-Section 4:
+Student needs:
 
-Code Example
-
-
-Section 5:
-
-Practice Exercise
-
-
-Section 6:
-
-Summary
+SQL
+Spring Boot
+REST API
+JPA
+Security
 
 
-====================================================================
-30. LEARNING PROGRESS ALGORITHM
-====================================================================
-
-Track each lesson.
+Generated Roadmap:
 
 
-Lesson status:
+PHASE 1
 
+Database Fundamentals
+
+SQL
+
+
+PHASE 2
+
+Backend Framework
+
+Spring Boot
+
+
+PHASE 3
+
+API Development
+
+REST API
+
+
+PHASE 4
+
+Data Access
+
+JPA/Hibernate
+
+
+PHASE 5
+
+Security
+
+Spring Security
+
+
+PHASE 6
+
+Deployment
+
+Docker
+
+
+PHASE 7
+
+Real-World Project
+
+
+The roadmap can skip or mark completed skills
+that the student already knows.
+
+
+# ============================================================
+# 25. ROADMAP STRUCTURE
+# ============================================================
+
+The roadmap should be structured like this:
+
+ROADMAP
+
+    |
+    +--------------------+
+
+    PHASE 1
+
+    Programming Foundation
+
+    Skills:
+
+    Java
+    OOP
+
+
+    |
+    +--------------------+
+
+    PHASE 2
+
+    Database Fundamentals
+
+    Skills:
+
+    SQL
+
+
+    |
+    +--------------------+
+
+    PHASE 3
+
+    Backend Framework
+
+    Skills:
+
+    Spring Boot
+
+
+    |
+    +--------------------+
+
+    PHASE 4
+
+    API Development
+
+    Skills:
+
+    REST API
+
+
+Each phase has:
+
+- Name
+- Description
+- Order
+- Required Skills
+- Progress
+- Status
+
+
+Possible phase status:
 
 NOT_STARTED
 
@@ -1665,132 +1861,518 @@ IN_PROGRESS
 
 COMPLETED
 
+SKIPPED
 
-Course progress:
+
+# ============================================================
+# 26. PHASE PAGE
+# ============================================================
+
+When the Student clicks a phase:
+
+Example:
+
+PHASE 3
+
+BACKEND FRAMEWORK
 
 
-completedLessons /
-totalRequiredLessons * 100
+The system displays:
+
+
+Description:
+
+Learn how to build backend applications
+using Spring Boot.
+
+
+Required Skills:
+
+Spring Boot
+
+
+Student Current Skill:
+
+20%
+
+
+Required Career Level:
+
+70%
+
+
+Then the system displays:
+
+COURSES FOR THIS PHASE
+
+
+# ============================================================
+# 27. COURSE DISCOVERY
+# ============================================================
+
+The system finds all published courses
+that teach the required skills.
 
 
 Example:
 
+Phase requires:
 
-6 / 10
-
-
-= 60%
+Spring Boot
 
 
-Do not rely only on the frontend.
+System finds:
 
-The backend should be the source of truth.
+Course A:
 
-
-====================================================================
-31. AI LEARNING ASSISTANT
-====================================================================
-
-AI exists primarily inside lessons.
+Spring Boot for Beginners
 
 
-Actions:
+Course B:
+
+Complete Spring Boot Development
 
 
-1. Explain Concept
+Course C:
 
-2. Explain Code
-
-3. Simplify
-
-4. Summarize
-
-5. Give Example
-
-6. Ask Question
+Advanced Spring Boot
 
 
-The AI should be context-aware.
+Only PUBLISHED courses should be considered.
 
 
-====================================================================
-32. AI CONTEXT PIPELINE
-====================================================================
+The system filters:
 
-User opens:
+DRAFT
 
+PENDING_APPROVAL
+
+REJECTED
+
+ARCHIVED
+
+
+Only:
+
+PUBLISHED
+
+courses can be recommended.
+
+
+# ============================================================
+# 28. COURSE RECOMMENDATION ENGINE
+# ============================================================
+
+The system calculates the best course
+for the specific student.
+
+
+Recommended criteria:
+
+
+1. Rating
+
+Weight:
+
+30%
+
+
+2. Review Confidence / Number of Ratings
+
+Weight:
+
+15%
+
+
+3. Skill Match
+
+Weight:
+
+20%
+
+
+4. Difficulty Match
+
+Weight:
+
+10%
+
+
+5. Course Completion Rate
+
+Weight:
+
+10%
+
+
+6. Course Quality
+
+Weight:
+
+10%
+
+
+7. Course Freshness
+
+Weight:
+
+5%
+
+
+Total:
+
+100%
+
+
+# ============================================================
+# 29. COURSE RECOMMENDATION FORMULA
+# ============================================================
+
+Recommendation Score =
+
+
+Rating Score
+
+* 0.30
+
+
++
+
+Review Confidence
+
+* 0.15
+
+
++
+
+Skill Match
+
+* 0.20
+
+
++
+
+Difficulty Match
+
+* 0.10
+
+
++
+
+Completion Rate
+
+* 0.10
+
+
++
+
+Course Quality
+
+* 0.10
+
+
++
+
+Freshness
+
+* 0.05
+
+
+The system ranks courses.
+
+Highest score:
+
+RECOMMENDED COURSE
+
+
+# ============================================================
+# 30. COURSE RECOMMENDATION EXAMPLE
+# ============================================================
+
+Student:
+
+Spring Boot Skill = 20%
+
+
+Phase:
+
+Backend Framework
+
+
+Required Skill:
+
+Spring Boot
+
+
+Available Courses:
+
+
+COURSE A
+
+Spring Boot for Beginners
+
+Rating:
+
+4.8
+
+Reviews:
+
+1,200
+
+Difficulty:
+
+BEGINNER
+
+Completion Rate:
+
+85%
+
+
+COURSE B
+
+Advanced Spring Boot
+
+Rating:
+
+4.9
+
+Reviews:
+
+20
+
+Difficulty:
+
+ADVANCED
+
+Completion Rate:
+
+45%
+
+
+COURSE C
+
+Complete Spring Boot
+
+Rating:
+
+4.5
+
+Reviews:
+
+600
+
+Difficulty:
+
+INTERMEDIATE
+
+
+For this student:
+
+COURSE A
+
+is most suitable.
+
+
+Why?
+
+
+- Student is beginner
+- Course difficulty matches
+- Strong rating
+- Many reviews
+- High completion rate
+- Strong skill match
+
+
+# ============================================================
+# 31. RECOMMENDED COURSE UI
+# ============================================================
+
+Example:
+
+
+BACKEND FRAMEWORK
+
+
+Required Skill:
+
+Spring Boot
+
+
+Your Current Level:
+
+20%
+
+
+---------------------------------------------
+
+
+⭐ RECOMMENDED FOR YOU
+
+
+Spring Boot for Beginners
+
+
+⭐ 4.8
+
+1,200 ratings
+
+
+Difficulty:
+
+Beginner
+
+
+Why recommended?
+
+
+✓ Matches your skill level
+
+✓ Covers required skills
+
+✓ Highly rated
+
+✓ High completion rate
+
+
+[ START COURSE ]
+
+
+---------------------------------------------
+
+
+OTHER COURSES
+
+
+Complete Spring Boot
+
+⭐ 4.6
+
+
+Advanced Spring Boot
+
+⭐ 4.8
+
+
+Spring Boot REST API
+
+⭐ 4.5
+
+
+# ============================================================
+# 32. COURSE ENROLLMENT
+# ============================================================
+
+Student selects:
+
+START COURSE
+
+
+        |
+        v
+
+CREATE ENROLLMENT
+
+
+Status:
+
+ENROLLED
+
+
+        |
+        v
+
+Student opens course.
+
+
+Status becomes:
+
+IN_PROGRESS
+
+
+The system tracks:
+
+- Enrollment date
+- Last accessed date
+- Course progress
+- Completed lessons
+- Quiz results
+- Completion status
+
+
+# ============================================================
+# 33. COURSE LEARNING STRUCTURE
+# ============================================================
 
 Course:
 
-Spring Boot Fundamentals
+Spring Boot for Beginners
 
 
-Lesson:
+        |
+        +-------------------+
 
-Dependency Injection
+        Lesson 1
 
-
-User asks:
-
-"Explain this simply."
+        Introduction to Spring Boot
 
 
-Frontend sends:
+        |
+        +-------------------+
+
+        Lesson 2
+
+        Dependency Injection
 
 
-courseId
+        |
+        +-------------------+
 
-lessonId
+        Lesson 3
 
-action
-
-question
-
-
-Backend retrieves:
+        Controllers
 
 
-Course information
+        |
+        +-------------------+
 
-Lesson information
+        Lesson 4
 
-Lesson content
-
-Selected text if any
-
-
-Then:
+        REST API
 
 
-BACKEND
+        |
+        +-------------------+
 
-      ↓
-
-Build AI Prompt
-
-      ↓
-
-AI Provider
-
-      ↓
-
-Response
-
-      ↓
-
-Frontend
+        Quiz
 
 
-====================================================================
-33. AI PROMPT CONTEXT
-====================================================================
+        |
+        +-------------------+
 
-AI receives:
+        Assignment
 
 
-COURSE:
+# ============================================================
+# 34. LESSON PAGE
+# ============================================================
 
-Spring Boot Fundamentals
+The lesson page contains:
+
+LESSON CONTENT
+
+
+Examples:
+
+- Text
+- Explanations
+- Code
+- Images
+- Examples
+- Exercises
+
+
+Example:
 
 
 LESSON:
@@ -1798,2463 +2380,2353 @@ LESSON:
 Dependency Injection
 
 
-LESSON CONTENT:
+Content:
 
-[Relevant content]
-
-
-USER REQUEST:
-
-Explain this simply.
+Spring uses Dependency Injection
+to automatically provide objects
+to other components.
 
 
-RULE:
+Code Example:
 
-Only answer based on the current lesson
-and closely related educational context.
+@Service
+public class UserService {
 
-If the question is unrelated,
-tell the user that it is outside the current
-lesson context.
+}
 
 
-This prevents the AI assistant from becoming
-an uncontrolled general chatbot.
+The lesson page also contains:
+
+AI ASSISTANT
 
 
-====================================================================
-34. AI ACTION: EXPLAIN
-====================================================================
+# ============================================================
+# 35. AI ASSISTANT INSIDE LESSON
+# ============================================================
 
-Input:
+IMPORTANT FEATURE:
 
-Concept
-
-
-Output:
+The AI Assistant should be available
+while the student is learning a lesson.
 
 
-Simple definition
+Example UI:
 
-How it works
 
-Why it matters
+LESSON CONTENT
+
+
+                         [ AI ASSISTANT 🤖 ]
+
+
+The student can interact with the AI
+without leaving the lesson.
+
+
+The AI Assistant can:
+
+
+1. Explain Concepts
+
+Example:
+
+Student asks:
+
+"What is Dependency Injection?"
+
+
+AI gives:
+
+Simple explanation
 
 Example
 
+Analogy
 
-====================================================================
-35. AI ACTION: EXPLAIN CODE
-====================================================================
 
-Input:
+---------------------------------------------------------------
 
+2. Summarize Lesson
 
-Selected code
 
+Student clicks:
 
-Output:
+[ SUMMARIZE ]
 
 
-What the code does
+AI generates:
 
-Important lines
+Short summary of the current lesson.
 
-How the components interact
 
-Why the code is written this way
+---------------------------------------------------------------
 
+3. Explain Selected Text
 
-The AI should not just repeat the code.
 
+Student selects:
 
-====================================================================
-36. AI ACTION: SIMPLIFY
-====================================================================
+"Dependency Injection"
 
-Convert difficult technical explanations
-into beginner-friendly explanations.
 
+Student asks:
 
-Use:
+"Explain this."
 
-- simple language
-- analogies
-- short examples
 
+AI explains the selected concept.
 
-====================================================================
-37. AI ACTION: SUMMARIZE
-====================================================================
 
-Return:
+---------------------------------------------------------------
 
+4. Generate Examples
 
-Key concept
 
-Important points
+Student asks:
 
-Important code idea
+"Give me a simple Java example."
 
-Things to remember
 
+AI generates an educational example.
 
-Do not generate an unnecessarily long response.
 
+---------------------------------------------------------------
 
-====================================================================
-38. AI ACTION: GIVE EXAMPLE
-====================================================================
+5. Generate Practice Questions
 
-Example must relate to:
 
-Current course
+Student clicks:
 
-Current lesson
+[ PRACTICE ME ]
 
 
-If lesson:
+AI generates practice questions
+related to the current lesson.
 
-Dependency Injection
 
+---------------------------------------------------------------
 
-Example should be related to:
+6. Give Hints
 
-Spring dependency injection
 
+Student is solving an exercise.
 
-not an unrelated topic.
 
+Student asks:
 
-====================================================================
-39. AI SECURITY
-====================================================================
+"Give me a hint."
 
-Never put AI API keys in React.
 
+AI provides a hint instead of
+immediately giving the answer.
 
-Correct:
 
+---------------------------------------------------------------
 
-React
+7. Explain Code
 
-   ↓
 
-Spring Boot
-
-   ↓
-
-AI Provider
-
-
-The backend owns the AI credentials.
-
-
-Also verify:
-
-
-User authentication
-
-Course access
-
-Lesson ownership
-
-Request limits
-
-
-====================================================================
-40. OFFICIAL ASSESSMENT
-====================================================================
-
-Normal learning:
-
-AI = AVAILABLE
-
-
-Official assessment:
-
-AI = DISABLED
-
-
-Reason:
-
-The assessment measures the user's actual knowledge.
-
-
-====================================================================
-41. QUIZ SYSTEM
-====================================================================
-
-Quizzes can appear inside lessons.
-
-
-Types:
-
-
-Multiple Choice
-
-True/False
-
-Multiple Answer
-
-Code Questions
-
-
-The system stores:
-
-
-Question
-
-Correct Answer
-
-Skill
-
-Difficulty
-
-
-This allows assessment results
-to contribute to skill evidence.
-
-
-====================================================================
-42. FINAL ASSESSMENT ALGORITHM
-====================================================================
-
-Example:
-
-
-20 questions
-
-
-Score:
-
-
-correct / total * 100
-
-
-Passing:
-
-
->= 70%
-
-
-If:
-
-
-score >= passingScore
-
-
-then:
-
-PASS
-
-
-otherwise:
-
-FAIL
-
-
-The system should store the attempt.
-
-
-====================================================================
-43. COURSE COMPLETION
-====================================================================
-
-A course is completed only when:
-
-
-Required lessons completed
-
-AND
-
-Final assessment passed
-
-
-Optional exercises may also be required
-depending on course configuration.
-
-
-Then:
-
-
-course.status = COMPLETED
-
-
-====================================================================
-44. CERTIFICATE ALGORITHM
-====================================================================
-
-If:
-
-
-courseCompleted == true
-
-
-then:
-
-
-Generate certificate.
-
-
-Certificate contains:
-
-
-Unique ID
-
-User
-
-Course
-
-Date
-
-Score
-
-Skills
-
-
-Example:
-
-
-CERT-2026-8F72A1
-
-
-The certificate should be verifiable.
-
-
-====================================================================
-45. SKILL UPDATE ALGORITHM
-====================================================================
-
-Do NOT simply:
-
-
-Course completed
-=
-Skill automatically becomes Advanced.
-
-
-Instead collect evidence.
-
-
-Evidence:
-
-
-Assessment Score
-
-Course Completion
-
-Quiz Results
-
-Exercises
-
-Projects
-
-
-Example:
-
-
-Before:
-
-Spring Boot = Level 1
-
-
-After course:
-
-Final assessment = 90%
-
-
-System calculates new evidence.
-
-
-Possible:
-
-
-Spring Boot = Level 2
-
-
-If score is insufficient:
-
-
-Skill may remain Level 1.
-
-
-This makes the skill profile more trustworthy.
-
-
-====================================================================
-46. SKILL EXCHANGE
-====================================================================
-
-Purpose:
-
-
-Connect users based on complementary skills.
-
-
-Example:
-
-
-User A:
-
-
-Backend Developer
-
-Java
-
-Spring Boot
-
-SQL
-
-
-User B:
-
-
-Frontend Developer
-
-React
-
-JavaScript
-
-CSS
-
-
-User C:
-
-
-UI/UX Designer
-
-Figma
-
-UI Design
-
-
-A project requiring:
-
-
-Backend
-
-Frontend
-
-UI/UX
-
-
-can match all three.
-
-
-====================================================================
-47. PROJECT REQUIREMENTS
-====================================================================
-
-Every project has:
-
-
-Role
-
-Skill
-
-Required Level
-
-Importance
-
-
-Example:
-
-
-Backend Developer
-
-
-Java
-
-Level 3
-
-Importance = 1.0
-
-
-Spring Boot
-
-Level 3
-
-Importance = 1.0
-
-
-SQL
-
-Level 2
-
-Importance = 0.7
-
-
-====================================================================
-48. SKILL EXCHANGE MATCHING ALGORITHM
-====================================================================
-
-For:
-
-USER -> PROJECT
-
-
-Compare:
-
-
-User Skills
-
-with
-
-Project Requirements
-
-
-For every required skill:
-
-
-skillMatch =
-
-
-min(userLevel / requiredLevel, 1)
-
-
-Example:
-
-
-Required:
-
-
-Java = 4
-
-
-User:
-
-
-Java = 3
-
-
-skillMatch:
-
-
-3 / 4 = 0.75
-
-
-If user has:
-
-Java = 4
-
-
-then:
-
-
-4 / 4 = 1.0
-
-
-If:
-
-Java = 5
-
-
-still:
-
-
-1.0
-
-
-Do not give extra score just because
-the user is overqualified.
-
-
-====================================================================
-49. WEIGHTED SKILL MATCH
-====================================================================
-
-For project requirements:
-
-
-skillContribution =
-
-skillMatch * importance
-
-
-Then:
-
-
-totalSkillScore =
-
-sum(skillContribution) /
-sum(importance)
-
-
-Example:
-
-
-Java:
-
-1.0 * 1.0 = 1.0
-
-
-Spring Boot:
-
-0.75 * 1.0 = 0.75
-
-
-SQL:
-
-1.0 * 0.7 = 0.7
-
-
-Total:
-
-
-(1.0 + 0.75 + 0.7) /
-(1.0 + 1.0 + 0.7)
-
-
-= 90.7%
-
-
-====================================================================
-50. OTHER MATCHING FACTORS
-====================================================================
-
-Skill match should be the strongest factor.
-
-
-Example:
-
-
-Skill Match = 60%
-
-Role Match = 15%
-
-Career Interest = 10%
-
-Experience = 10%
-
-Availability = 5%
-
-
-Final:
-
-
-matchScore =
-
-skillMatch * 0.60
-
-+
-
-roleMatch * 0.15
-
-+
-
-careerInterest * 0.10
-
-+
-
-experience * 0.10
-
-+
-
-availability * 0.05
-
-
-====================================================================
-51. PROJECT -> USER MATCHING
-====================================================================
-
-Project owner asks:
-
-
-"Who would be good for this project?"
-
-
-System:
-
-
-1. Find users with required skills.
-
-2. Calculate skill match.
-
-3. Calculate role match.
-
-4. Calculate other factors.
-
-5. Calculate final score.
-
-6. Sort descending.
-
-7. Return top candidates.
-
-
-Example:
-
-
-Alex = 94%
-
-Ryan = 88%
-
-John = 81%
-
-
-====================================================================
-52. USER -> PROJECT MATCHING
-====================================================================
-
-User asks:
-
-
-"What projects fit me?"
-
-
-System performs the same calculation
-in reverse.
-
-
-Example:
-
-
-E-Commerce = 91%
-
-Education App = 87%
-
-Portfolio Platform = 80%
-
-
-====================================================================
-53. HUMAN CONTROL IN SKILL EXCHANGE
-====================================================================
-
-The algorithm only recommends.
-
-
-It NEVER:
-
-
-Automatically adds users
-
-Automatically creates teams
-
-Automatically accepts applications
-
-
-Instead:
-
-
-Recommendation
-
-      ↓
-
-Apply / Invite
-
-      ↓
-
-Human Decision
-
-      ↓
-
-Accept / Reject
-
-      ↓
-
-Team
-
-
-====================================================================
-54. PROFILE SYSTEM
-====================================================================
-
-User profile should show:
-
-
-Name
-
-Career Goal
-
-Skills
-
-Skill Levels
-
-Completed Courses
-
-Certificates
-
-Badges
-
-Projects
-
-Skill Exchange activity
-
-
-Example:
-
-
-Career Goal:
-
-Backend Developer
-
-
-Skills:
-
-
-Java
-Intermediate
-
-
-Spring Boot
-Intermediate
-
-
-SQL
-Intermediate
-
-
-REST API
-Beginner
-
-
-====================================================================
-55. MAIN DASHBOARD
-====================================================================
-
-Dashboard should summarize:
-
-
-Career Goal
-
-Roadmap Progress
-
-Continue Learning
-
-Skill Progress
-
-Recommended Courses
-
-Skill Exchange Matches
-
-
-Primary CTA:
-
-
-[ Continue Learning ]
-
-
-Secondary:
-
-
-[ Continue Roadmap ]
-
-
-====================================================================
-56. MAIN NAVIGATION
-====================================================================
-
-ROADMAP
-
-"My career journey"
-
-
-MY LEARNING
-
-"My current learning"
-
-
-COURSES
-
-"Everything I can learn"
-
-
-SKILL EXCHANGE
-
-"People and projects"
-
-
-====================================================================
-57. ROADMAP VS MY LEARNING
-====================================================================
-
-ROADMAP:
-
-
-Focus:
-
-Career destination
-
-Skill gaps
-
-Learning sequence
-
-
-MY LEARNING:
-
-
-Focus:
-
-Current courses
-
-Completed courses
-
-Learning progress
-
-
-Do not duplicate the same information unnecessarily.
-
-
-====================================================================
-58. COURSES PAGE
-====================================================================
-
-Contains:
-
-
-Search
-
-Filter
-
-Category
-
-Difficulty
-
-Skill
-
-Duration
-
-
-Example:
-
-
-Search:
-
-Spring Boot
-
-
-Results:
-
-
-Spring Boot Fundamentals
-
-Spring Boot Advanced
-
-Spring Data JPA
-
-
-====================================================================
-59. COURSE ACCESS LOGIC
-====================================================================
-
-General Courses page:
-
-
-User can browse all courses.
-
-
-Roadmap:
-
-
-Only recommended courses appear
-in the personalized learning sequence.
-
-
-Locked course:
-
-
-User can see the course.
-
-
-But:
-
-
-Cannot start it if required prerequisites
-are not completed.
-
-
-====================================================================
-60. ADMIN COURSE CREATION
-====================================================================
-
-Admin creates:
-
-
-Course
-
-
-Then defines:
-
-
-Course skills
-
-Skill target levels
-
-Difficulty
-
-Prerequisites
-
-
-Then creates:
-
-
-Lessons
-
-
-Then:
-
-
-Quiz questions
-
-Final assessment questions
-
-
-Therefore the recommendation system
-has structured data to work with.
-
-
-====================================================================
-61. IMPORTANT: COURSE QUALITY
-====================================================================
-
-The system should NOT rely on AI to generate
-all course content automatically.
-
-
-Courses should be curated/created by admin.
-
-
-AI helps the student understand
-the existing lesson content.
-
-
-This keeps learning content controlled.
-
-
-====================================================================
-62. ROADMAP EXPLAINABILITY
-====================================================================
-
-Every recommended course should have
-a reason.
-
-
-Example:
-
-
-"Recommended because:"
-
-
-Your Spring Boot level:
-
-Beginner
-
-
-Required level:
-
-Advanced
-
-
-Skill gap:
-
-3 levels
-
-
-Career importance:
-
-Very High
-
-
-This course helps improve:
-
-Spring Boot
-
-REST API
-
-
-Prerequisite:
-
-Java Fundamentals
-
-
-This makes the recommendation explainable.
-
-
-====================================================================
-63. RECOMMENDATION ENGINE SUMMARY
-====================================================================
-
-The recommendation engine works as:
-
-
-CAREER
-
-    ↓
-
-Required Skills
-
-    ↓
-
-User Skills
-
-    ↓
-
-Skill Gap
-
-    ↓
-
-Priority
-
-    ↓
-
-Relevant Courses
-
-    ↓
-
-Prerequisite Check
-
-    ↓
-
-Course Ranking
-
-    ↓
-
-Roadmap Ordering
-
-    ↓
-
-Personalized Roadmap
-
-
-====================================================================
-64. WHAT AI DOES NOT DO
-====================================================================
-
-AI should NOT decide:
-
-
-"Your career is Backend Developer."
-
-
-AI should NOT decide:
-
-
-"You need this course."
-
-
-AI should NOT decide:
-
-
-"You passed the exam."
-
-
-AI should NOT decide:
-
-
-"You earned this certificate."
-
-
-AI should NOT decide:
-
-
-"This person should join your team."
-
-
-These are application decisions.
-
-
-====================================================================
-65. WHAT AI DOES
-====================================================================
-
-AI helps:
-
-
-"Explain this concept."
-
+Student asks:
 
 "Explain this code."
 
 
-"Simplify this."
+AI explains:
 
+- Class
+- Method
+- Variables
+- Logic
 
-"Summarize this lesson."
 
+---------------------------------------------------------------
 
-"Give me an example."
+8. Answer Learning Questions
 
 
-"Help me understand this lesson."
+Student asks:
 
+"Why do we use @Autowired?"
 
-Therefore:
 
+AI explains the concept.
 
-ALGORITHM = DECISION SUPPORT
 
+# ============================================================
+# 36. AI ASSISTANT CONTEXT
+# ============================================================
 
-AI = LEARNING SUPPORT
+The AI Assistant should understand
+the current learning context.
 
 
-====================================================================
-66. FULL TECHNICAL FLOW
-====================================================================
+Example:
 
-USER
 
- ↓
+Student is inside:
 
-React Frontend
 
- ↓
+Course:
 
-Spring Boot REST API
+Spring Boot for Beginners
 
- ↓
 
-Authentication / Authorization
+Lesson:
 
- ↓
+Dependency Injection
 
-Business Logic
 
- ↓
+Therefore AI requests should include:
 
-PostgreSQL
+Course context
 
++
 
-For roadmap:
+Lesson context
 
++
 
-React
+Lesson content
 
- ↓
 
-POST /roadmap/generate
+This allows AI responses to be more relevant.
 
- ↓
 
-RoadmapService
+Example:
 
- ↓
 
-CareerService
+Without context:
 
- ↓
+Student asks:
 
-SkillService
+"Explain this."
 
- ↓
 
-SkillGapService
+AI does not know what "this" means.
 
- ↓
 
-CourseRecommendationService
+With context:
 
- ↓
+Current Lesson:
 
-PrerequisiteService
+Dependency Injection
 
- ↓
 
-RoadmapOrderingService
+Selected Text:
 
- ↓
+@Autowired injects dependencies.
 
-PostgreSQL
 
- ↓
+AI can provide a relevant explanation.
 
-Personalized Roadmap
 
- ↓
+# ============================================================
+# 37. AI ASSISTANT ROLE
+# ============================================================
 
-React
+AI should support learning.
 
+AI responsibilities:
 
-====================================================================
-67. AI TECHNICAL FLOW
-====================================================================
+- Explain
+- Simplify
+- Summarize
+- Give examples
+- Generate practice
+- Generate questions
+- Give hints
+- Explain code
+- Help students understand lessons
 
-React Lesson Page
 
- ↓
+AI should NOT control:
 
-User clicks:
+- Career structure
+- Skill library
+- Admin decisions
+- Course approval
+- Core roadmap generation
 
-"Explain"
 
+Core recommendation:
 
- ↓
+Algorithm-based
 
-POST /ai/assist
 
+AI:
 
- ↓
+Learning assistant
 
-AIController
 
+# ============================================================
+# 38. LESSON PROGRESS
+# ============================================================
 
- ↓
+Student opens lesson.
 
-AIService
+        |
+        v
 
+Lesson Status:
 
- ↓
+IN_PROGRESS
 
-CourseService
 
-LessonService
+Student finishes lesson.
 
+        |
+        v
 
- ↓
+Click:
 
-Context Builder
+MARK AS COMPLETE
 
 
- ↓
+Lesson Status:
 
-AI Provider
+COMPLETED
 
 
- ↓
+Course Progress updates.
 
-Response
 
+Example:
 
- ↓
+10 lessons
 
-React
 
+Completed:
 
-====================================================================
-68. ASSESSMENT TECHNICAL FLOW
-====================================================================
+7
 
-User starts assessment
 
- ↓
+Progress:
 
-AssessmentController
+70%
 
- ↓
 
-Retrieve questions
+# ============================================================
+# 39. QUIZ SYSTEM
+# ============================================================
 
- ↓
+After lessons or course sections:
 
-User submits answers
+Student takes a quiz.
 
- ↓
 
-AssessmentService
+Quiz contains:
 
- ↓
+- Multiple Choice
+- True/False
+- Multiple Select
+- Scenario Questions
+- Code Questions
 
-Score answers
 
- ↓
+Student submits quiz.
 
-Map results to skills
 
- ↓
+System calculates:
 
-Update assessment attempt
+Quiz Score
 
- ↓
 
-Update skill evidence
+Example:
 
- ↓
+8 / 10
 
-Return result
 
+80%
 
-====================================================================
-69. COURSE COMPLETION TECHNICAL FLOW
-====================================================================
 
-Lesson completed
+If score >= passing score:
 
- ↓
+PASSED
 
-LessonProgress updated
 
- ↓
+Otherwise:
 
-Calculate course progress
+FAILED
 
- ↓
 
-If all required lessons completed
+Student can:
 
- ↓
+Retry quiz
 
-Allow final assessment
+Review lesson
 
- ↓
+Practice with AI Assistant
 
-Final assessment passed
 
- ↓
+# ============================================================
+# 40. AI ASSISTANT AFTER QUIZ
+# ============================================================
 
-Course completed
+The AI Assistant can also help students
+understand incorrect answers.
 
- ↓
 
-Generate badge
+Example:
 
- ↓
+Question:
 
-Generate certificate
+What does @RestController do?
 
- ↓
 
-Update skill evidence
+Student selects wrong answer.
 
- ↓
 
-Recalculate future roadmap if needed
+System displays:
 
+Incorrect.
 
-====================================================================
-70. ROADMAP REGENERATION
-====================================================================
 
-If user completes a course:
+Student can click:
 
+[ ASK AI WHY ]
 
-NEW SKILL EVIDENCE
 
-        ↓
+AI explains:
 
-UPDATE USER SKILL
+- Why the answer is incorrect
+- Why the correct answer is correct
+- Related concept
 
-        ↓
 
-RECALCULATE REMAINING SKILL GAPS
+This creates a better learning experience.
 
-        ↓
 
-CHECK REMAINING COURSES
+# ============================================================
+# 41. ASSIGNMENTS AND PROJECTS
+# ============================================================
 
-        ↓
+Courses can contain:
 
-UPDATE FUTURE ROADMAP
+Assignments
 
 
-Do NOT rebuild completed history.
+Example:
 
-Only adjust future learning.
+Create a simple Spring Boot REST API.
 
 
-====================================================================
-71. EXAMPLE COMPLETE USER
-====================================================================
+Or projects.
 
-USER:
 
-Student A
+Example:
 
+Build a Student Management System.
 
-CAREER:
 
-Backend Developer
+Assignment workflow:
 
+Student receives assignment
 
-INITIAL SKILLS:
+        |
+        v
 
+Completes assignment
 
-Java = 3
+        |
+        v
 
-Spring Boot = 1
+Submits assignment
 
-REST API = 1
+        |
+        v
 
-SQL = 2
+Instructor/System evaluates
 
+        |
+        v
 
-CAREER REQUIREMENTS:
+Result stored
 
 
-Java = 4
+Assignment results can contribute
+to skill progress.
 
-Spring Boot = 4
 
-REST API = 4
+# ============================================================
+# 42. COURSE COMPLETION
+# ============================================================
 
-SQL = 3
+A course is completed when:
 
+Required Lessons
 
-GAPS:
++
 
+Required Quizzes
 
-Java = 1
++
 
-Spring Boot = 3
+Assignments/Projects if required
 
-REST API = 3
+are completed.
 
-SQL = 1
 
+Example:
 
-PRIORITY:
+Lessons:
 
+100%
 
-Spring Boot
 
-REST API
+Quiz:
 
-Java
+Passed
 
-SQL
 
+Assignment:
 
-COURSES:
+Completed
 
 
-Spring Boot Fundamentals
+Result:
 
-REST API with Spring Boot
+COURSE COMPLETED
 
-Spring Data JPA
 
-Spring Security
+# ============================================================
+# 43. COURSE RATING AND REVIEW
+# ============================================================
 
+After course completion:
 
-ROADMAP:
+Student can rate the course.
 
 
-1. Spring Boot Fundamentals
+Example:
 
-2. REST API with Spring Boot
 
-3. Spring Data JPA
+COURSE COMPLETED 🎉
 
-4. Spring Security
 
+How would you rate this course?
 
-USER COMPLETES:
 
+☆ ☆ ☆ ☆ ☆
 
-Spring Boot Fundamentals
 
+Student selects:
 
-FINAL SCORE:
+5 stars
 
 
-87%
+Optional:
 
+Write a Review
 
-SKILL UPDATE:
+
+Example:
+
+"Very clear explanation and useful examples."
+
+
+Business rule:
+
+One student can submit
+one review per course.
+
+
+Recommended rule:
+
+Only students who completed the course
+can submit a rating/review.
+
+
+# ============================================================
+# 44. COURSE REVIEW SYSTEM
+# ============================================================
+
+Course Review contains:
+
+- Review ID
+- Student ID
+- Course ID
+- Rating
+- Review Text
+- Created Date
+- Updated Date
+
+
+Relationship:
+
+STUDENT
+
+    |
+    v
+
+COURSE_REVIEW
+
+    |
+    v
+
+COURSE
+
+
+Course Rating:
+
+Average of student ratings.
+
+
+Example:
+
+Ratings:
+
+5
+5
+4
+4
+5
+
+
+Average:
+
+4.6
+
+
+Display:
+
+⭐ 4.6
+
+
+# ============================================================
+# 45. SKILL PROGRESS UPDATE
+# ============================================================
+
+The student's skill profile should update
+after learning.
+
+
+Initial Assessment:
 
 
 Spring Boot:
 
-1 → 2
+20%
 
 
-ROADMAP:
+After completing course:
 
+40%
 
-Next:
 
-REST API with Spring Boot
+After quiz:
 
+55%
 
-USER OPENS LESSON:
 
+After assignment:
 
-REST Controllers
+70%
 
 
-User selects:
+The skill profile is dynamic.
 
 
-"What does this code do?"
+Possible skill progress sources:
 
+- Initial Assessment
+- Course Completion
+- Quiz Results
+- Assignment Results
+- Project Results
 
-AI receives:
 
+Example weighted calculation:
 
-Course ID
 
-Lesson ID
+Skill Score =
 
-Selected Code
 
-User Request
+Assessment Score
 
+* 0.30
 
-AI explains the code.
 
++
 
-USER COMPLETES COURSE.
+Quiz Score
 
+* 0.30
 
-Certificate generated.
 
++
 
-Skill profile updated.
+Assignment/Project Score
 
+* 0.40
 
-Later:
 
+The exact formula can be adjusted.
 
-User joins Skill Exchange.
 
+# ============================================================
+# 46. ROADMAP PROGRESS UPDATE
+# ============================================================
 
-A project requires:
+Career requirement:
 
+Spring Boot:
 
-Java
+70%
 
-Spring Boot
 
-SQL
+Student initially:
 
-REST API
+20%
 
 
-Matching algorithm calculates:
+After learning:
 
+75%
 
-User match = 88%
 
+The skill requirement is achieved.
 
-User sees:
 
+System updates:
 
-"E-Commerce Platform — 88% Match"
+Phase Status:
 
+COMPLETED
 
-User applies.
 
+The next phase becomes:
 
-Project owner accepts.
+IN_PROGRESS
 
 
-User becomes a project member.
+Example:
 
 
-====================================================================
-72. UI INFORMATION ARCHITECTURE
-====================================================================
+PHASE 1
 
-ONBOARDING
+Java Foundation
 
+✓ COMPLETED
 
-"What are you looking for?"
 
+PHASE 2
 
-       +------------------+------------------+
+Database Fundamentals
 
-       |                                     |
+✓ COMPLETED
 
-       v                                     v
 
+PHASE 3
 
-FIND MY CAREER                     I KNOW MY CAREER
+Backend Framework
 
+✓ COMPLETED
 
-       |                                     |
 
-       v                                     v
+PHASE 4
 
+API Development
 
-QUESTIONS                            SELECT CAREER
+→ IN PROGRESS
 
 
-       |                                     |
+PHASE 5
 
-       v                                     |
+Security
 
-CAREER MATCHES                            |
+🔒 NOT STARTED
 
 
-       |                                     |
+# ============================================================
+# 47. ADAPTIVE ROADMAP
+# ============================================================
 
-       +-------------------+-----------------+
+The roadmap can adapt based on
+the student's updated skills.
 
-                           |
 
-                           v
+Example:
 
-                     CAREER DETAIL
 
-                           |
+Initial Skills:
 
-                           v
+Java:
 
-                    SKILL ASSESSMENT
+30%
 
-                           |
 
-                           v
+SQL:
 
-                   PERSONALIZED ROADMAP
+20%
 
 
-====================================================================
-73. MAIN UI
-====================================================================
+Spring Boot:
 
-NAVIGATION:
+0%
 
 
-Roadmap
+Roadmap:
 
-My Learning
+1. Java
+2. SQL
+3. Spring Boot
 
-Courses
 
-Skill Exchange
+After assessment or learning:
 
+Java:
 
-DASHBOARD:
+85%
 
 
-Career Goal
+SQL:
 
-Roadmap Progress
+75%
 
-Continue Learning
 
-Skill Progress
+Spring Boot:
 
-Recommended Course
+10%
 
-Skill Exchange Matches
 
+System updates roadmap:
 
-====================================================================
-74. ROADMAP UI
-====================================================================
 
-Show vertical journey:
+Java:
 
+COMPLETED
 
-START
 
- ↓
+SQL:
 
-✓ Completed Course
+COMPLETED
 
- ↓
 
-● Current Course
+Spring Boot:
 
- ↓
+ACTIVE
 
-🔒 Locked Course
 
- ↓
+This prevents unnecessary learning.
 
-🔒 Locked Course
 
- ↓
+# ============================================================
+# 48. RECOMMEND NEXT COURSE
+# ============================================================
 
-🎯 Career Goal
+After a student completes a course:
 
+System updates:
 
-Every course:
+- Course progress
+- Skill profile
+- Skill gaps
+- Phase progress
 
-Name
 
-Difficulty
+Then the system determines:
 
-Duration
+What should the student learn next?
 
-Skills
 
-Progress
+Example:
 
-Status
 
-Why recommended?
+Student completed:
 
+Spring Boot Beginner
 
-====================================================================
-75. MY LEARNING UI
-====================================================================
 
-Tabs:
+Spring Boot level:
+
+20%
+
+to
+
+60%
+
+
+Next recommendation:
+
+Spring Boot Intermediate
+
+
+or:
+
+REST API Fundamentals
+
+
+depending on:
+
+- Required skill level
+- Current skill level
+- Current phase
+- Skill dependencies
+
+
+# ============================================================
+# 49. STUDENT DASHBOARD
+# ============================================================
+
+The Student Dashboard should display:
+
+
+WELCOME BACK
+
+
+TARGET CAREER
+
+Java Backend Developer
+
+
+ROADMAP PROGRESS
+
+45%
+
+
+CURRENT PHASE
+
+Backend Framework
+
+
+CURRENT COURSE
+
+Spring Boot for Beginners
+
+Progress:
+
+65%
+
+
+SKILL PROGRESS
+
+Java:
+
+85%
+
+
+SQL:
+
+70%
+
+
+Spring Boot:
+
+55%
+
+
+REST API:
+
+20%
+
+
+RECOMMENDED NEXT
+
+REST API Fundamentals
+
+
+ACHIEVEMENTS
+
+🏆 Java Foundation
+
+🏆 SQL Explorer
+
+
+# ============================================================
+# 50. INSTRUCTOR DASHBOARD
+# ============================================================
+
+Instructor Dashboard includes:
 
 
 MY COURSES
 
 
-In Progress
+Draft:
 
-Completed
+3
 
 
-MY ROADMAP
+Pending Approval:
 
+2
 
-Learning Progress
 
-Current Course
+Published:
 
-Upcoming Courses
+5
 
-Skill Progress
 
+Rejected:
 
-====================================================================
-76. COURSE UI
-====================================================================
+1
 
-Course page:
 
+Actions:
 
-Course information
+[ CREATE COURSE ]
 
-Skills
 
-Lessons
+Course List:
 
-Progress
 
-Quizzes
+Java Programming
 
-Assessment
+PUBLISHED
 
-Certificate requirements
 
+Spring Boot Basics
 
-Lesson page:
+PENDING APPROVAL
 
 
-Lesson content
+Advanced Java
 
-Code examples
+REJECTED
 
-Exercises
 
-AI Assistant
+Instructor can view:
 
+- Course statistics
+- Enrollment count
+- Completion rate
+- Average rating
+- Reviews
 
-====================================================================
-77. SKILL EXCHANGE UI
-====================================================================
 
-Tabs/sections:
+# ============================================================
+# 51. ADMIN DASHBOARD
+# ============================================================
 
+Admin Dashboard includes:
 
-Find Projects
 
-Find Teammates
+TOTAL STUDENTS
 
-My Applications
+1,250
 
-My Invitations
 
-My Projects
+TOTAL INSTRUCTORS
 
+50
 
-Project card:
 
+TOTAL COURSES
 
-Title
+200
 
-Match %
 
-Required Skills
+PENDING COURSE APPROVALS
 
-Open Roles
+12
 
-Team Size
 
+TOTAL CAREERS
 
-Teammate card:
+10
 
 
-Name
+TOTAL SKILLS
 
-Match %
+80
 
-Skills
 
-Role
+RECENT ACTIVITY
 
-[ Invite ]
 
+Admin actions:
 
-====================================================================
-78. EMPTY STATES
-====================================================================
 
-If no courses:
+MANAGE USERS
 
 
-"You're ready to start learning."
+MANAGE INSTRUCTORS
 
 
-[ Explore Courses ]
+MANAGE SKILLS
 
 
-If no project matches:
+MANAGE CAREERS
 
 
-"No projects match your current skills yet."
+MANAGE ASSESSMENTS
 
 
-[ Explore Projects ]
+REVIEW COURSES
 
 
-If no teammates:
+MODERATE REVIEWS
 
 
-"We couldn't find a strong match yet."
+VIEW REPORTS
 
 
-[ Explore More ]
+# ============================================================
+# 52. SKILL EXCHANGE
+# ============================================================
 
+Skill Exchange allows students to find
+other students with complementary skills.
 
-====================================================================
-79. SECURITY RULES
-====================================================================
 
-All protected actions require authentication.
+Example:
 
 
-Backend must verify:
+STUDENT A
 
 
-User identity
+Strong Skills:
 
-Course access
+Java
 
-Assessment ownership
 
-Certificate ownership
+Needs Help:
 
-Project permissions
+React
 
 
-Never trust frontend values for:
+STUDENT B
 
 
-Score
+Strong Skills:
 
-Completion
+React
 
-Certificate eligibility
 
-Skill level
+Needs Help:
 
-Project membership
+Java
 
 
-All important decisions must be verified
-on the backend.
+System can suggest:
 
 
-====================================================================
-80. IMPORTANT DESIGN PRINCIPLE
-====================================================================
+POTENTIAL SKILL PARTNER
 
-The frontend displays the result.
 
-The backend calculates the result.
+Student A
 
+<------>
 
-For example:
+Student B
 
 
-Frontend says:
+Possible Skill Exchange features:
 
-"Generate Roadmap"
+- View student skills
+- View learning goals
+- Send connection request
+- Accept/reject request
+- Communicate
+- Exchange knowledge
 
 
-Backend actually performs:
+# ============================================================
+# 53. CERTIFICATES
+# ============================================================
 
+After completing a course:
 
-Career requirements
+System can generate a certificate.
 
-+
 
-User skills
+Certificate contains:
 
-+
+- Student Name
+- Course Name
+- Instructor Name
+- Completion Date
+- Certificate ID
 
-Skill gaps
 
-+
+Example:
 
-Course relationships
 
-+
+CERTIFICATE OF COMPLETION
 
-Prerequisites
 
-+
+Awarded to:
 
-Recommendation scores
+John Doe
 
 
-Then returns:
+For completing:
 
+Java Programming for Beginners
 
-Personalized Roadmap
 
+# ============================================================
+# 54. BADGES
+# ============================================================
 
-This prevents users from manipulating
-important system decisions.
+Students can earn badges.
 
 
-====================================================================
-81. SYSTEM SEPARATION
-====================================================================
+Examples:
 
-SEPARATE THESE THREE THINGS:
 
+Java Beginner
 
-1. CAREER RECOMMENDATION
 
+SQL Explorer
 
-"Which career might suit me?"
 
+Backend Explorer
 
-2. ROADMAP RECOMMENDATION
 
+Course Finisher
 
-"What should I learn to reach my career goal?"
 
+Project Builder
 
-3. AI LEARNING ASSISTANCE
 
+Roadmap Champion
 
-"Help me understand what I'm learning."
 
+Badges are awarded based on achievements.
 
-They are different systems.
 
+# ============================================================
+# 55. COMPLETE STUDENT WORKFLOW
+# ============================================================
 
-Career Recommendation
-≠
-Roadmap Recommendation
-≠
-AI Tutor
+REGISTER
 
-
-====================================================================
-82. ALGORITHM SUMMARY
-====================================================================
-
-CAREER DISCOVERY:
-
-
-answers
-
- ↓
-
-weighted career scores
-
- ↓
-
-normalized percentage
-
- ↓
-
-top careers
-
-
-SKILL ASSESSMENT:
-
-
-answers
-
- ↓
-
-skill evidence
-
- ↓
-
-skill levels
-
-
-SKILL GAP:
-
-
-career requirements
-
--
-
-user skills
-
- ↓
-
-skill gaps
-
-
-ROADMAP:
-
-
-skill gaps
-
-+
-
-importance
-
-+
-
-courses
-
-+
-
-prerequisites
-
-+
-
-difficulty
-
- ↓
-
-course ranking
-
- ↓
-
-dependency ordering
-
- ↓
-
-roadmap
-
-
-LEARNING:
-
-
-lessons
-
- ↓
-
-progress
-
- ↓
-
-assessment
-
- ↓
-
-completion
-
-
-SKILL UPDATE:
-
-
-assessment evidence
-
-+
-
-course evidence
-
-+
-
-project evidence
-
- ↓
-
-updated skill profile
-
-
-SKILL EXCHANGE:
-
-
-user skills
-
-+
-
-project requirements
-
- ↓
-
-match score
-
- ↓
-
-recommendations
-
- ↓
-
-human decision
-
-
-AI:
-
-
-lesson context
-
-+
-
-user request
-
- ↓
-
-AI explanation
-
-
-====================================================================
-83. DEVELOPMENT PRIORITY
-====================================================================
-
-Build in this order:
-
-
-PHASE 1:
-
-Authentication
-
-User Profile
-
-Skill System
-
-
-PHASE 2:
-
-Career Database
-
-Career Discovery
-
-Career Selection
-
-
-PHASE 3:
-
-Skill Assessment
-
-Skill Scoring
-
-Skill Gap Analysis
-
-
-PHASE 4:
-
-Course Database
-
-Course-Skill Mapping
-
-Prerequisites
-
-
-PHASE 5:
-
-Roadmap Algorithm
-
-Course Recommendation
-
-Roadmap UI
-
-
-PHASE 6:
-
-Course Learning
-
-Lessons
-
-Progress
-
-Quizzes
-
-
-PHASE 7:
-
-Final Assessment
-
-Certificate
-
-Badge
-
-Skill Updates
-
-
-PHASE 8:
-
-AI Learning Assistant
-
-
-PHASE 9:
-
-Skill Exchange
-
-Projects
-
-Matching
-
-Applications
-
-Invitations
-
-
-====================================================================
-84. MVP PRINCIPLE
-====================================================================
-
-Do not implement every advanced feature immediately.
-
-
-The minimum viable complete journey is:
-
-
-Career Selection
-
-        ↓
-
-Skill Assessment
-
-        ↓
-
-Skill Gap
-
-        ↓
-
-Personalized Roadmap
-
-        ↓
-
-Reading Course
-
-        ↓
-
-Progress
-
-        ↓
-
-Final Assessment
-
-        ↓
-
-Certificate
-
-
-Then:
-
-
-AI Assistant
-
-
-Then:
-
-
-Skill Exchange
-
-
-====================================================================
-85. FINAL SYSTEM PHILOSOPHY
-====================================================================
-
-The platform should be:
-
-
-PERSONALIZED
-
-because every roadmap is based on the user's
-current skills and career goal.
-
-
-EXPLAINABLE
-
-because every recommendation has a reason.
-
-
-SKILL-BASED
-
-because careers, courses, assessments,
-and projects are connected through skills.
-
-
-AI-ASSISTED
-
-because AI helps students understand lessons.
-
-
-NOT AI-DEPENDENT
-
-because core decisions are controlled
-by deterministic algorithms and backend logic.
-
-
-ASSESSMENT-DRIVEN
-
-because the system verifies understanding.
-
-
-PROGRESSIVE
-
-because the roadmap changes as the user's
-skills improve.
-
-
-HUMAN-CONTROLLED
-
-because career choices and team decisions
-remain with the user.
-
-
-====================================================================
-FINAL ARCHITECTURE
-====================================================================
-
-
-                       USER
-                         |
-                         v
-                  REACT FRONTEND
-                         |
-                         v
-                SPRING BOOT BACKEND
-                         |
-        +----------------+----------------+
-        |                |                |
-        v                v                v
-    PostgreSQL       Recommendation     AI Service
-        |                Engine             |
-        |                |                  |
-        |        +-------+-------+          |
-        |        |       |       |          |
-        |        v       v       v          v
-        |     Career   Roadmap Course    AI Provider
-        |     Match    Engine   Match
         |
-        +------------------------------------------------+
-        |              |              |                  |
-        v              v              v                  v
-      Users          Careers        Courses          Projects
-        |              |              |                  |
-        |              |              |                  |
-        +--------------+--------------+------------------+
-                               |
-                               v
-                         SKILL SYSTEM
-                               |
-             +-----------------+----------------+
-             |                 |                |
-             v                 v                v
-       Career Skills     User Skills      Course Skills
-             |                 |                |
-             +-----------------+----------------+
-                               |
-                               v
-                         SKILL GAP ENGINE
-                               |
-                               v
-                      COURSE RECOMMENDER
-                               |
-                               v
-                      ROADMAP GENERATOR
-                               |
-                               v
-                           LEARNING
-                               |
-                               v
-                          ASSESSMENT
-                               |
-                               v
-                        SKILL EVIDENCE
-                               |
-                               v
-                       SKILL EXCHANGE
-                               |
-                               v
-                         MATCH ENGINE
-                               |
-                               v
-                      HUMAN DECISION
+        v
+
+SELECT:
+
+STUDENT
+
+        |
+        v
+
+CREATE ACCOUNT
+
+        |
+        v
+
+LOGIN
+
+        |
+        v
+
+STUDENT DASHBOARD
+
+        |
+        v
+
+CHOOSE:
 
 
-====================================================================
-END
-====================================================================
+FIND MY CAREER
+
+OR
+
+
+I KNOW MY CAREER
+
+
+        |
+        v
+
+ASSESSMENT
+
+        |
+        v
+
+SKILL PROFILE
+
+        |
+        v
+
+CAREER MATCH / SELECT CAREER
+
+        |
+        v
+
+SKILL GAP ANALYSIS
+
+        |
+        v
+
+PERSONALIZED ROADMAP
+
+        |
+        v
+
+SELECT PHASE
+
+        |
+        v
+
+VIEW REQUIRED SKILLS
+
+        |
+        v
+
+VIEW AVAILABLE COURSES
+
+        |
+        v
+
+COURSE RECOMMENDATION ENGINE
+
+        |
+        v
+
+⭐ RECOMMENDED COURSE
+
+        |
+        v
+
+ENROLL
+
+        |
+        v
+
+LESSONS
+
+        |
+        v
+
+AI ASSISTANT
+
+        |
+        v
+
+QUIZZES
+
+        |
+        v
+
+ASSIGNMENTS / PROJECTS
+
+        |
+        v
+
+COURSE COMPLETION
+
+        |
+        v
+
+RATE COURSE
+
+        |
+        v
+
+UPDATE SKILL PROFILE
+
+        |
+        v
+
+UPDATE ROADMAP
+
+        |
+        v
+
+NEXT PHASE
+
+        |
+        v
+
+REPEAT
+
+
+# ============================================================
+# 56. COMPLETE INSTRUCTOR WORKFLOW
+# ============================================================
+
+SELECT:
+
+INSTRUCTOR
+
+
+        |
+        v
+
+CREATE ACCOUNT
+
+        |
+        v
+
+ENTER INSTRUCTOR DETAILS
+
+        |
+        v
+
+LOGIN
+
+        |
+        v
+
+INSTRUCTOR DASHBOARD
+
+        |
+        v
+
+CREATE COURSE
+
+        |
+        v
+
+ENTER COURSE INFORMATION
+
+        |
+        v
+
+SELECT EXISTING SKILLS
+
+        |
+        v
+
+SET DIFFICULTY
+
+        |
+        v
+
+CREATE LESSONS
+
+        |
+        v
+
+CREATE QUIZZES
+
+        |
+        v
+
+CREATE ASSIGNMENTS
+
+        |
+        v
+
+SAVE AS DRAFT
+
+        |
+        v
+
+SUBMIT FOR APPROVAL
+
+        |
+        v
+
+PENDING APPROVAL
+
+        |
+        v
+
+ADMIN REVIEW
+
+
+       / \
+
+
+   APPROVE   REJECT
+
+
+      |         |
+
+
+      v         v
+
+
+ PUBLISHED   EDIT COURSE
+
+
+      |         |
+
+
+      |         v
+
+
+      |      RESUBMIT
+
+
+      |         |
+
+
+      +---------+
+
+
+          |
+
+
+          v
+
+
+STUDENTS CAN ENROLL
+
+
+# ============================================================
+# 57. COMPLETE ADMIN WORKFLOW
+# ============================================================
+
+ADMIN LOGIN
+
+        |
+        v
+
+ADMIN DASHBOARD
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+SKILL MANAGEMENT
+
+
+Create Skills
+
+Edit Skills
+
+Delete Skills
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+CAREER MANAGEMENT
+
+
+Create Career
+
+Select Skills
+
+Set Required Levels
+
+Set Importance
+
+Create Career Structure
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+ASSESSMENT MANAGEMENT
+
+
+Create Questions
+
+Map Questions to Skills
+
+Set Difficulty
+
+Set Answers
+
+Set Scoring
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+COURSE APPROVAL
+
+
+View Pending Courses
+
+Review Content
+
+
+        |
+        +-------------------+
+
+
+        |                   |
+
+
+     APPROVE             REJECT
+
+
+        |                   |
+
+
+        v                   v
+
+
+   PUBLISHED           PROVIDE REASON
+
+
+                            |
+
+
+                            v
+
+
+                      INSTRUCTOR EDITS
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+USER MANAGEMENT
+
+
+Manage Students
+
+Manage Instructors
+
+Manage Accounts
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+REVIEW MODERATION
+
+
+View Reviews
+
+Remove Inappropriate Reviews
+
+
+        |
+        +-------------------------------------+
+
+        |
+        v
+
+REPORTS
+
+
+Users
+
+Courses
+
+Enrollments
+
+Ratings
+
+Career Popularity
+
+Skill Popularity
+
+Completion Rates
+
+
+# ============================================================
+# 58. COMPLETE SYSTEM DATA FLOW
+# ============================================================
+
+
+ADMIN
+
+    |
+
+    v
+
+CREATES SKILLS
+
+    |
+
+    v
+
+CREATES CAREERS
+
+    |
+
+    v
+
+MAPS CAREERS TO SKILLS
+
+    |
+
+    v
+
+CREATES ASSESSMENTS
+
+
+
+INSTRUCTOR
+
+    |
+
+    v
+
+CREATES COURSES
+
+    |
+
+    v
+
+MAPS COURSES TO SKILLS
+
+    |
+
+    v
+
+CREATES LESSONS
+
+    |
+
+    v
+
+SUBMITS COURSE
+
+    |
+
+    v
+
+ADMIN APPROVES
+
+    |
+
+    v
+
+COURSE PUBLISHED
+
+
+
+STUDENT
+
+    |
+
+    v
+
+TAKES ASSESSMENT
+
+    |
+
+    v
+
+SKILL PROFILE
+
+    |
+
+    v
+
+CAREER SELECTION
+
+    |
+
+    v
+
+SKILL GAP ANALYSIS
+
+    |
+
+    v
+
+ROADMAP
+
+    |
+
+    v
+
+PHASE
+
+    |
+
+    v
+
+REQUIRED SKILLS
+
+    |
+
+    v
+
+FIND PUBLISHED COURSES
+
+    |
+
+    v
+
+RECOMMENDATION ENGINE
+
+    |
+
+    v
+
+RECOMMENDED COURSE
+
+    |
+
+    v
+
+LEARNING
+
+
+
+LEARNING
+
+    |
+
+    +------------------------+
+
+    |                        |
+
+    v                        v
+
+LESSON                 AI ASSISTANT
+
+    |                        |
+
+    |                        |
+
+    +-----------+------------+
+
+                |
+
+                v
+
+             QUIZ
+
+                |
+
+                v
+
+         ASSIGNMENT
+
+                |
+
+                v
+
+        COURSE COMPLETE
+
+                |
+
+                v
+
+         COURSE REVIEW
+
+                |
+
+                v
+
+        SKILL UPDATE
+
+                |
+
+                v
+
+        ROADMAP UPDATE
+
+                |
+
+                v
+
+          NEXT PHASE
+
+
+# ============================================================
+# 59. CORE DATABASE RELATIONSHIP CONCEPT
+# ============================================================
+
+USER
+
+    |
+
+    +---------------------------+
+
+    |             |             |
+
+STUDENT      INSTRUCTOR       ADMIN
+
+
+------------------------------------------------
+
+
+CAREER
+
+    |
+
+CAREER_SKILL
+
+    |
+
+SKILL
+
+
+------------------------------------------------
+
+
+COURSE
+
+    |
+
+COURSE_SKILL
+
+    |
+
+SKILL
+
+
+------------------------------------------------
+
+
+COURSE
+
+    |
+
+LESSON
+
+
+------------------------------------------------
+
+
+COURSE
+
+    |
+
+QUIZ
+
+    |
+
+QUIZ_QUESTION
+
+
+------------------------------------------------
+
+
+STUDENT
+
+    |
+
+ENROLLMENT
+
+    |
+
+COURSE
+
+
+------------------------------------------------
+
+
+STUDENT
+
+    |
+
+SKILL_PROGRESS
+
+    |
+
+SKILL
+
+
+------------------------------------------------
+
+
+STUDENT
+
+    |
+
+COURSE_REVIEW
+
+    |
+
+COURSE
+
+
+------------------------------------------------
+
+
+STUDENT
+
+    |
+
+ROADMAP
+
+    |
+
+ROADMAP_PHASE
+
+    |
+
+PHASE_SKILL
+
+    |
+
+SKILL
+
+
+# ============================================================
+# 60. IMPORTANT BUSINESS RULES
+# ============================================================
+
+
+RULE 1:
+
+One login system is used for all roles.
+
+
+RULE 2:
+
+After login, users are redirected based on their role.
+
+
+RULE 3:
+
+Student and Instructor have different signup forms.
+
+
+RULE 4:
+
+Instructor signup requires additional professional details.
+
+
+RULE 5:
+
+Admin accounts should be created securely and should
+not normally be publicly available through signup.
+
+
+RULE 6:
+
+Skills are globally shared.
+
+
+RULE 7:
+
+Admin manages the Skill Library.
+
+
+RULE 8:
+
+Instructors select existing skills when creating courses.
+
+
+RULE 9:
+
+Instructors should not create duplicate global skills.
+
+
+RULE 10:
+
+Courses are not public immediately after creation.
+
+
+RULE 11:
+
+Courses must be approved by Admin before publishing.
+
+
+RULE 12:
+
+Rejected courses must remain unavailable to students.
+
+
+RULE 13:
+
+Admin should provide a rejection reason.
+
+
+RULE 14:
+
+Instructors can edit rejected courses.
+
+
+RULE 15:
+
+Instructors can resubmit rejected courses.
+
+
+RULE 16:
+
+Only PUBLISHED courses can be recommended.
+
+
+RULE 17:
+
+Roadmaps contain PHASES, not fixed courses.
+
+
+RULE 18:
+
+Phases contain required skills.
+
+
+RULE 19:
+
+Courses teach skills.
+
+
+RULE 20:
+
+A recommendation engine selects suitable courses
+for each student.
+
+
+RULE 21:
+
+Course rating alone must not determine recommendations.
+
+
+RULE 22:
+
+Course recommendation considers:
+
+- Rating
+- Review count
+- Skill match
+- Difficulty match
+- Completion rate
+- Course quality
+- Freshness
+
+
+RULE 23:
+
+Students should only rate courses they completed.
+
+
+RULE 24:
+
+One student should only have one review per course.
+
+
+RULE 25:
+
+Student skill levels should update after learning.
+
+
+RULE 26:
+
+Roadmaps should update according to student progress.
+
+
+RULE 27:
+
+AI Assistant should be available during lessons.
+
+
+RULE 28:
+
+AI Assistant should understand the current lesson context.
+
+
+RULE 29:
+
+AI Assistant should support learning, not replace
+the core recommendation algorithm.
+
+
+RULE 30:
+
+Role authorization must be enforced by the backend.
+
+
+# ============================================================
+# 61. FINAL SYSTEM PRINCIPLE
+# ============================================================
+
+The complete SkillHub system follows this structure:
+
+
+                 ADMIN
+                   |
+                   v
+        SKILLS + CAREERS + ASSESSMENTS
+                   |
+                   v
+              SYSTEM STRUCTURE
+
+
+INSTRUCTOR
+    |
+    v
+CREATE COURSE
+    |
+    v
+SELECT SKILLS
+    |
+    v
+CREATE LESSONS
+    |
+    v
+CREATE QUIZZES
+    |
+    v
+SUBMIT COURSE
+    |
+    v
+ADMIN APPROVAL
+    |
+    v
+PUBLISHED COURSE
+
+
+STUDENT
+    |
+    v
+ASSESSMENT
+    |
+    v
+SKILL PROFILE
+    |
+    v
+CAREER SELECTION
+    |
+    v
+SKILL GAP ANALYSIS
+    |
+    v
+PERSONALIZED ROADMAP
+    |
+    v
+PHASE
+    |
+    v
+REQUIRED SKILLS
+    |
+    v
+FIND COURSES
+    |
+    v
+COURSE RECOMMENDATION
+    |
+    v
+⭐ BEST COURSE
+    |
+    v
+LEARN LESSON
+    |
+    +-----------------------+
+    |                       |
+    v                       v
+LESSON CONTENT        AI ASSISTANT
+    |                       |
+    +-----------+-----------+
+                |
+                v
+               QUIZ
+                |
+                v
+        ASSIGNMENT/PROJECT
+                |
+                v
+        COURSE COMPLETION
+                |
+                v
+          COURSE RATING
+                |
+                v
+          SKILL UPDATE
+                |
+                v
+         ROADMAP UPDATE
+                |
+                v
+            NEXT PHASE
+
+
+# ============================================================
+# 62. SIMPLE SUMMARY
+# ============================================================
+
+Admin builds the platform structure.
+
+Admin creates:
+
+- Skills
+- Careers
+- Career skill requirements
+- Assessments
+- Questions
+
+
+Instructor creates learning content.
+
+Instructor creates:
+
+- Courses
+- Lessons
+- Quizzes
+- Assignments
+
+Instructor maps courses to existing skills.
+
+Instructor submits courses for Admin approval.
+
+Admin approves or rejects courses.
+
+Only approved courses become public.
+
+
+Student enters the platform.
+
+Student can:
+
+- Discover a career
+OR
+- Select a known career
+
+
+The system assesses student skills.
+
+The system compares student skills with career requirements.
+
+The system calculates skill gaps.
+
+The system creates a personalized roadmap.
+
+The roadmap contains phases.
+
+Each phase contains required skills.
+
+The system finds published courses that teach those skills.
+
+The recommendation engine ranks courses.
+
+The best suitable course receives:
+
+⭐ RECOMMENDED FOR YOU
+
+
+Student learns through lessons.
+
+Inside lessons, the Student can use an AI Assistant.
+
+The AI Assistant can:
+
+- Explain
+- Summarize
+- Give examples
+- Generate practice
+- Give hints
+- Explain code
+- Help with quiz mistakes
+
+
+After learning:
+
+Student completes quizzes and assignments.
+
+The system updates:
+
+- Course progress
+- Skill profile
+- Roadmap progress
+
+
+The system then recommends:
+
+The next skill,
+phase,
+or course.
+
+
+This process continues until the student completes
+their personalized career roadmap.
+
+
+# ============================================================
+# END OF COMPLETE SYSTEM WORKFLOW
+# ============================================================

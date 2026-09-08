@@ -30,4 +30,8 @@ public interface EnrollmentRepository
             Long userId,
             Long courseId
     );
+
+    List<Enrollment> findByCourseIdIn(List<Long> courseIds);
+
+    List<Enrollment> findByCourseId(Long courseId);
 }

@@ -18,9 +18,7 @@ public class CourseService {
     private final CourseSkillRepository courseSkillRepository;
     private final CoursePrerequisiteRepository coursePrerequisiteRepository;
 
-
     public List<CourseResponse> getAllCourses() {
-
         return courseRepository
                 .findByPublishedTrue()
                 .stream()
@@ -28,24 +26,15 @@ public class CourseService {
                 .toList();
     }
 
-
     public CourseResponse getCourseById(Long id) {
-
         Course course = courseRepository
                 .findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Course not found"));
-
-        if (!course.getPublished()) {
-            throw new RuntimeException("Course is not available");
-        }
+                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
 
         return toResponse(course);
     }
 
-
     public List<CourseResponse> searchCourses(String search) {
-
         return courseRepository
                 .findByTitleContainingIgnoreCaseAndPublishedTrue(search)
                 .stream()
@@ -53,11 +42,7 @@ public class CourseService {
                 .toList();
     }
 
-
-    public List<CourseResponse> getCoursesByCategory(
-            String category
-    ) {
-
+    public List<CourseResponse> getCoursesByCategory(String category) {
         return courseRepository
                 .findByCategoryIgnoreCaseAndPublishedTrue(category)
                 .stream()
@@ -65,34 +50,36 @@ public class CourseService {
                 .toList();
     }
 
-
     public CourseResponse toResponse(Course course) {
+        if (course == null) return null;
+
+        boolean isPub = Boolean.TRUE.equals(course.getPublished());
+        String status = course.getStatus() != null ? course.getStatus() : (isPub ? "PUBLISHED" : "DRAFT");
 
         return new CourseResponse(
-
                 course.getId(),
-
                 course.getTitle(),
-
                 course.getDescription(),
-
                 course.getCategory(),
-
                 course.getDifficulty(),
-
                 course.getDurationHours(),
-
                 course.getThumbnailUrl(),
-
-                course.getRating(),
-
-                course.getEnrollmentCount(),
-
-                course.getCreatedAt()
+                course.getRating() != null ? course.getRating() : 0.0,
+                course.getEnrollmentCount() != null ? course.getEnrollmentCount() : 0,
+                course.getCreatedAt() != null ? course.getCreatedAt() : java.time.LocalDateTime.now(),
+                isPub,
+                status,
+                course.getRejectionReason(),
+                course.getInstructorId(),
+                course.getInstructorName(),
+                course.getReviewCount() != null ? course.getReviewCount() : 0
         );
     }
 
     public CourseResponse createCourse(CourseRequest request) {
+        boolean isPub = request.getPublished() != null ? request.getPublished() : true;
+        String initialStatus = request.getStatus() != null ? request.getStatus() : (isPub ? "PUBLISHED" : "DRAFT");
+
         Course course = Course.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -100,9 +87,14 @@ public class CourseService {
                 .difficulty(request.getDifficulty())
                 .durationHours(request.getDurationHours())
                 .thumbnailUrl(request.getThumbnailUrl())
-                .published(request.getPublished() != null ? request.getPublished() : true)
+                .published(isPub)
+                .status(initialStatus)
+                .rejectionReason(request.getRejectionReason())
+                .instructorId(request.getInstructorId())
+                .instructorName(request.getInstructorName())
                 .rating(0.0)
                 .enrollmentCount(0)
+                .reviewCount(0)
                 .build();
         return toResponse(courseRepository.save(course));
     }
@@ -116,9 +108,23 @@ public class CourseService {
         course.setDifficulty(request.getDifficulty());
         course.setDurationHours(request.getDurationHours());
         course.setThumbnailUrl(request.getThumbnailUrl());
+
         if (request.getPublished() != null) {
             course.setPublished(request.getPublished());
         }
+        if (request.getStatus() != null) {
+            course.setStatus(request.getStatus());
+        }
+        if (request.getRejectionReason() != null) {
+            course.setRejectionReason(request.getRejectionReason());
+        }
+        if (request.getInstructorId() != null) {
+            course.setInstructorId(request.getInstructorId());
+        }
+        if (request.getInstructorName() != null) {
+            course.setInstructorName(request.getInstructorName());
+        }
+
         return toResponse(courseRepository.save(course));
     }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Users, Clock, Edit2, Settings, Inbox } from 'lucide-react'
+import { Plus, Users, Clock, Settings, Inbox } from 'lucide-react'
 import ForumNavbar from '../components/ForumNavbar'
 import MemberAvatar from '../components/MemberAvatar'
 import StatusBadge from '../components/StatusBadge'
@@ -66,7 +66,7 @@ export default function MyProjects() {
       <div className="forum-container" style={{ paddingBottom: 64 }}>
         {/* Action button */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
-          <Link to="/forum/create" className="btn btn-primary">
+          <Link to="/skill-exchange/create" className="btn btn-primary">
             <Plus size={16} />
             Create New Project
           </Link>
@@ -117,7 +117,7 @@ export default function MyProjects() {
                     icon="🚀"
                     title="No projects yet"
                     text="Create your first project and find your dream team."
-                    action={<Link to="/forum/create" className="btn btn-primary"><Plus size={15} />Create Project</Link>}
+                    action={<Link to="/skill-exchange/create" className="btn btn-primary"><Plus size={15} />Create Project</Link>}
                   />
                 ) : (
                   <div>
@@ -125,7 +125,7 @@ export default function MyProjects() {
                       <div key={project.id} className="my-project-card">
                         <div className="my-project-card__info">
                           <div className="my-project-card__title">
-                            <Link to={`/forum/project/${project.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                            <Link to={`/skill-exchange/project/${project.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
                               {project.title}
                             </Link>
                           </div>
@@ -155,7 +155,7 @@ export default function MyProjects() {
                         <div className="my-project-card__actions">
                           {project.pendingRequests > 0 && (
                             <Link
-                              to={`/forum/project/${project.id}/requests`}
+                              to={`/skill-exchange/project/${project.id}/requests`}
                               className="btn btn-primary btn-sm"
                               aria-label={`Manage ${project.pendingRequests} requests for ${project.title}`}
                             >
@@ -164,7 +164,7 @@ export default function MyProjects() {
                             </Link>
                           )}
                           <Link
-                            to={`/forum/project/${project.id}`}
+                            to={`/skill-exchange/project/${project.id}`}
                             className="btn btn-secondary btn-sm"
                             aria-label={`View ${project.title}`}
                           >
@@ -185,7 +185,7 @@ export default function MyProjects() {
                     icon="🤝"
                     title="Not in any projects yet"
                     text="Explore the forum and join a project that excites you!"
-                    action={<Link to="/forum" className="btn btn-primary">Browse Projects</Link>}
+                    action={<Link to="/skill-exchange" className="btn btn-primary">Browse Projects</Link>}
                   />
                 ) : (
                   <div>
@@ -193,7 +193,7 @@ export default function MyProjects() {
                       <div key={project.id} className="my-project-card">
                         <div className="my-project-card__info">
                           <div className="my-project-card__title">
-                            <Link to={`/forum/project/${project.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                            <Link to={`/skill-exchange/project/${project.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
                               {project.title}
                             </Link>
                           </div>
@@ -211,7 +211,7 @@ export default function MyProjects() {
                         </div>
                         <div className="my-project-card__actions">
                           <Link
-                            to={`/forum/project/${project.id}`}
+                            to={`/skill-exchange/project/${project.id}`}
                             className="btn btn-secondary btn-sm"
                           >
                             View Project
@@ -230,7 +230,7 @@ export default function MyProjects() {
                     icon="📬"
                     title="No pending requests"
                     text="You haven't sent any join requests yet, or all have been resolved."
-                    action={<Link to="/forum" className="btn btn-primary">Explore Projects</Link>}
+                    action={<Link to="/skill-exchange" className="btn btn-primary">Explore Projects</Link>}
                   />
                 ) : (
                   <div>
@@ -257,7 +257,7 @@ export default function MyProjects() {
                           </div>
                         </div>
                         <Link
-                          to={`/forum/project/${req.projectId}`}
+                          to={`/skill-exchange/project/${req.projectId}`}
                           className="btn btn-ghost btn-sm"
                           style={{ flexShrink: 0 }}
                         >

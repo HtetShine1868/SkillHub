@@ -3,15 +3,21 @@ import './AdminDashboard.css'
 
 const navItems = [
     { to: '/admin', label: 'Overview', icon: '📊', end: true },
-    { section: 'Content' },
+    { section: 'Platform Users' },
+    { to: '/admin/users', label: 'Users & Instructors', icon: '👥' },
+    { section: 'Content & Skills' },
     { to: '/admin/careers', label: 'Careers', icon: '🎯' },
     { to: '/admin/skills', label: 'Skills', icon: '⚡' },
     { to: '/admin/career-skills', label: 'Career Skills', icon: '🔗' },
     { section: 'Questions' },
     { to: '/admin/discovery', label: 'Discovery Qs', icon: '🔍' },
     { to: '/admin/assessment', label: 'Assessment Qs', icon: '📝' },
-    { section: 'Learning' },
-    { to: '/admin/courses', label: 'Courses & Lessons', icon: '📚' },
+    { section: 'Learning & Review' },
+    { to: '/admin/courses', label: 'Courses & Approvals', icon: '📚' },
+    { to: '/admin/reviews', label: 'Course Reviews', icon: '⭐' },
+    { to: '/admin/certificates', label: 'Certificates', icon: '🏆' },
+    { section: 'Community' },
+    { to: '/admin/skill-exchange', label: 'Skill Exchange', icon: '🤝' },
 ]
 
 export default function AdminDashboard() {

@@ -109,7 +109,7 @@ const CareerDetailPage = () => {
           <button
             id="btn-generate-roadmap"
             className="careerdetail__cta"
-            onClick={() => navigate('/roadmap')}
+            onClick={() => navigate(`/roadmap?careerId=${career.id}`)}
           >
             🚀 Generate My Roadmap
           </button>
@@ -178,7 +178,7 @@ const CareerDetailPage = () => {
             <button
               id="btn-roadmap-bottom"
               className="careerdetail__cta"
-              onClick={() => navigate('/roadmap')}
+              onClick={() => navigate(`/roadmap?careerId=${career.id}`)}
             >
               🚀 Generate My Roadmap
             </button>

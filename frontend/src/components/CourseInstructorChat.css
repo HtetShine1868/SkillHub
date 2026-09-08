@@ -1,0 +1,397 @@
+.course-chat-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-top: 24px;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    transition: border-color 0.2s ease;
+}
+
+.course-chat-card.loading {
+    padding: 40px;
+    text-align: center;
+    color: #94a3b8;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.course-chat-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(124, 58, 237, 0.2);
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: course-spin 0.8s linear infinite;
+}
+
+@keyframes course-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Header */
+.course-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(30, 27, 75, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.course-chat-instructor {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.course-chat-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    font-size: 1.1rem;
+    position: relative;
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+}
+
+.course-chat-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.course-chat-status-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #0f172a;
+}
+
+.course-chat-instructor-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.course-chat-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.course-chat-role-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    text-transform: uppercase;
+}
+
+.course-chat-course-context {
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.course-chat-course-context strong {
+    color: #cbd5e1;
+}
+
+/* Mode Switcher Tabs */
+.course-chat-mode-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 4px;
+}
+
+.course-chat-mode-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.course-chat-mode-btn:hover {
+    color: #fff;
+}
+
+.course-chat-mode-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+/* Notice Banner */
+.course-chat-notice {
+    padding: 10px 18px;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.course-chat-notice.course {
+    background: rgba(124, 58, 237, 0.1);
+    color: #c4b5fd;
+    border-left: 3px solid #8b5cf6;
+}
+
+.course-chat-notice.general {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fcd34d;
+    border-left: 3px solid #f59e0b;
+}
+
+/* Messages Area */
+.course-chat-messages {
+    padding: 18px 20px;
+    max-height: 380px;
+    min-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(10, 15, 30, 0.4);
+}
+
+.course-chat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 16px;
+    color: #94a3b8;
+    margin: auto;
+}
+
+.course-chat-empty-icon {
+    font-size: 2.2rem;
+    margin-bottom: 8px;
+}
+
+.course-chat-empty h4 {
+    color: #e2e8f0;
+    font-size: 1rem;
+    margin: 0 0 6px;
+}
+
+.course-chat-empty p {
+    font-size: 0.84rem;
+    margin: 0;
+    max-width: 380px;
+    line-height: 1.4;
+}
+
+/* Bubble rows */
+.course-chat-bubble-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.course-chat-bubble-row.mine {
+    justify-content: flex-end;
+}
+
+.course-chat-bubble-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #4f46e5;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.course-chat-bubble-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.course-chat-bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    position: relative;
+    word-break: break-word;
+}
+
+.course-chat-bubble.mine {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.course-chat-bubble.theirs {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom-left-radius: 4px;
+}
+
+.course-chat-bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.course-chat-bubble-author {
+    font-size: 0.72rem;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.course-chat-tag {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.course-chat-bubble-text {
+    font-size: 0.88rem;
+    white-space: pre-wrap;
+}
+
+.course-chat-bubble-time {
+    font-size: 0.65rem;
+    opacity: 0.65;
+    margin-top: 4px;
+    text-align: right;
+}
+
+/* Quick Prompts */
+.course-chat-quick-prompts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(15, 23, 42, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.course-chat-quick-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.course-chat-prompt-pill {
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.course-chat-prompt-pill:hover:not(:disabled) {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: #8b5cf6;
+    color: #fff;
+}
+
+/* Input Form */
+.course-chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.8);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.course-chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.course-chat-input:focus {
+    border-color: #8b5cf6;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.course-chat-send-btn {
+    padding: 0 18px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course-chat-send-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+.course-chat-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

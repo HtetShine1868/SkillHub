@@ -10,35 +10,41 @@ const DIFF_COLOR = {
 }
 
 const MOCK_COURSES = [
-  { id:1,  title:'Java Fundamentals',          category:'Backend',    difficulty:'BEGINNER',     durationHours:20, rating:4.8, enrollmentCount:1240, description:'Master Java syntax, OOP principles, and collections.' },
-  { id:2,  title:'Spring Boot Essentials',     category:'Backend',    difficulty:'INTERMEDIATE', durationHours:30, rating:4.9, enrollmentCount:980,  description:'Build production-ready REST APIs with Spring Boot.' },
-  { id:3,  title:'React & Modern CSS',         category:'Frontend',   difficulty:'BEGINNER',     durationHours:25, rating:4.7, enrollmentCount:1580, description:'Build dynamic UIs with React hooks and modern CSS.' },
-  { id:4,  title:'TypeScript Deep Dive',       category:'Frontend',   difficulty:'INTERMEDIATE', durationHours:18, rating:4.6, enrollmentCount:730,  description:'Add type safety to your JavaScript projects.' },
-  { id:5,  title:'SQL & Database Design',      category:'Database',   difficulty:'BEGINNER',     durationHours:15, rating:4.7, enrollmentCount:2100, description:'Master relational databases and query optimization.' },
-  { id:6,  title:'Docker & Kubernetes',        category:'DevOps',     difficulty:'INTERMEDIATE', durationHours:22, rating:4.5, enrollmentCount:870,  description:'Containerize and orchestrate cloud-native apps.' },
-  { id:7,  title:'Python for Data Science',   category:'Data',       difficulty:'BEGINNER',     durationHours:28, rating:4.8, enrollmentCount:3200, description:'Pandas, NumPy, and visualization with Matplotlib.' },
-  { id:8,  title:'Machine Learning A-Z',      category:'AI',         difficulty:'ADVANCED',     durationHours:40, rating:4.9, enrollmentCount:1870, description:'Supervised & unsupervised learning, neural nets, deployment.' },
-  { id:9,  title:'System Design Interviews',  category:'Architecture',difficulty:'ADVANCED',     durationHours:20, rating:4.9, enrollmentCount:2650, description:'Design scalable systems like top FAANG engineers.' },
-  { id:10, title:'Git & CI/CD Pipelines',     category:'DevOps',     difficulty:'BEGINNER',     durationHours:10, rating:4.6, enrollmentCount:1560, description:'Version control mastery and automated deployment pipelines.' },
+  { id:1,  title:'Java & Spring Boot Core',            category:'Engineering', difficulty:'INTERMEDIATE', durationHours:12, rating:4.8, enrollmentCount:342,  description:'Master enterprise Java 17, Spring Boot 3 microservices, REST APIs, and JPA.' },
+  { id:2,  title:'SQL & PostgreSQL Masterclass',       category:'Database',    difficulty:'BEGINNER',     durationHours:8,  rating:4.9, enrollmentCount:521,  description:'Master relational database modeling, complex joins, window functions, and indexing.' },
+  { id:3,  title:'React & Modern Frontend Development', category:'Frontend',   difficulty:'BEGINNER',     durationHours:10, rating:4.7, enrollmentCount:689,  description:'Build production-grade React applications with hooks, TypeScript, and modern CSS.' },
+  { id:4,  title:'Docker & Kubernetes in Production',   category:'DevOps',     difficulty:'INTERMEDIATE', durationHours:8,  rating:4.6, enrollmentCount:287,  description:'Package, deploy, and orchestrate containerized applications with Docker & K8s.' },
+  { id:5,  title:'Python for Data Analysis',          category:'Data',       difficulty:'BEGINNER',     durationHours:9,  rating:4.8, enrollmentCount:445,  description:'Learn Python data analysis using Pandas, NumPy, and Matplotlib to extract insights.' },
+  { id:6,  title:'Machine Learning Foundations',        category:'Data',       difficulty:'INTERMEDIATE', durationHours:12, rating:4.9, enrollmentCount:312,  description:'Build ML models using scikit-learn — from data preprocessing to model evaluation.' },
+  { id:7,  title:'AWS Cloud Fundamentals',             category:'Cloud',      difficulty:'BEGINNER',     durationHours:10, rating:4.7, enrollmentCount:198,  description:'Get hands-on with AWS core services: EC2, S3, RDS, Lambda, IAM, and cloud deployment.' },
+  { id:8,  title:'TypeScript & Modern JavaScript',      category:'Frontend',   difficulty:'BEGINNER',     durationHours:6,  rating:4.6, enrollmentCount:534,  description:'Level up from JS to TS — master static typing, generics, interfaces, and patterns.' },
+  { id:9,  title:'Linux & DevOps Fundamentals',        category:'DevOps',     difficulty:'BEGINNER',     durationHours:7,  rating:4.5, enrollmentCount:231,  description:'Master Linux system administration, shell scripting, and essential DevOps tools.' },
+  { id:10, title:'Node.js & Express REST APIs',         category:'Backend',    difficulty:'INTERMEDIATE', durationHours:8,  rating:4.7, enrollmentCount:389,  description:'Build fast, scalable REST APIs using Node.js, Express, MongoDB, and async JS.' },
 ]
 
 const ICON_MAP = {
-  Backend:'🔧', Frontend:'🎨', Database:'🗄️', DevOps:'⚙️', Data:'📊', AI:'🤖', Architecture:'🏗️'
+  Backend:'🔧', Engineering:'🔧', Frontend:'🎨', Database:'🗄️', DevOps:'⚙️', Data:'📊', AI:'🤖', Cloud:'☁️', Architecture:'🏗️'
 }
 
 const CoursesPage = () => {
   const navigate  = useNavigate()
-  const [courses, setCourses]   = useState([])
-  const [filtered, setFiltered] = useState([])
+  const [courses, setCourses]   = useState(MOCK_COURSES)
+  const [filtered, setFiltered] = useState(MOCK_COURSES)
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('All')
   const [diff, setDiff]         = useState('All')
-  const [loading, setLoading]   = useState(true)
+  const [loading, setLoading]   = useState(false)
 
   useEffect(() => {
+    setLoading(true)
     getAllCourses()
-      .then(data => { const d = data?.length ? data : MOCK_COURSES; setCourses(d); setFiltered(d) })
-      .catch(() => { setCourses(MOCK_COURSES); setFiltered(MOCK_COURSES) })
+      .then(data => {
+        if (data?.length) {
+          setCourses(data)
+          setFiltered(data)
+        }
+      })
+      .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 

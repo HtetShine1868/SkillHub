@@ -27,23 +27,54 @@ export default function AdminAssessmentQuestionsPage() {
     const load = () => {
         setLoading(true)
         Promise.all([getAssessmentQuestions(), getAdminSkills()])
-            .then(([q, s]) => { setQuestions(q); setSkills(s) })
+            .then(([q, s]) => {
+                setQuestions(Array.isArray(q) ? q : [])
+                setSkills(Array.isArray(s) ? s : [])
+            })
             .catch(() => setError('Failed to load data'))
             .finally(() => setLoading(false))
     }
 
     useEffect(() => { load() }, [])
 
-    const openCreate = () => { setForm({ ...EMPTY, options: ['', '', '', ''] }); setEditId(null); setModal(true) }
+    const openCreate = () => {
+        setForm({ ...EMPTY, options: ['', '', '', ''] })
+        setEditId(null)
+        setModal(true)
+    }
+
     const openEdit = q => {
+        let opts = ['', '', '', '']
+        if (Array.isArray(q.options) && q.options.length > 0) {
+            opts = [0, 1, 2, 3].map(i => q.options[i] !== undefined ? String(q.options[i]) : '')
+        } else if (q.optionsJson) {
+            try {
+                const parsed = JSON.parse(q.optionsJson)
+                if (Array.isArray(parsed)) {
+                    opts = [0, 1, 2, 3].map(i => {
+                        const item = parsed[i]
+                        if (!item) return ''
+                        if (typeof item === 'string') return item
+                        return item.text || item.label || ''
+                    })
+                }
+            } catch {
+                opts = ['', '', '', '']
+            }
+        }
+        let corr = q.correctAnswer || ''
+        if (corr && ['A', 'B', 'C', 'D'].includes(corr.toUpperCase())) {
+            const idx = corr.toUpperCase().charCodeAt(0) - 65
+            if (opts[idx]) corr = opts[idx]
+        }
         setForm({
-            questionText: q.questionText || '',
+            questionText: q.questionText || q.question || '',
             skillId: q.skillId || q.skill?.id || '',
-            difficultyLevel: q.difficultyLevel || 'BEGINNER',
-            correctAnswer: q.correctAnswer || '',
-            options: Array.isArray(q.options) ? [...q.options] : ['', '', '', ''],
+            difficultyLevel: q.difficultyLevel || (q.difficulty === 1 ? 'BEGINNER' : q.difficulty === 2 ? 'INTERMEDIATE' : q.difficulty === 3 ? 'ADVANCED' : 'EXPERT') || 'BEGINNER',
+            correctAnswer: corr,
+            options: opts,
             explanation: q.explanation || '',
-            pointsValue: q.pointsValue || 10,
+            pointsValue: q.pointsValue || (q.difficulty ? q.difficulty * 10 : 10),
         })
         setEditId(q.id)
         setModal(true)
@@ -51,33 +82,87 @@ export default function AdminAssessmentQuestionsPage() {
 
     const handleSave = async e => {
         e.preventDefault()
+        setError('')
         setSaving(true)
-        const payload = { ...form, skillId: Number(form.skillId), options: form.options.filter(Boolean) }
+        const filteredOptions = form.options.filter(o => o && o.trim() !== '')
+        if (filteredOptions.length < 2) {
+            setError('Please provide at least 2 answer options.')
+            setSaving(false)
+            return
+        }
+        if (!form.correctAnswer) {
+            setError('Please select the correct answer option.')
+            setSaving(false)
+            return
+        }
+        const payload = {
+            ...form,
+            question: form.questionText,
+            skillId: form.skillId ? Number(form.skillId) : null,
+            options: filteredOptions.length > 0 ? filteredOptions : form.options,
+        }
         try {
             if (editId) await updateAssessmentQuestion(editId, payload)
             else await createAssessmentQuestion(payload)
             setModal(false)
             load()
-        } catch { setError('Save failed') }
-        finally { setSaving(false) }
+        } catch {
+            setError('Failed to save assessment question')
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleDelete = async id => {
         if (!window.confirm('Delete this question?')) return
-        try { await deleteAssessmentQuestion(id); load() }
-        catch { setError('Delete failed') }
+        try {
+            await deleteAssessmentQuestion(id)
+            load()
+        } catch {
+            setError('Delete failed')
+        }
     }
 
-    const setOption = (i, val) => setForm(f => ({ ...f, options: f.options.map((o, idx) => idx === i ? val : o) }))
+    const setOption = (i, val) => {
+        setForm(f => {
+            const nextOpts = [...f.options]
+            nextOpts[i] = val
+            // If the current correctAnswer matched the old option value, update it
+            let nextCorr = f.correctAnswer
+            if (f.correctAnswer === f.options[i]) {
+                nextCorr = val
+            }
+            return { ...f, options: nextOpts, correctAnswer: nextCorr }
+        })
+    }
 
-    const skillName = id => skills.find(s => String(s.id) === String(id))?.name || '—'
+    const safeSkills = Array.isArray(skills) ? skills : []
+    const safeQuestions = Array.isArray(questions) ? questions : []
 
-    const filtered = questions.filter(q =>
-        q.questionText?.toLowerCase().includes(search.toLowerCase()) ||
-        skillName(q.skillId || q.skill?.id).toLowerCase().includes(search.toLowerCase())
-    )
+    const skillName = (id, fallbackName) => {
+        if (fallbackName) return fallbackName
+        return safeSkills.find(s => String(s.id) === String(id))?.name || '—'
+    }
 
-    const DIFF_COLORS = { BEGINNER: 'admin-badge--green', INTERMEDIATE: 'admin-badge--blue', ADVANCED: 'admin-badge--orange', EXPERT: 'admin-badge--red' }
+    const filtered = safeQuestions.filter(q => {
+        const text = (q.questionText || q.question || '').toLowerCase()
+        const sName = skillName(q.skillId || q.skill?.id, q.skillName).toLowerCase()
+        const query = search.toLowerCase()
+        return text.includes(query) || sName.includes(query)
+    })
+
+    const DIFF_COLORS = {
+        BEGINNER: 'admin-badge--green',
+        INTERMEDIATE: 'admin-badge--blue',
+        ADVANCED: 'admin-badge--orange',
+        EXPERT: 'admin-badge--red'
+    }
+
+    const availableOptions = (form.options || []).map((opt, i) => ({
+        letter: String.fromCharCode(65 + i),
+        text: (opt || '').trim(),
+        index: i,
+    })).filter(o => o.text !== '')
 
     return (
         <div>
@@ -92,8 +177,12 @@ export default function AdminAssessmentQuestionsPage() {
             {error && <div className="admin-error">{error}</div>}
 
             <div className="admin-toolbar">
-                <input className="admin-search" placeholder="Search questions or skills…"
-                    value={search} onChange={e => setSearch(e.target.value)} />
+                <input
+                    className="admin-search"
+                    placeholder="Search questions or skills…"
+                    value={search || ''}
+                    onChange={e => setSearch(e.target.value)}
+                />
             </div>
 
             {loading ? (
@@ -117,24 +206,28 @@ export default function AdminAssessmentQuestionsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.map(q => (
-                                <tr key={q.id}>
-                                    <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {q.questionText}
-                                    </td>
-                                    <td>{skillName(q.skillId || q.skill?.id)}</td>
-                                    <td>
-                                        <span className={`admin-badge ${DIFF_COLORS[q.difficultyLevel] || 'admin-badge--blue'}`}>
-                                            {q.difficultyLevel}
-                                        </span>
-                                    </td>
-                                    <td>{q.pointsValue}</td>
-                                    <td style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button className="admin-btn admin-btn--sm admin-btn--secondary" onClick={() => openEdit(q)}>Edit</button>
-                                        <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(q.id)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {filtered.map(q => {
+                                const diff = q.difficultyLevel || (q.difficulty === 1 ? 'BEGINNER' : q.difficulty === 2 ? 'INTERMEDIATE' : q.difficulty === 3 ? 'ADVANCED' : 'EXPERT') || 'BEGINNER'
+                                const qText = q.questionText || q.question || '—'
+                                return (
+                                    <tr key={q.id}>
+                                        <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {qText}
+                                        </td>
+                                        <td>{skillName(q.skillId || q.skill?.id, q.skillName)}</td>
+                                        <td>
+                                            <span className={`admin-badge ${DIFF_COLORS[diff] || 'admin-badge--blue'}`}>
+                                                {diff}
+                                            </span>
+                                        </td>
+                                        <td>{q.pointsValue || (q.difficulty ? q.difficulty * 10 : 10)}</td>
+                                        <td style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button className="admin-btn admin-btn--sm admin-btn--secondary" onClick={() => openEdit(q)}>Edit</button>
+                                            <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(q.id)}>Delete</button>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -147,22 +240,32 @@ export default function AdminAssessmentQuestionsPage() {
                         <form onSubmit={handleSave}>
                             <div className="admin-field">
                                 <label>Question Text *</label>
-                                <textarea required rows={3} value={form.questionText}
-                                    onChange={e => setForm(f => ({ ...f, questionText: e.target.value }))} />
+                                <textarea
+                                    required
+                                    rows={3}
+                                    value={form.questionText || ''}
+                                    placeholder="e.g. Which React Hook is used to perform side effects?"
+                                    onChange={e => setForm(f => ({ ...f, questionText: e.target.value }))}
+                                />
                             </div>
                             <div className="admin-form-row">
                                 <div className="admin-field">
                                     <label>Skill *</label>
-                                    <select required value={form.skillId}
-                                        onChange={e => setForm(f => ({ ...f, skillId: e.target.value }))}>
+                                    <select
+                                        required
+                                        value={form.skillId || ''}
+                                        onChange={e => setForm(f => ({ ...f, skillId: e.target.value }))}
+                                    >
                                         <option value="">— Select skill —</option>
-                                        {skills.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        {safeSkills.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="admin-field">
                                     <label>Difficulty</label>
-                                    <select value={form.difficultyLevel}
-                                        onChange={e => setForm(f => ({ ...f, difficultyLevel: e.target.value }))}>
+                                    <select
+                                        value={form.difficultyLevel || 'BEGINNER'}
+                                        onChange={e => setForm(f => ({ ...f, difficultyLevel: e.target.value }))}
+                                    >
                                         <option value="BEGINNER">Beginner</option>
                                         <option value="INTERMEDIATE">Intermediate</option>
                                         <option value="ADVANCED">Advanced</option>
@@ -172,16 +275,25 @@ export default function AdminAssessmentQuestionsPage() {
                             </div>
                             <div style={{ marginBottom: '1rem' }}>
                                 <label style={{ fontSize: '0.85rem', color: 'var(--f-text-muted)', fontWeight: 500, display: 'block', marginBottom: '0.5rem' }}>
-                                    Answer Options (mark the correct one below)
+                                    Answer Options (fill in at least 2 options, then select the correct one below)
                                 </label>
-                                {form.options.map((opt, i) => (
+                                {(form.options || ['', '', '', '']).map((opt, i) => (
                                     <div key={i} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                                         <span style={{ color: 'var(--f-text-muted)', fontSize: '0.8rem', width: 16 }}>{String.fromCharCode(65 + i)}.</span>
                                         <input
                                             placeholder={`Option ${String.fromCharCode(65 + i)}`}
-                                            value={opt}
+                                            value={opt || ''}
                                             onChange={e => setOption(i, e.target.value)}
-                                            style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.6rem 0.9rem', color: '#f0f2ff', fontSize: '0.88rem', fontFamily: 'var(--sans)' }}
+                                            style={{
+                                                flex: 1,
+                                                background: 'rgba(255,255,255,0.04)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: 8,
+                                                padding: '0.6rem 0.9rem',
+                                                color: '#f0f2ff',
+                                                fontSize: '0.88rem',
+                                                fontFamily: 'var(--sans)'
+                                            }}
                                         />
                                     </div>
                                 ))}
@@ -189,20 +301,41 @@ export default function AdminAssessmentQuestionsPage() {
                             <div className="admin-form-row">
                                 <div className="admin-field">
                                     <label>Correct Answer *</label>
-                                    <input required value={form.correctAnswer}
-                                        placeholder="Exact text of the correct option"
-                                        onChange={e => setForm(f => ({ ...f, correctAnswer: e.target.value }))} />
+                                    <select
+                                        required
+                                        value={form.correctAnswer || ''}
+                                        onChange={e => setForm(f => ({ ...f, correctAnswer: e.target.value }))}
+                                    >
+                                        <option value="">— Select Correct Option ({availableOptions.length} available) —</option>
+                                        {availableOptions.map(opt => (
+                                            <option key={opt.letter} value={opt.text}>
+                                                Option {opt.letter}: {opt.text}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {availableOptions.length === 0 && (
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--f-text-muted)', marginTop: '0.3rem', display: 'block' }}>
+                                            Please enter answer options above first.
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="admin-field">
                                     <label>Points Value</label>
-                                    <input type="number" min={1} value={form.pointsValue}
-                                        onChange={e => setForm(f => ({ ...f, pointsValue: Number(e.target.value) }))} />
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={form.pointsValue || 10}
+                                        onChange={e => setForm(f => ({ ...f, pointsValue: Number(e.target.value) }))}
+                                    />
                                 </div>
                             </div>
                             <div className="admin-field">
                                 <label>Explanation (shown after answering)</label>
-                                <textarea rows={2} value={form.explanation}
-                                    onChange={e => setForm(f => ({ ...f, explanation: e.target.value }))} />
+                                <textarea
+                                    rows={2}
+                                    value={form.explanation || ''}
+                                    onChange={e => setForm(f => ({ ...f, explanation: e.target.value }))}
+                                />
                             </div>
                             <div className="admin-modal-actions">
                                 <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setModal(false)}>Cancel</button>
@@ -215,3 +348,5 @@ export default function AdminAssessmentQuestionsPage() {
         </div>
     )
 }
+
+

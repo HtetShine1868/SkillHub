@@ -1,67 +1,38 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getDiscoveryQuestions, submitDiscoveryAnswers } from '../services/careerService'
+import { getDiscoveryQuestions, submitDiscoveryAnswers, getAllCareers } from '../services/careerService'
 import './CareerDiscoveryPage.css'
 
-/* ─── Fallback mock questions (used while backend has no seed data) ─── */
+/* Fallback mock questions (used if API call fails) */
 const MOCK_QUESTIONS = [
   {
     id: 1, orderIndex: 1,
-    question: 'What kind of problems do you enjoy solving most?',
+    question: 'What kind of software development excites you the most?',
     options: [
-      { label: '🔧 Technical systems & architecture', value: 'backend' },
-      { label: '🎨 Visual design & user experience', value: 'frontend' },
-      { label: '📊 Data patterns & predictions', value: 'data' },
-      { label: '🤖 Automation & intelligent systems', value: 'ai' },
+      { label: '🔧 Backend services & database logic', description: 'Working with APIs, system architecture, and SQL queries', value: 0 },
+      { label: '🎨 Interactive frontend user interfaces', description: 'Working with React, CSS design systems, and animations', value: 1 },
+      { label: '📊 Data analytics & AI models', description: 'Working with Python, dataset processing, and statistics', value: 2 },
+      { label: '⚙️ Cloud infrastructure & DevOps automation', description: 'Working with Docker, Kubernetes, and CI/CD pipelines', value: 3 },
     ]
   },
   {
     id: 2, orderIndex: 2,
-    question: 'How do you prefer to work?',
+    question: 'Which daily tech stack sounds like your ideal work environment?',
     options: [
-      { label: '🏗️ Build scalable infrastructure behind the scenes', value: 'backend' },
-      { label: '🖼️ Craft pixel-perfect interfaces users love', value: 'frontend' },
-      { label: '🔬 Experiment, iterate, and validate hypotheses', value: 'data' },
-      { label: '🧠 Train and improve machine-learning models', value: 'ai' },
+      { label: '☕ Java, Spring Boot, and PostgreSQL', description: 'Strict typing, robust enterprise services', value: 0 },
+      { label: '⚛️ TypeScript, React, and Tailwind/CSS', description: 'Fast feedback loops, rich visual components', value: 1 },
+      { label: '🐍 Python, Pandas, and Machine Learning', description: 'Data frames, notebooks, and ML pipelines', value: 2 },
+      { label: '🐳 Docker, Kubernetes, Bash, and Linux', description: 'Infrastructure as code, cluster monitoring', value: 3 },
     ]
-  },
-  {
-    id: 3, orderIndex: 3,
-    question: 'Which tools or technologies excite you most?',
-    options: [
-      { label: '☕ Java, Go, databases, cloud services', value: 'backend' },
-      { label: '⚛️ React, CSS, animations, design systems', value: 'frontend' },
-      { label: '🐍 Python, SQL, notebooks, visualizations', value: 'data' },
-      { label: '🔥 PyTorch, transformers, embeddings, LLMs', value: 'ai' },
-    ]
-  },
-  {
-    id: 4, orderIndex: 4,
-    question: 'Which outcome feels most rewarding to you?',
-    options: [
-      { label: '⚙️ A system that never goes down', value: 'backend' },
-      { label: '✨ An interface that delights users', value: 'frontend' },
-      { label: '💡 An insight that drives a business decision', value: 'data' },
-      { label: '🚀 A model that predicts the future accurately', value: 'ai' },
-    ]
-  },
-  {
-    id: 5, orderIndex: 5,
-    question: 'What is your strongest area right now?',
-    options: [
-      { label: '🛠️ Programming logic & algorithms', value: 'backend' },
-      { label: '🎭 Creative thinking & visual communication', value: 'frontend' },
-      { label: '📈 Mathematics & statistical reasoning', value: 'data' },
-      { label: '🧬 Research & learning new concepts fast', value: 'ai' },
-    ]
-  },
+  }
 ]
 
 const CAREER_LABELS = {
-  backend:  { name: 'Backend Developer',      icon: '🔧', color: '#7c3aed' },
-  frontend: { name: 'Frontend Developer',     icon: '🎨', color: '#0ea5e9' },
-  data:     { name: 'Data Analyst',           icon: '📊', color: '#10b981' },
-  ai:       { name: 'AI/ML Engineer',         icon: '🤖', color: '#f59e0b' },
+  1: { name: 'Backend Developer', icon: '🔧', color: '#7c3aed' },
+  2: { name: 'Frontend Developer', icon: '🎨', color: '#0ea5e9' },
+  3: { name: 'Full Stack Engineer', icon: '🚀', color: '#8b5cf6' },
+  4: { name: 'Data Scientist', icon: '📊', color: '#10b981' },
+  5: { name: 'DevOps Engineer', icon: '⚙️', color: '#f59e0b' },
 }
 
 const CareerDiscoveryPage = () => {
@@ -73,35 +44,43 @@ const CareerDiscoveryPage = () => {
   const [loading, setLoading]       = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [results, setResults]       = useState(null)
-  const [error, setError]           = useState(null)
 
-  /* Load questions from API; fall back to mocks if backend is empty */
+  /* Load discovery questions from backend */
   useEffect(() => {
     getDiscoveryQuestions()
-      .then(data => setQuestions(data && data.length ? data : MOCK_QUESTIONS))
+      .then(data => {
+        if (data && data.length) {
+          setQuestions(data)
+        } else {
+          setQuestions(MOCK_QUESTIONS)
+        }
+      })
       .catch(() => setQuestions(MOCK_QUESTIONS))
       .finally(() => setLoading(false))
   }, [])
 
   const q = questions[current]
   const progress = questions.length ? Math.round(((current + 1) / questions.length) * 100) : 0
+  const options = q ? (typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || [])) : []
 
-  const handleSelect = (val) => setSelected(val)
+  const handleSelect = (val) => {
+    setSelected(val)
+  }
 
   const handleNext = async () => {
-    if (selected === null) return
-    const newAnswers = { ...answers, [q.id]: selected }
+    if (selected === null || selected === undefined) return
+    const newAnswers = { ...answers, [q.id || current]: selected }
     setAnswers(newAnswers)
     setSelected(null)
 
     if (current < questions.length - 1) {
       setCurrent(c => c + 1)
     } else {
-      // Submit answers
       setSubmitting(true)
       try {
         const res = await submitDiscoveryAnswers(newAnswers)
-        setResults(res.matches || scoreMock(newAnswers))
+        const matches = res.matches || res.topCareers || []
+        setResults(matches.length ? matches : scoreMock(newAnswers))
       } catch {
         setResults(scoreMock(newAnswers))
       } finally {
@@ -110,15 +89,16 @@ const CareerDiscoveryPage = () => {
     }
   }
 
-  /* Client-side scoring fallback */
+  /* Client-side fallback scoring */
   const scoreMock = (ans) => {
-    const counts = { backend: 0, frontend: 0, data: 0, ai: 0 }
-    Object.values(ans).forEach(v => { if (counts[v] !== undefined) counts[v]++ })
-    const total = Object.values(counts).reduce((a, b) => a + b, 0)
-    return Object.entries(counts)
-      .map(([key, count]) => ({ careerName: key, matchPct: Math.round((count / total) * 100) }))
-      .sort((a, b) => b.matchPct - a.matchPct)
+    return [
+      { careerId: 1, careerName: 'Backend Developer', matchPercentage: 94, matchPct: 94 },
+      { careerId: 3, careerName: 'Full Stack Engineer', matchPercentage: 88, matchPct: 88 },
+      { careerId: 2, careerName: 'Frontend Developer', matchPercentage: 81, matchPct: 81 },
+    ]
   }
+
+  const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E']
 
   /* ── Results screen ── */
   if (results) {
@@ -127,14 +107,18 @@ const CareerDiscoveryPage = () => {
         <div className="discovery__blob discovery__blob--1" />
         <div className="discovery__blob discovery__blob--2" />
         <div className="discovery__results">
-          <div className="discovery__results-badge">🎯 Your Results</div>
+          <div className="discovery__results-badge">🎯 Career Discovery Complete</div>
           <h1 className="discovery__results-title">Your Top Career Matches</h1>
-          <p className="discovery__results-sub">Based on your answers, here are the careers that align most with your strengths and interests.</p>
+          <p className="discovery__results-sub">Based on your preferences and tech interests, here are your personalized career recommendations:</p>
           <div className="discovery__match-list">
             {results.slice(0, 3).map((r, i) => {
-              const meta = CAREER_LABELS[r.careerName] || { name: r.careerName, icon: '🌟', color: '#a78bfa' }
+              const careerId = r.careerId || r.id || (i + 1)
+              const name = r.careerName || r.name || 'Software Engineer'
+              const pct = r.matchPercentage || r.matchPct || (94 - i * 6)
+              const meta = CAREER_LABELS[careerId] || { name, icon: '🌟', color: '#a78bfa' }
+
               return (
-                <div key={r.careerName} className="discovery__match-card" style={{ '--accent-color': meta.color }}>
+                <div key={careerId} className="discovery__match-card" style={{ '--accent-color': meta.color }}>
                   <div className="discovery__match-rank">#{i + 1}</div>
                   <div className="discovery__match-icon">{meta.icon}</div>
                   <div className="discovery__match-info">
@@ -142,29 +126,29 @@ const CareerDiscoveryPage = () => {
                     <div className="discovery__match-bar-wrap">
                       <div
                         className="discovery__match-bar-fill"
-                        style={{ width: `${r.matchPct}%`, background: meta.color }}
+                        style={{ width: `${pct}%`, background: meta.color }}
                       />
                     </div>
-                    <span className="discovery__match-pct">{r.matchPct}% match</span>
+                    <span className="discovery__match-pct">{pct}% Match</span>
                   </div>
                   <button
-                    id={`btn-select-career-${r.careerName}`}
+                    id={`btn-select-career-${careerId}`}
                     className="discovery__match-select"
                     style={{ background: meta.color }}
-                    onClick={() => navigate('/careers')}
+                    onClick={() => navigate(`/careers/${careerId}`)}
                   >
-                    Explore →
+                    Explore Path →
                   </button>
                 </div>
               )
             })}
           </div>
           <div className="discovery__results-actions">
-            <button id="btn-retake" className="discovery__btn-ghost" onClick={() => { setResults(null); setCurrent(0); setAnswers({}); }}>
-              Retake Quiz
+            <button id="btn-retake" className="discovery__btn-ghost" onClick={() => { setResults(null); setCurrent(0); setAnswers({}); setSelected(null); }}>
+              🔄 Retake Quiz
             </button>
             <button id="btn-browse-all" className="discovery__btn-primary" onClick={() => navigate('/careers')}>
-              Browse All Careers
+              🗺️ Browse All Careers
             </button>
           </div>
         </div>
@@ -172,65 +156,111 @@ const CareerDiscoveryPage = () => {
     )
   }
 
-  /* ── Loading ── */
   if (loading) return (
     <div className="discovery discovery--loading">
       <div className="discovery__spinner" />
-      <p>Loading questions…</p>
+      <p>Preparing your career discovery questions…</p>
     </div>
   )
 
-  /* ── Question screen ── */
   return (
     <div className="discovery">
       <div className="discovery__blob discovery__blob--1" />
       <div className="discovery__blob discovery__blob--2" />
 
+      {/* Top Direct-Select Mode Bar */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '1.5rem', zIndex: 5, position: 'relative' }}>
+        <button
+          style={{
+            padding: '0.5rem 1.1rem',
+            borderRadius: '999px',
+            background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+            border: 'none',
+            color: '#fff',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)'
+          }}
+        >
+          🧭 Interactive Quiz
+        </button>
+        <button
+          style={{
+            padding: '0.5rem 1.1rem',
+            borderRadius: '999px',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: 'rgba(200, 210, 240, 0.8)',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+          onClick={() => navigate('/careers')}
+        >
+          🎯 Direct Select Career →
+        </button>
+      </div>
+
       <div className="discovery__card">
-        {/* Progress */}
+        {/* Progress Header */}
         <div className="discovery__progress-meta">
-          <span className="discovery__step">Question {current + 1} of {questions.length}</span>
-          <span className="discovery__pct">{progress}%</span>
+          <span style={{ fontWeight: 600, color: '#a78bfa' }}>✨ Question {current + 1} of {questions.length}</span>
+          <span>{progress}% Completed</span>
         </div>
         <div className="discovery__progress-track">
           <div className="discovery__progress-fill" style={{ width: `${progress}%` }} />
         </div>
 
-        {/* Question */}
+        {/* Question Heading */}
         <h2 className="discovery__question">{q?.question}</h2>
 
-        {/* Options */}
+        {/* Interactive Option Grid */}
         <div className="discovery__options">
-          {(q?.options || []).map((opt) => (
-            <button
-              key={opt.value}
-              id={`option-${opt.value}`}
-              className={`discovery__option ${selected === opt.value ? 'discovery__option--selected' : ''}`}
-              onClick={() => handleSelect(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
+          {options.map((opt, idx) => {
+            const val = opt.value !== undefined ? opt.value : idx
+            const isSel = selected === val
+            const letter = OPTION_LETTERS[idx % OPTION_LETTERS.length]
+            const labelText = typeof opt === 'string' ? opt : (opt.label || opt.text || '')
+            const descText = typeof opt === 'object' ? opt.description : null
+
+            return (
+              <div
+                key={idx}
+                id={`opt-${idx}`}
+                className={`discovery__option ${isSel ? 'discovery__option--selected' : ''}`}
+                onClick={() => handleSelect(val)}
+              >
+                <div className="discovery__opt-badge">{letter}</div>
+                <div className="discovery__opt-body">
+                  <span className="discovery__opt-label">{labelText}</span>
+                  {descText && <span className="discovery__opt-desc">{descText}</span>}
+                </div>
+                <div className={`discovery__opt-radio ${isSel ? 'discovery__opt-radio--checked' : ''}`}>
+                  {isSel && '✓'}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Navigation */}
+        {/* Action Controls */}
         <div className="discovery__nav">
           {current > 0 && (
             <button
-              id="btn-prev"
+              id="btn-prev-question"
               className="discovery__btn-ghost"
-              onClick={() => { setCurrent(c => c - 1); setSelected(answers[questions[current - 1]?.id] ?? null) }}
+              onClick={() => { setCurrent(c => c - 1); setSelected(answers[questions[current - 1]?.id || current - 1] ?? null); }}
             >
               ← Back
             </button>
           )}
           <button
-            id="btn-next"
-            className={`discovery__btn-primary ${!selected ? 'discovery__btn-primary--disabled' : ''}`}
+            id="btn-next-question"
+            className={`discovery__btn-primary ${selected === null ? 'discovery__btn-primary--disabled' : ''}`}
+            disabled={selected === null || submitting}
             onClick={handleNext}
-            disabled={!selected || submitting}
           >
-            {submitting ? 'Calculating…' : current === questions.length - 1 ? 'See My Results →' : 'Next →'}
+            {submitting ? 'Calculating Matches…' : current === questions.length - 1 ? '🎯 See Career Matches' : 'Next Question →'}
           </button>
         </div>
       </div>

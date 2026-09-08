@@ -6,14 +6,12 @@ export default function AssessmentProgress({
 
   return (
     <div className="assessment-progress">
-
       <div className="assessment-progress-info">
-        <span>
-          Question <strong>{current}</strong> of {total}
+        <span className="assessment-step-badge">
+          ✨ Question <strong>{current}</strong> of {total}
         </span>
-
-        <span>
-          {Math.round(percentage)}%
+        <span className="assessment-pct-badge">
+          {Math.round(percentage)}% Completed
         </span>
       </div>
 
@@ -25,7 +23,6 @@ export default function AssessmentProgress({
           }}
         />
       </div>
-
     </div>
   )
 }

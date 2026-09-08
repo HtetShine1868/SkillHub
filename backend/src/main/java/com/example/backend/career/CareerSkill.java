@@ -39,12 +39,14 @@ public class CareerSkill {
      * Required proficiency level (0–5).
      */
     @Column(nullable = false)
-    private Integer requiredLevel;
+    @Builder.Default
+    private Integer requiredLevel = 1;
 
     /**
      * How important this skill is for the career (0.0 – 1.0).
      * Used in skill gap priority score: gap * importance.
      */
     @Column(nullable = false)
-    private Double importance;
+    @Builder.Default
+    private Double importance = 1.0;
 }

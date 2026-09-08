@@ -96,7 +96,7 @@ export default function ProjectRequests() {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 24px 64px', width: '100%' }}>
         {/* Back */}
         <Link
-          to={`/forum/project/${id}`}
+          to={`/skill-exchange/project/${id}`}
           className="project-details__back"
           style={{ display: 'inline-flex', marginBottom: 24 }}
         >

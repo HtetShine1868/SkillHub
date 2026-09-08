@@ -1,0 +1,108 @@
+/* ══════════════════════════════════════════════════════════════
+   CareerPage — tab wrapper for Career Discovery & All Careers
+   ══════════════════════════════════════════════════════════════ */
+
+.careerpage {
+  min-height: 100vh;
+  background: #07080f;
+}
+
+/* ── Tab bar ── */
+.careerpage__tabbar {
+  position: sticky;
+  top: 64px; /* offset navbar */
+  z-index: 50;
+  background: rgba(10, 12, 20, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(108, 92, 231, 0.15);
+  padding: 0 2rem;
+}
+
+.careerpage__tabs {
+  display: flex;
+  gap: 0;
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.careerpage__tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.careerpage__tab:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(167, 139, 250, 0.05);
+}
+
+.careerpage__tab--active {
+  color: #a78bfa;
+  border-bottom-color: #a78bfa;
+}
+
+.careerpage__tab-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.careerpage__tab-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  opacity: 0.65;
+}
+
+.careerpage__tab--active .careerpage__tab-desc {
+  opacity: 0.85;
+}
+
+/* ── Content area ── */
+.careerpage__content {
+  /* Let child pages control their own layout */
+  animation: careerpage-fade-in 0.25s ease;
+}
+
+@keyframes careerpage-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .careerpage__tabbar {
+    padding: 0 0.5rem;
+  }
+
+  .careerpage__tab {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .careerpage__tab-label {
+    font-size: 0.8rem;
+  }
+
+  .careerpage__tab-desc {
+    display: none;
+  }
+}

@@ -26,9 +26,7 @@ export default function Login() {
     const navigate =
         useNavigate();
 
-    const {
-        login
-    } = useAuth();
+    const { login } = useAuth();
 
 
     const [email, setEmail] =
@@ -54,14 +52,20 @@ export default function Login() {
 
             try {
 
-                await login(
+                const loggedInUser = await login(
                     email,
                     password
                 );
 
-                navigate(
-                    "/dashboard"
-                );
+                // Admins → admin dashboard, Instructors → instructor dashboard, Learners → student dashboard
+                const destination =
+                    loggedInUser?.role === 'ROLE_ADMIN'
+                        ? '/admin'
+                        : loggedInUser?.role === 'ROLE_INSTRUCTOR'
+                        ? '/instructor/dashboard'
+                        : '/dashboard';
+
+                navigate(destination);
 
             } catch (error) {
 

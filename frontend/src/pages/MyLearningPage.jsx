@@ -1,30 +1,128 @@
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import PersonalizedRoadmapPage from './PersonalizedRoadmapPage'
+import { getMyEnrollments } from '../services/enrollmentService'
+import { getAllCourses } from '../services/courseService'
+import { getMyRoadmap } from '../services/roadmapService'
 import './MyLearningPage.css'
 
-/* Mock data — will be replaced with real enrollment API in Phase 6 */
-const MOCK_IN_PROGRESS = [
-  { id:1, title:'Java Fundamentals',        category:'Backend',  progress:65, totalLessons:12, completedLessons:8, lastLesson:'OOP Principles',    nextLessonId:5 },
-  { id:3, title:'React & Modern CSS',       category:'Frontend', progress:30, totalLessons:10, completedLessons:3, lastLesson:'React Hooks',        nextLessonId:4 },
-  { id:7, title:'Python for Data Science',  category:'Data',     progress:10, totalLessons:14, completedLessons:1, lastLesson:'NumPy Basics',       nextLessonId:2 },
-]
-const MOCK_COMPLETED = [
-  { id:10, title:'Git & CI/CD Pipelines', category:'DevOps',   completedAt:'2026-08-10', rating:5 },
-  { id:5,  title:'SQL & Database Design', category:'Database', completedAt:'2026-07-22', rating:4 },
-]
-const MOCK_SKILLS = [
-  { name:'Java',              level:3, maxLevel:5 },
-  { name:'Spring Boot',      level:2, maxLevel:5 },
-  { name:'React',            level:2, maxLevel:5 },
-  { name:'SQL',              level:4, maxLevel:5 },
-  { name:'Git',              level:4, maxLevel:5 },
-  { name:'Python',           level:1, maxLevel:5 },
-]
-
-const LEVEL_LABEL = ['None','Beginner','Basic','Intermediate','Advanced','Expert']
-const CAT_COLOR   = { Backend:'#a78bfa', Frontend:'#38bdf8', Data:'#6ee7b7', DevOps:'#fcd34d', Database:'#f9a8d4' }
+const CAT_COLOR = { Backend: '#a78bfa', Frontend: '#38bdf8', Data: '#6ee7b7', DevOps: '#fcd34d', Database: '#f9a8d4', Engineering: '#a78bfa' }
 
 const MyLearningPage = () => {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabFromUrl = searchParams.get('tab')
+  const filterFromUrl = searchParams.get('filter')
+  const [activeTab, setActiveTab] = useState(tabFromUrl === 'roadmap' ? 'roadmap' : 'courses')
+
+  // Courses state
+  const [enrollments, setEnrollments] = useState([])
+  const [allCourses, setAllCourses] = useState([])
+  const [filter, setFilter] = useState(filterFromUrl === 'completed' ? 'completed' : 'in_progress')
+  const [loading, setLoading] = useState(true)
+
+  // Roadmap state
+  const [userRoadmap, setUserRoadmap] = useState(null)
+  const [roadmapCompleteness, setRoadmapCompleteness] = useState(0)
+
+  useEffect(() => {
+    if (tabFromUrl === 'roadmap') {
+      setActiveTab('roadmap')
+    } else {
+      setActiveTab('courses')
+    }
+  }, [tabFromUrl])
+
+  // Fetch real enrollments & courses from backend
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true)
+      try {
+        const [myEnrolls, courses] = await Promise.all([
+          getMyEnrollments().catch(() => []),
+          getAllCourses().catch(() => [])
+        ])
+
+        setEnrollments(myEnrolls || [])
+        setAllCourses(courses || [])
+
+        // Attempt to load active user roadmap - check localStorage first
+        try {
+          const userKeyPrefix = user?.id ? `_${user.id}` : ''
+          const roadmapKey = `skillhub_active_roadmap${userKeyPrefix}`
+          const careerKey = `skillhub_active_career${userKeyPrefix}`
+
+          const savedRoadmapStr = typeof window !== 'undefined' ? localStorage.getItem(roadmapKey) : null
+          const savedCareerStr = typeof window !== 'undefined' ? localStorage.getItem(careerKey) : null
+
+          if (savedRoadmapStr) {
+            const roadmap = JSON.parse(savedRoadmapStr)
+            if (roadmap && roadmap.items) {
+              setUserRoadmap(roadmap)
+              const completedCount = roadmap.items.filter(i => i.status === 'COMPLETED').length
+              const pct = roadmap.items.length > 0 ? Math.round((completedCount / roadmap.items.length) * 100) : 0
+              setRoadmapCompleteness(pct)
+            }
+          } else if (savedCareerStr) {
+            const career = JSON.parse(savedCareerStr)
+            if (career && career.id) {
+              const roadmap = await getMyRoadmap(career.id).catch(() => null)
+              if (roadmap && roadmap.items) {
+                setUserRoadmap(roadmap)
+                localStorage.setItem(roadmapKey, JSON.stringify(roadmap))
+                const completedCount = roadmap.items.filter(i => i.status === 'COMPLETED').length
+                const pct = roadmap.items.length > 0 ? Math.round((completedCount / roadmap.items.length) * 100) : 0
+                setRoadmapCompleteness(pct)
+              }
+            }
+          }
+        } catch {
+          // Silently ignore
+        }
+      } catch (e) {
+        console.error("Failed to load learning data", e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  const handleTabChange = (tabKey) => {
+    setActiveTab(tabKey)
+    setSearchParams(tabKey === 'roadmap' ? { tab: 'roadmap' } : {})
+  }
+
+  // Helper functions for enrollment extraction
+  const getProgress = (item) => item.progressPercentage ?? item.progress ?? 0
+  const checkCompleted = (item) => item.completed === true || item.status === 'COMPLETED' || getProgress(item) >= 100
+  const getCourseId = (item) => item.course?.id || item.courseId || item.id
+
+  // Derive in-progress and completed list
+  const inProgressEnrollments = enrollments.filter(e => !checkCompleted(e))
+  const completedEnrollments = enrollments.filter(e => checkCompleted(e))
+
+  // Show enrolled courses if user has any; otherwise show available catalog courses
+  const isEnrolledView = enrollments.length > 0
+  const displayedCourses = isEnrolledView ? enrollments : allCourses.map(c => ({
+    id: c.id,
+    courseId: c.id,
+    title: c.title,
+    category: c.category || 'Engineering',
+    progress: 0,
+    progressPercentage: 0,
+    status: 'NOT_STARTED',
+    completed: false,
+    completedLessons: 0,
+    totalLessons: c.durationHours || 10
+  }))
+
+  const filteredCourses = displayedCourses.filter(item => {
+    const isComp = checkCompleted(item)
+    if (filter === 'in_progress') return !isComp
+    if (filter === 'completed') return isComp
+    return true
+  }).sort((a, b) => getProgress(b) - getProgress(a)) // Priority: highest progress first
 
   return (
     <div className="mylearn">
@@ -34,118 +132,167 @@ const MyLearningPage = () => {
       <div className="mylearn__inner">
         {/* Header */}
         <div className="mylearn__header">
-          <div className="mylearn__badge">🎓 My Learning</div>
+          <div className="mylearn__badge">🎓 My Space</div>
           <h1 className="mylearn__title">Your Learning <span className="mylearn__hl">Journey</span></h1>
-          <p className="mylearn__subtitle">Track your progress, continue courses, and see how your skills are growing.</p>
+          <p className="mylearn__subtitle">Track your enrolled courses, monitor milestone progress, and build your career skills.</p>
+          
+          {/* Sub-tabs Navigation */}
+          <div className="mylearn__nav-tabs">
+            <button
+              id="tab-btn-mycourses"
+              className={`mylearn__tab-btn ${activeTab === 'courses' ? 'mylearn__tab-btn--active' : ''}`}
+              onClick={() => handleTabChange('courses')}
+            >
+              📚 My Courses ({enrollments.length || allCourses.length})
+            </button>
+            <button
+              id="tab-btn-myroadmap"
+              className={`mylearn__tab-btn ${activeTab === 'roadmap' ? 'mylearn__tab-btn--active' : ''}`}
+              onClick={() => handleTabChange('roadmap')}
+            >
+              🗺️ My Career Roadmap {userRoadmap ? `(${roadmapCompleteness}%)` : ''}
+            </button>
+          </div>
         </div>
 
-        {/* Stats row */}
-        <div className="mylearn__stats-row">
-          {[
-            { icon:'📚', label:'In Progress',  value: MOCK_IN_PROGRESS.length },
-            { icon:'✅', label:'Completed',    value: MOCK_COMPLETED.length },
-            { icon:'🧠', label:'Skills Gained',value: MOCK_SKILLS.filter(s => s.level >= 2).length },
-            { icon:'⏱',  label:'Hours Learned',value: '48h' },
-          ].map(stat => (
-            <div key={stat.label} className="mylearn__stat-card">
-              <span className="mylearn__stat-icon">{stat.icon}</span>
-              <span className="mylearn__stat-value">{stat.value}</span>
-              <span className="mylearn__stat-label">{stat.label}</span>
+        {/* ── Sub-Tab 1: Courses ── */}
+        {activeTab === 'courses' && (
+          <>
+            {/* Filters toolbar */}
+            <div className="mylearn__filter-bar">
+              <span className="mylearn__filter-label">Filter:</span>
+              <button
+                className={`mylearn__filter-btn ${filter === 'in_progress' ? 'mylearn__filter-btn--active' : ''}`}
+                onClick={() => setFilter('in_progress')}
+              >
+                🔥 In Progress ({inProgressEnrollments.length})
+              </button>
+              <button
+                className={`mylearn__filter-btn ${filter === 'all' ? 'mylearn__filter-btn--active' : ''}`}
+                onClick={() => setFilter('all')}
+              >
+                All Courses ({displayedCourses.length})
+              </button>
+              <button
+                className={`mylearn__filter-btn ${filter === 'completed' ? 'mylearn__filter-btn--active' : ''}`}
+                onClick={() => setFilter('completed')}
+              >
+                ✅ Completed ({completedEnrollments.length})
+              </button>
             </div>
-          ))}
-        </div>
 
-        {/* In Progress */}
-        <section className="mylearn__section">
-          <h2 className="mylearn__section-title">Continue Learning</h2>
-          <div className="mylearn__course-list">
-            {MOCK_IN_PROGRESS.map(course => (
-              <div key={course.id} className="mylearn__course-card">
-                <div className="mylearn__course-top">
-                  <div>
-                    <span className="mylearn__course-cat" style={{ color: CAT_COLOR[course.category] || '#a78bfa' }}>
-                      {course.category}
-                    </span>
-                    <h3 className="mylearn__course-title">{course.title}</h3>
-                    <p className="mylearn__course-last">Last: {course.lastLesson}</p>
-                  </div>
-                  <div className="mylearn__progress-circle">
-                    <svg viewBox="0 0 60 60">
-                      <circle cx="30" cy="30" r="24" className="mylearn__circle-bg" />
-                      <circle cx="30" cy="30" r="24" className="mylearn__circle-fill"
-                        strokeDasharray={`${(course.progress / 100) * 150.8} 150.8`} />
-                    </svg>
-                    <span className="mylearn__progress-pct">{course.progress}%</span>
-                  </div>
-                </div>
-                <div className="mylearn__progress-track">
-                  <div className="mylearn__progress-fill" style={{ width: `${course.progress}%` }} />
-                </div>
-                <div className="mylearn__course-meta">
-                  <span>{course.completedLessons}/{course.totalLessons} lessons</span>
-                </div>
-                <button
-                  id={`btn-continue-${course.id}`}
-                  className="mylearn__continue-btn"
-                  onClick={() => navigate(`/courses/${course.id}/lessons/${course.nextLessonId}`)}
-                >
-                  Continue →
-                </button>
+            {/* Loading Indicator */}
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#a78bfa' }}>
+                <p style={{ margin: 0, fontSize: '1.1rem' }}>⏳ Loading your learning space...</p>
               </div>
-            ))}
-          </div>
-        </section>
+            )}
 
-        {/* Skill Progress */}
-        <section className="mylearn__section">
-          <h2 className="mylearn__section-title">Your Skill Profile</h2>
-          <div className="mylearn__skills-card">
-            {MOCK_SKILLS.map(skill => (
-              <div key={skill.name} className="mylearn__skill">
-                <div className="mylearn__skill-row">
-                  <span className="mylearn__skill-name">{skill.name}</span>
-                  <span className="mylearn__skill-level">{LEVEL_LABEL[skill.level]}</span>
-                </div>
-                <div className="mylearn__skill-track">
-                  <div className="mylearn__skill-fill" style={{ width: `${(skill.level / skill.maxLevel) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Completed */}
-        {MOCK_COMPLETED.length > 0 && (
-          <section className="mylearn__section">
-            <h2 className="mylearn__section-title">Completed Courses</h2>
-            <div className="mylearn__completed-list">
-              {MOCK_COMPLETED.map(course => (
-                <div key={course.id} className="mylearn__completed-card">
-                  <div className="mylearn__completed-check">✓</div>
-                  <div className="mylearn__completed-info">
-                    <h3 className="mylearn__completed-title">{course.title}</h3>
-                    <span className="mylearn__completed-meta">{course.category} · Completed {course.completedAt}</span>
-                  </div>
-                  <div className="mylearn__completed-rating">
-                    {'⭐'.repeat(course.rating)}
-                  </div>
-                  <button id={`btn-review-${course.id}`} className="mylearn__review-btn" onClick={() => navigate(`/courses/${course.id}`)}>
-                    Review
+            {/* Empty state when filtering in_progress but user hasn't started any yet */}
+            {!loading && filteredCourses.length === 0 && filter === 'in_progress' && (
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 24px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                margin: '20px 0'
+              }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎯</div>
+                <h3 style={{ color: '#f8fafc', margin: '0 0 8px' }}>No courses in progress yet</h3>
+                <p style={{ color: '#cbd5e1', fontSize: '14px', maxWidth: '440px', margin: '0 auto 20px' }}>
+                  Explore available courses from our catalog or generate your career roadmap to begin learning.
+                </p>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                  <button
+                    style={{
+                      padding: '10px 20px',
+                      background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => setFilter('all')}
+                  >
+                    View All Courses →
+                  </button>
+                  <button
+                    style={{
+                      padding: '10px 20px',
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '8px',
+                      color: '#cbd5e1',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => navigate('/careers')}
+                  >
+                    Generate Roadmap 🗺️
                   </button>
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+            )}
+
+            {/* Courses List */}
+            {!loading && (
+              <section className="mylearn__section">
+              <div className="mylearn__course-list">
+                {filteredCourses.map(item => {
+                  const title = item.course?.title || item.title || 'Course'
+                  const cat = item.course?.category || item.category || 'Backend'
+                  const pct = getProgress(item)
+                  const isDone = checkCompleted(item)
+                  const courseTargetId = getCourseId(item)
+
+                  return (
+                    <div key={item.id} className="mylearn__course-card">
+                      <div className="mylearn__course-top">
+                        <div>
+                          <span className="mylearn__course-cat" style={{ color: CAT_COLOR[cat] || '#a78bfa' }}>
+                            {cat}
+                          </span>
+                          <h3 className="mylearn__course-title">{title}</h3>
+                          <span style={{ fontSize: '0.8rem', color: isDone ? '#4ade80' : '#a78bfa', fontWeight: 600 }}>
+                            {isDone ? '✓ Completed' : `${pct}% Completed`}
+                          </span>
+                        </div>
+                        <div className="mylearn__progress-circle">
+                          <svg viewBox="0 0 60 60">
+                            <circle cx="30" cy="30" r="24" className="mylearn__circle-bg" />
+                            <circle cx="30" cy="30" r="24" className="mylearn__circle-fill"
+                              strokeDasharray={`${(pct / 100) * 150.8} 150.8`} />
+                          </svg>
+                          <span className="mylearn__progress-pct">{pct}%</span>
+                        </div>
+                      </div>
+                      <div className="mylearn__progress-track">
+                        <div className="mylearn__progress-fill" style={{ width: `${pct}%`, background: isDone ? '#10b981' : undefined }} />
+                      </div>
+                      <button
+                        id={`btn-continue-${item.id}`}
+                        className="mylearn__continue-btn"
+                        onClick={() => navigate(`/courses/${courseTargetId}`)}
+                      >
+                        {isDone ? 'Review Course →' : 'Continue Learning →'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+            )}
+          </>
         )}
 
-        {/* CTA */}
-        <div className="mylearn__explore-cta">
-          <h3>Discover More Courses</h3>
-          <p>Expand your skill set with hundreds of expert-designed courses aligned to your career path.</p>
-          <button id="btn-explore-courses" className="mylearn__explore-btn" onClick={() => navigate('/courses')}>
-            Browse Course Library →
-          </button>
-        </div>
+        {/* ── Sub-Tab 2: My Roadmap ── */}
+        {activeTab === 'roadmap' && (
+          <div className="mylearn__roadmap-wrapper">
+            <PersonalizedRoadmapPage />
+          </div>
+        )}
       </div>
     </div>
   )

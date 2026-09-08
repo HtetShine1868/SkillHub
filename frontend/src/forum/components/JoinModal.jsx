@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle, Send } from 'lucide-react'
 import MemberAvatar from './MemberAvatar'
 import SkillChip from './SkillChip'
-import { MOCK_CURRENT_USER } from '../data/forumData'
+import { useAuth } from '../../context/AuthContext'
 import { sendJoinRequest } from '../services/forumApi'
 
 export default function JoinModal({ project, onClose, onSuccess }) {
+  const { user: currentUser } = useAuth()
   const [message, setMessage] = useState('')
-  const [skills, setSkills] = useState([...MOCK_CURRENT_USER.skills])
+  const [skills, setSkills] = useState(currentUser?.skills ? [...currentUser.skills] : [])
   const [skillInput, setSkillInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)

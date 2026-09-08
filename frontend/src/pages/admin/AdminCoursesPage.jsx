@@ -5,6 +5,8 @@ import {
     updateAdminCourse,
     deleteAdminCourse,
     toggleCoursePublished,
+    approveAdminCourse,
+    rejectAdminCourse,
     getAdminLessons,
     createAdminLesson,
     updateAdminLesson,
@@ -19,6 +21,7 @@ const EMPTY_LESSON = { title: '', lessonOrder: 1, estimatedMinutes: 15, content:
 
 export default function AdminCoursesPage() {
     const [courses, setCourses] = useState([])
+    const [statusFilter, setStatusFilter] = useState('ALL') // 'ALL' | 'PENDING_APPROVAL' | 'PUBLISHED' | 'REJECTED' | 'DRAFT'
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [search, setSearch] = useState('')
@@ -28,6 +31,11 @@ export default function AdminCoursesPage() {
     const [courseForm, setCourseForm] = useState(EMPTY_COURSE)
     const [editCourseId, setEditCourseId] = useState(null)
     const [savingCourse, setSavingCourse] = useState(false)
+
+    // Rejection Modal
+    const [rejectModal, setRejectModal] = useState(false)
+    const [rejectingCourseId, setRejectingCourseId] = useState(null)
+    const [rejectionReason, setRejectionReason] = useState('')
 
     // Lesson panel
     const [activeCourse, setActiveCourse] = useState(null)
@@ -41,12 +49,40 @@ export default function AdminCoursesPage() {
     const loadCourses = () => {
         setLoading(true)
         getAdminCourses()
-            .then(setCourses)
+            .then(data => setCourses(Array.isArray(data) ? data : []))
             .catch(() => setError('Failed to load courses'))
             .finally(() => setLoading(false))
     }
 
     useEffect(() => { loadCourses() }, [])
+
+    // ── Approval handlers ────────────────────────────
+    const handleApproveCourse = async (id) => {
+        try {
+            await approveAdminCourse(id)
+            setCourses(prev => prev.map(c => String(c.id) === String(id) ? { ...c, status: 'PUBLISHED', published: true, rejectionReason: null } : c))
+        } catch {
+            setError('Failed to approve course')
+        }
+    }
+
+    const openRejectModal = (id) => {
+        setRejectingCourseId(id)
+        setRejectionReason('Please add more comprehensive lesson materials, practical exercises, and quizzes.')
+        setRejectModal(true)
+    }
+
+    const handleConfirmReject = async () => {
+        if (!rejectingCourseId) return
+        try {
+            await rejectAdminCourse(rejectingCourseId, rejectionReason)
+            setCourses(prev => prev.map(c => String(c.id) === String(rejectingCourseId) ? { ...c, status: 'REJECTED', published: false, rejectionReason } : c))
+            setRejectModal(false)
+            setRejectingCourseId(null)
+        } catch {
+            setError('Failed to reject course')
+        }
+    }
 
     // ── Course handlers ────────────────────────────
     const openCreateCourse = () => { setCourseForm(EMPTY_COURSE); setEditCourseId(null); setCourseModal(true) }
@@ -125,19 +161,68 @@ export default function AdminCoursesPage() {
 
     const DIFF = { BEGINNER: 'admin-badge--green', INTERMEDIATE: 'admin-badge--blue', ADVANCED: 'admin-badge--orange', EXPERT: 'admin-badge--red' }
 
-    const filtered = courses.filter(c =>
-        c.title?.toLowerCase().includes(search.toLowerCase()) ||
-        c.category?.toLowerCase().includes(search.toLowerCase())
-    )
+    const safeCourses = Array.isArray(courses) ? courses : []
+    const safeLessons = Array.isArray(lessons) ? [...lessons] : []
+
+    const pendingCount = safeCourses.filter(c => c.status === 'PENDING_APPROVAL' || (!c.published && c.status !== 'DRAFT' && c.status !== 'REJECTED')).length
+
+    const filtered = safeCourses.filter(c => {
+        const matchesSearch = c.title?.toLowerCase().includes(search.toLowerCase()) ||
+            c.category?.toLowerCase().includes(search.toLowerCase())
+        if (!matchesSearch) return false
+
+        const cStatus = c.status || (c.published ? 'PUBLISHED' : 'DRAFT')
+        if (statusFilter === 'ALL') return true
+        if (statusFilter === 'PENDING_APPROVAL') return cStatus === 'PENDING_APPROVAL'
+        if (statusFilter === 'PUBLISHED') return cStatus === 'PUBLISHED'
+        if (statusFilter === 'REJECTED') return cStatus === 'REJECTED'
+        if (statusFilter === 'DRAFT') return cStatus === 'DRAFT'
+        return true
+    })
 
     return (
         <div>
             <div className="admin-page-header">
                 <div>
-                    <h1>Courses &amp; Lessons</h1>
-                    <p>Manage all courses and their lesson content</p>
+                    <h1>Courses &amp; Approval System</h1>
+                    <p>Review instructor submissions, approve content for public catalog, and manage curriculum.</p>
                 </div>
                 <button className="admin-btn admin-btn--primary" onClick={openCreateCourse}>+ Add Course</button>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <button
+                    className={`admin-btn admin-btn--sm ${statusFilter === 'ALL' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+                    onClick={() => setStatusFilter('ALL')}
+                >
+                    All Courses ({safeCourses.length})
+                </button>
+                <button
+                    className={`admin-btn admin-btn--sm ${statusFilter === 'PENDING_APPROVAL' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+                    onClick={() => setStatusFilter('PENDING_APPROVAL')}
+                    style={pendingCount > 0 ? { border: '1px solid #fbbf24', color: '#fbbf24' } : {}}
+                >
+                    ⏳ Pending Review ({pendingCount})
+                </button>
+                <button
+                    className={`admin-btn admin-btn--sm ${statusFilter === 'PUBLISHED' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+                    onClick={() => setStatusFilter('PUBLISHED')}
+                >
+                    🚀 Published
+                </button>
+                <button
+                    className={`admin-btn admin-btn--sm ${statusFilter === 'REJECTED' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+                    onClick={() => setStatusFilter('REJECTED')}
+                >
+                    ❌ Rejected
+                </button>
+                <button
+                    className={`admin-btn admin-btn--sm ${statusFilter === 'DRAFT' ? 'admin-btn--primary' : 'admin-btn--secondary'}`}
+                    onClick={() => setStatusFilter('DRAFT')}
+                >
+                    📝 Drafts
+                </button>
             </div>
 
             {error && <div className="admin-error" onClick={() => setError('')}>{error} ✕</div>}
@@ -154,7 +239,7 @@ export default function AdminCoursesPage() {
                     ) : filtered.length === 0 ? (
                         <div className="admin-empty">
                             <div className="admin-empty-icon">📚</div>
-                            <h3>No courses yet</h3>
+                            <h3>No courses matching this filter</h3>
                         </div>
                     ) : (
                         <div className="admin-table-wrap">
@@ -164,13 +249,16 @@ export default function AdminCoursesPage() {
                                         <th>Title</th>
                                         <th>Category</th>
                                         <th>Diff.</th>
-                                        <th>Hrs</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.map(c => (
+                                    {filtered.map(c => {
+                                        const cStatus = c.status || (c.published ? 'PUBLISHED' : 'DRAFT')
+                                        const isPending = cStatus === 'PENDING_APPROVAL'
+                                        
+                                        return (
                                         <tr key={c.id} style={activeCourse?.id === c.id ? { background: 'rgba(167,139,250,0.06)' } : {}}>
                                             <td>
                                                 <button
@@ -179,26 +267,42 @@ export default function AdminCoursesPage() {
                                                 >
                                                     {c.title}
                                                 </button>
+                                                {c.rejectionReason && (
+                                                    <div style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '4px' }}>
+                                                        Reason: {c.rejectionReason}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>{c.category}</td>
                                             <td><span className={`admin-badge ${DIFF[c.difficulty] || 'admin-badge--blue'}`}>{c.difficulty}</span></td>
-                                            <td>{c.durationHours}h</td>
                                             <td>
-                                                <span className={`admin-badge ${c.published ? 'admin-badge--green' : 'admin-badge--red'}`}>
-                                                    {c.published ? 'Published' : 'Draft'}
+                                                <span className={`admin-badge ${cStatus === 'PUBLISHED' ? 'admin-badge--green' : cStatus === 'PENDING_APPROVAL' ? 'admin-badge--orange' : cStatus === 'REJECTED' ? 'admin-badge--red' : 'admin-badge--blue'}`}>
+                                                    {cStatus === 'PENDING_APPROVAL' ? 'Pending Review' : cStatus}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                    {isPending && (
+                                                        <>
+                                                            <button className="admin-btn admin-btn--sm admin-btn--success" onClick={() => handleApproveCourse(c.id)}>
+                                                                ✓ Approve
+                                                            </button>
+                                                            <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => openRejectModal(c.id)}>
+                                                                ✕ Reject
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     <button className="admin-btn admin-btn--sm admin-btn--secondary" onClick={() => openEditCourse(c)}>Edit</button>
-                                                    <button className="admin-btn admin-btn--sm admin-btn--success" onClick={() => handleToggleCourse(c.id)}>
-                                                        {c.published ? 'Unpublish' : 'Publish'}
-                                                    </button>
+                                                    {!isPending && (
+                                                        <button className="admin-btn admin-btn--sm admin-btn--success" onClick={() => handleToggleCourse(c.id)}>
+                                                            {c.published ? 'Unpublish' : 'Publish'}
+                                                        </button>
+                                                    )}
                                                     <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDeleteCourse(c.id)}>Delete</button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )})}
                                 </tbody>
                             </table>
                         </div>
@@ -220,7 +324,7 @@ export default function AdminCoursesPage() {
 
                         {lessonsLoading ? (
                             <div className="admin-loading">Loading lessons…</div>
-                        ) : lessons.length === 0 ? (
+                        ) : safeLessons.length === 0 ? (
                             <div className="admin-empty" style={{ padding: '2rem' }}>
                                 <div className="admin-empty-icon">📖</div>
                                 <h3>No lessons yet</h3>
@@ -237,7 +341,7 @@ export default function AdminCoursesPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {lessons.sort((a, b) => a.lessonOrder - b.lessonOrder).map(l => (
+                                        {safeLessons.sort((a, b) => (a.lessonOrder || 0) - (b.lessonOrder || 0)).map(l => (
                                             <tr key={l.id}>
                                                 <td style={{ color: 'var(--f-text-muted)', fontSize: '0.8rem' }}>{l.lessonOrder}</td>
                                                 <td>{l.title}</td>
@@ -339,6 +443,31 @@ export default function AdminCoursesPage() {
                                 <button type="submit" className="admin-btn admin-btn--primary" disabled={savingLesson}>{savingLesson ? 'Saving…' : 'Save'}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Modal */}
+            {rejectModal && (
+                <div className="admin-modal-overlay" onClick={() => setRejectModal(false)}>
+                    <div className="admin-modal" onClick={e => e.stopPropagation()}>
+                        <h2 style={{ color: '#f87171' }}>Reject Course Submission</h2>
+                        <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '16px' }}>
+                            Provide constructive feedback to the instructor explaining what changes or additions are needed before this course can be approved.
+                        </p>
+                        <div className="admin-field">
+                            <label>Feedback / Reason for Rejection *</label>
+                            <textarea
+                                rows={4}
+                                value={rejectionReason}
+                                onChange={e => setRejectionReason(e.target.value)}
+                                placeholder="Explain what content, lessons, or exercises need improvement..."
+                            />
+                        </div>
+                        <div className="admin-modal-actions">
+                            <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setRejectModal(false)}>Cancel</button>
+                            <button type="button" className="admin-btn admin-btn--danger" onClick={handleConfirmReject}>Confirm Rejection ✕</button>
+                        </div>
                     </div>
                 </div>
             )}

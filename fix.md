@@ -1,0 +1,3 @@
+Career tab:
+for now two choice and  career question are showing side by side , want to show choice and then question when click on choice.flow is choice1 -> que1 -> chosse career _>answer question then roadmap, choice2 -> chosse career wroad_>que2 -> 
+map.and after generate road map add in my road map tab also with jpw much complete a road map with courses and in my learning show all my courses by default show current leraning courses 

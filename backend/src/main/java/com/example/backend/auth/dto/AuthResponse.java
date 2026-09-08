@@ -1,6 +1,7 @@
 package com.example.backend.auth.dto;
 
 import lombok.*;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,4 +23,10 @@ public class AuthResponse {
     private boolean emailVerified;
 
     private String role;
-}
+
+    private String initials;
+
+    private List<String> skills;
+
+    private String level;
+}

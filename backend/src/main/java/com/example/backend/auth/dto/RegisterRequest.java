@@ -32,4 +32,6 @@ public class RegisterRequest {
 
     @NotBlank(message = "Please confirm your password")
     private String confirmPassword;
+
+    private String role;
 }

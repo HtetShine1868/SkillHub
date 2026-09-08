@@ -36,7 +36,10 @@ public class RoadmapService {
     @Transactional
     public RoadmapResponse generateRoadmap(User user, Long careerId) {
         Career career = careerRepository.findById(careerId)
-                .orElseThrow(() -> new RuntimeException("Career not found"));
+                .orElse(null);
+        if (career == null) {
+            return new RoadmapResponse(careerId, "Unknown Career", 0, new java.util.ArrayList<>());
+        }
 
         // Step 1: Fetch user's current skills
         List<UserSkill> userSkills = userSkillRepository.findByUserId(user.getId());
@@ -109,6 +112,16 @@ public class RoadmapService {
             if (addressesGap) {
                 candidateCourses.add(course);
                 courseReasons.put(course.getId(), "Recommended to address your skill gap in " + gapSkillName + ".");
+            }
+        }
+
+        // Fallback: If no candidate courses specifically match the skill gap, include all available courses
+        if (candidateCourses.isEmpty()) {
+            for (Course course : allCourses) {
+                if (!completedCourseIds.contains(course.getId())) {
+                    candidateCourses.add(course);
+                    courseReasons.put(course.getId(), "Recommended course for " + career.getName() + " roadmap.");
+                }
             }
         }
 
@@ -202,17 +215,52 @@ public class RoadmapService {
     }
 
     public RoadmapResponse getRoadmap(User user, Long careerId) {
-        Career career = careerRepository.findById(careerId)
-                .orElseThrow(() -> new RuntimeException("Career not found"));
+        Career career = careerRepository.findById(careerId).orElse(null);
+        if (career == null) {
+            return new RoadmapResponse(careerId, "Unknown Career", 0, new java.util.ArrayList<>());
+        }
 
         List<RoadmapItem> items = roadmapItemRepository.findByUserIdAndCareerIdOrderByOrderIndexAsc(user.getId(), careerId);
 
+        // Fetch user's enrollments to sync live completion status
+        List<Enrollment> userEnrollments = enrollmentRepository.findByUserId(user.getId());
+        Map<Long, Enrollment> enrollMap = new HashMap<>();
+        for (Enrollment e : userEnrollments) {
+            if (e.getCourse() != null) {
+                enrollMap.put(e.getCourse().getId(), e);
+            }
+        }
+
         int completed = 0;
+        boolean updatedAny = false;
         for (RoadmapItem item : items) {
-            if ("COMPLETED".equalsIgnoreCase(item.getStatus())) {
+            Long cId = item.getCourse().getId();
+            Enrollment e = enrollMap.get(cId);
+            if (e != null) {
+                boolean isDone = (e.getCompleted() != null && e.getCompleted())
+                        || (e.getProgressPercentage() != null && e.getProgressPercentage() >= 100);
+                if (isDone && !"COMPLETED".equalsIgnoreCase(item.getStatus())) {
+                    item.setStatus("COMPLETED");
+                    item.setProgress(100);
+                    updatedAny = true;
+                } else if (!isDone && e.getProgressPercentage() != null && e.getProgressPercentage() > 0) {
+                    item.setProgress(e.getProgressPercentage());
+                    if (!"IN_PROGRESS".equalsIgnoreCase(item.getStatus())) {
+                        item.setStatus("IN_PROGRESS");
+                        updatedAny = true;
+                    }
+                }
+            }
+
+            if ("COMPLETED".equalsIgnoreCase(item.getStatus()) || (item.getProgress() != null && item.getProgress() >= 100)) {
                 completed++;
             }
         }
+
+        if (updatedAny) {
+            roadmapItemRepository.saveAll(items);
+        }
+
         int progress = items.isEmpty() ? 0 : (completed * 100) / items.size();
 
         List<RoadmapItemDto> dtos = items.stream().map(ri -> {

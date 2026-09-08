@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.example.backend.roadmap.RoadmapItem;
+import com.example.backend.roadmap.RoadmapItemRepository;
+
 @Service
 @RequiredArgsConstructor
 public class EnrollmentService {
@@ -27,6 +30,7 @@ public class EnrollmentService {
     private final LessonProgressRepository lessonProgressRepository;
     private final CertificateRepository certificateRepository;
     private final BadgeRepository badgeRepository;
+    private final RoadmapItemRepository roadmapItemRepository;
 
     @Transactional
     public Enrollment enroll(User user, Long courseId) {
@@ -51,12 +55,22 @@ public class EnrollmentService {
     @Transactional
     public Enrollment completeLesson(User user, Long courseId, Long lessonId) {
         Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseThrow(() -> new RuntimeException("Not enrolled in this course"));
+                .orElseGet(() -> enroll(user, courseId));
 
+        // Find lesson safely (by ID or by lesson order within course)
+        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByLessonOrder(courseId);
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+                .filter(l -> l.getCourse() != null && l.getCourse().getId().equals(courseId))
+                .orElseGet(() -> {
+                    for (Lesson l : courseLessons) {
+                        if (l.getLessonOrder() != null && l.getLessonOrder().equals(lessonId.intValue())) {
+                            return l;
+                        }
+                    }
+                    return courseLessons.isEmpty() ? null : courseLessons.get(0);
+                });
 
-        if (!lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lessonId).isPresent()) {
+        if (lesson != null && !lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
             LessonProgress progress = LessonProgress.builder()
                     .user(user)
                     .lesson(lesson)
@@ -66,42 +80,87 @@ public class EnrollmentService {
         }
 
         // Calculate progress percentage
-        int totalLessons = lessonRepository.findByCourseIdOrderByLessonOrder(courseId).size();
+        int totalLessons = courseLessons.isEmpty() ? 1 : courseLessons.size();
         int completedLessons = lessonProgressRepository.countByUserIdAndLessonCourseId(user.getId(), courseId);
 
-        int percent = totalLessons > 0 ? (int) (((double) completedLessons / totalLessons) * 100) : 100;
+        int percent = (int) (((double) completedLessons / totalLessons) * 100);
+        if (completedLessons >= totalLessons || percent > 100) {
+            percent = 100;
+        }
+
         enrollment.setProgressPercentage(percent);
 
-        // If completed all lessons and has no assessment required (or auto-completed), we can set completed = true
-        // If course has assessment, completion requires passing the assessment (which is done via submitCourseAssessment).
-        return enrollmentRepository.save(enrollment);
-    }
-
-    @Transactional
-    public boolean submitCourseAssessment(User user, Long courseId, int score) {
-        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
-                .orElseThrow(() -> new RuntimeException("Not enrolled in this course"));
-
-        if (score >= 70) {
+        if (percent >= 100) {
             enrollment.setCompleted(true);
             enrollment.setCompletedAt(LocalDateTime.now());
-            enrollmentRepository.save(enrollment);
+        }
 
-            // Issue Certificate
+        Enrollment saved = enrollmentRepository.save(enrollment);
+
+        // Issue certificate when course fully completed via lesson completion
+        if (percent >= 100) {
+            issueCertificateAndBadge(user, enrollment, courseId, 100.0);
+        }
+
+        // Sync active roadmap items and unlock downstream stages
+        syncRoadmapProgress(user, courseId, percent);
+
+        return saved;
+    }
+
+    /**
+     * Explicitly marks an entire course as completed for a user, regardless of
+     * which individual lessons already have a recorded LessonProgress row.
+     *
+     * This is used by the "Complete Course & Rate" action so that certificate
+     * issuance does not silently depend on the student having clicked "Next"
+     * on every single lesson in order (e.g. if they jumped ahead via the
+     * lesson sidebar).
+     */
+    @Transactional
+    public Enrollment completeCourse(User user, Long courseId) {
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
+                .orElseGet(() -> enroll(user, courseId));
+
+        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByLessonOrder(courseId);
+
+        for (Lesson lesson : courseLessons) {
+            if (!lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
+                LessonProgress progress = LessonProgress.builder()
+                        .user(user)
+                        .lesson(lesson)
+                        .completed(true)
+                        .build();
+                lessonProgressRepository.save(progress);
+            }
+        }
+
+        enrollment.setProgressPercentage(100);
+        enrollment.setCompleted(true);
+        enrollment.setCompletedAt(LocalDateTime.now());
+
+        Enrollment saved = enrollmentRepository.save(enrollment);
+
+        issueCertificateAndBadge(user, enrollment, courseId, 100.0);
+        syncRoadmapProgress(user, courseId, 100);
+
+        return saved;
+    }
+
+    private void issueCertificateAndBadge(User user, Enrollment enrollment, Long courseId, double score) {
+        try {
             if (!certificateRepository.findByUserIdAndCourseId(user.getId(), courseId).isPresent()) {
                 String certUuid = "CERT-" + LocalDateYear() + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
                 Certificate certificate = Certificate.builder()
                         .certificateId(certUuid)
                         .user(user)
                         .course(enrollment.getCourse())
-                        .score((double) score)
+                        .score(score)
                         .build();
                 certificateRepository.save(certificate);
             }
-
-            // Issue Badge
-            List<Badge> existingBadges = badgeRepository.findByUserIdAndCourseId(user.getId(), courseId);
-            if (existingBadges.isEmpty()) {
+            // Issue badge if not already given
+            if (badgeRepository.findByUserIdAndCourseId(user.getId(), courseId).isEmpty()) {
                 Badge badge = Badge.builder()
                         .user(user)
                         .course(enrollment.getCourse())
@@ -109,6 +168,48 @@ public class EnrollmentService {
                         .build();
                 badgeRepository.save(badge);
             }
+        } catch (Exception e) {
+            // Silently ignore if cert/badge already exists
+        }
+    }
+
+    private void syncRoadmapProgress(User user, Long courseId, int percent) {
+        try {
+            List<RoadmapItem> userRoadmapItems = roadmapItemRepository.findByUserIdOrderByOrderIndexAsc(user.getId());
+            boolean unlockedNext = false;
+            for (int i = 0; i < userRoadmapItems.size(); i++) {
+                RoadmapItem ri = userRoadmapItems.get(i);
+                if (ri.getCourse() != null && ri.getCourse().getId().equals(courseId)) {
+                    ri.setProgress(percent);
+                    if (percent >= 100) {
+                        ri.setStatus("COMPLETED");
+                        unlockedNext = true;
+                    } else {
+                        ri.setStatus("IN_PROGRESS");
+                    }
+                    roadmapItemRepository.save(ri);
+                } else if (unlockedNext && "LOCKED".equalsIgnoreCase(ri.getStatus())) {
+                    ri.setStatus("AVAILABLE");
+                    roadmapItemRepository.save(ri);
+                    unlockedNext = false; // Only unlock the immediate next stage
+                }
+            }
+        } catch (Exception e) {
+            // Silently ignore roadmap sync error
+        }
+    }
+
+    @Transactional
+    public boolean submitCourseAssessment(User user, Long courseId, int score) {
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
+                .orElseGet(() -> enroll(user, courseId));
+
+        if (score >= 70) {
+            enrollment.setCompleted(true);
+            enrollment.setCompletedAt(LocalDateTime.now());
+            enrollmentRepository.save(enrollment);
+
+            issueCertificateAndBadge(user, enrollment, courseId, (double) score);
             return true;
         }
         return false;

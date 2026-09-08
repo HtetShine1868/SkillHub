@@ -13,99 +13,53 @@ import {
     loginWithGoogle
 } from "../services/authService";
 
-const AuthContext =
-    createContext(null);
+const AuthContext = createContext(null);
 
+export function AuthProvider({ children }) {
 
-export function AuthProvider({
-    children
-}) {
-
-    const [user, setUser] =
-        useState(null);
-
-    const [loading, setLoading] =
-        useState(true);
-
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-
         loadCurrentUser();
-
     }, []);
 
-
-    const loadCurrentUser =
-        async () => {
-
-            try {
-
-                const currentUser =
-                    await getCurrentUser();
-
-                setUser(currentUser);
-
-            } catch {
-
-                setUser(null);
-
-            } finally {
-
-                setLoading(false);
-            }
-        };
-
-
-    const login = async (
-        email,
-        password
-    ) => {
-
-        const loggedInUser =
-            await loginUser({
-                email,
-                password
-            });
-
-        setUser(loggedInUser);
-
-        return loggedInUser;
-    };
-
-
-    const register = async (
-        name,
-        email,
-        password,
-        confirmPassword
-    ) => {
-
-        const newUser =
-            await registerUser({
-                name,
-                email,
-                password,
-                confirmPassword
-            });
-
-        setUser(newUser);
-
-        return newUser;
-    };
-
-
-    const logout = async () => {
-
+    const loadCurrentUser = async () => {
         try {
-
-            await logoutUser();
-
-        } finally {
-
+            const currentUser = await getCurrentUser();
+            setUser(currentUser);
+        } catch {
             setUser(null);
+        } finally {
+            setLoading(false);
         }
     };
 
+    const login = async (email, password) => {
+        const loggedInUser = await loginUser({ email, password });
+        setUser(loggedInUser);
+        return loggedInUser;
+    };
+
+    const register = async (name, email, password, confirmPassword, role) => {
+        const newUser = await registerUser({
+            name,
+            email,
+            password,
+            confirmPassword,
+            role
+        });
+        setUser(newUser);
+        return newUser;
+    };
+
+    const logout = async () => {
+        try {
+            await logoutUser();
+        } finally {
+            setUser(null);
+        }
+    };
 
     return (
         <AuthContext.Provider
@@ -119,15 +73,11 @@ export function AuthProvider({
                 googleLogin: loginWithGoogle
             }}
         >
-
             {children}
-
         </AuthContext.Provider>
     );
 }
 
-
 export function useAuth() {
-
     return useContext(AuthContext);
 }

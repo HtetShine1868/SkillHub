@@ -44,5 +44,6 @@ public class CourseSkill {
      * How extensively this course covers the skill (0.0 to 1.0).
      */
     @Column(nullable = false)
-    private Double importance;
+    @Builder.Default
+    private Double importance = 1.0;
 }

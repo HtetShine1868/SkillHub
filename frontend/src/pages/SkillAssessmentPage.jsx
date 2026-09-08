@@ -138,6 +138,32 @@ const SkillAssessmentPage = () => {
       <div className="assess__blob assess__blob--2" />
 
       <div className="assess__card">
+        {/* Header bar with Quick Skip option */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <button id="btn-back-header" className="assess__back-btn" style={{ margin: 0 }} onClick={() => navigate(-1)}>
+            ← Exit Assessment
+          </button>
+          <button
+            id="btn-quick-skip"
+            style={{
+              background: 'rgba(124, 58, 237, 0.15)',
+              border: '1px solid rgba(124, 58, 237, 0.35)',
+              color: '#c4b5fd',
+              borderRadius: '999px',
+              padding: '0.4rem 0.9rem',
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={() => navigate(`/roadmap?careerId=${careerId}`)}
+          >
+            ⚡ Quick Skip & Generate Roadmap →
+          </button>
+        </div>
+
         {/* Header meta */}
         <div className="assess__meta">
           <span className="assess__diff" data-diff={q?.difficulty}>
@@ -160,24 +186,37 @@ const SkillAssessmentPage = () => {
 
         {/* Options */}
         <div className="assess__options">
-          {options.map((opt, i) => (
-            <button
-              key={i}
-              id={`option-${i}`}
-              className={`assess__option ${selected === opt.value ? 'assess__option--selected' : ''}`}
-              onClick={() => handleSelect(opt.value)}
-            >
-              <span className="assess__option-letter">{String.fromCharCode(65 + i)}</span>
-              {opt.label}
-            </button>
-          ))}
+          {options.map((opt, i) => {
+            const val = opt.value !== undefined ? opt.value : opt.optionKey
+            const label = opt.label || opt.text
+            const isSelected = selected === val
+            const letter = opt.optionKey || String.fromCharCode(65 + i)
+            return (
+              <div
+                key={i}
+                id={`option-${i}`}
+                className={`assess__option ${isSelected ? 'assess__option--selected' : ''}`}
+                onClick={() => handleSelect(val)}
+              >
+                <span className="assess__option-letter">{letter}</span>
+                <span className="assess__option-label">{label}</span>
+                <div className={`assess__option-check ${isSelected ? 'assess__option-check--active' : ''}`}>
+                  {isSelected && '✓'}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         {/* Nav */}
         <div className="assess__nav">
-          {current > 0 && (
+          {current > 0 ? (
             <button id="btn-prev" className="assess__btn-ghost"
               onClick={() => { setCurrent(c => c - 1); setSelected(answers[questions[current - 1]?.id] ?? null) }}>
+              ← Previous
+            </button>
+          ) : (
+            <button id="btn-back" className="assess__btn-ghost" onClick={() => navigate(-1)}>
               ← Back
             </button>
           )}
@@ -196,3 +235,4 @@ const SkillAssessmentPage = () => {
 }
 
 export default SkillAssessmentPage
+

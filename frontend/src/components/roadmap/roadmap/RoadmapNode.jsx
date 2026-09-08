@@ -24,13 +24,14 @@ export default function RoadmapNode({
     },
   }
 
-  const config = status[stage.status]
+  const normalizedKey = (stage.status || 'available').toLowerCase()
+  const config = status[normalizedKey] || status.available
 
   return (
     <button
-      className={`roadmap-node ${stage.status}`}
+      className={`roadmap-node ${normalizedKey}`}
       onClick={onClick}
-      disabled={stage.status === 'locked'}
+      disabled={normalizedKey === 'locked'}
     >
 
       <div className="roadmap-node-icon">

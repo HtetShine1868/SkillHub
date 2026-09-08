@@ -6,7 +6,22 @@ import {
     deleteSkill,
 } from '../../services/adminService'
 
-const EMPTY = { name: '', category: '', description: '' }
+const DEFAULT_SKILL_CATEGORIES = [
+    'Backend',
+    'Frontend',
+    'Framework',
+    'Database',
+    'DevOps',
+    'Data',
+    'Cloud',
+    'API',
+    'Mobile',
+    'Security',
+    'Testing',
+    'General',
+]
+
+const EMPTY = { name: '', category: 'Backend', description: '' }
 
 export default function AdminSkillsPage() {
     const [skills, setSkills] = useState([])
@@ -17,39 +32,104 @@ export default function AdminSkillsPage() {
     const [form, setForm] = useState(EMPTY)
     const [editId, setEditId] = useState(null)
     const [saving, setSaving] = useState(false)
+    const [isCustomCategory, setIsCustomCategory] = useState(false)
+    const [customCategory, setCustomCategory] = useState('')
 
     const load = () => {
         setLoading(true)
         getAdminSkills()
-            .then(setSkills)
+            .then(res => setSkills(Array.isArray(res) ? res : []))
             .catch(() => setError('Failed to load skills'))
             .finally(() => setLoading(false))
     }
 
     useEffect(() => { load() }, [])
 
-    const openCreate = () => { setForm(EMPTY); setEditId(null); setModal(true) }
-    const openEdit = s => { setForm({ name: s.name, category: s.category || '', description: s.description || '' }); setEditId(s.id); setModal(true) }
+    // Derive category options from DB skills + defaults
+    const dbCategories = Array.from(new Set((Array.isArray(skills) ? skills : []).map(s => s.category).filter(Boolean)))
+    const categoryOptions = Array.from(new Set([...DEFAULT_SKILL_CATEGORIES, ...dbCategories]))
+
+    const openCreate = () => {
+        setForm(EMPTY)
+        setEditId(null)
+        setIsCustomCategory(false)
+        setCustomCategory('')
+        setModal(true)
+    }
+
+    const openEdit = s => {
+        const isCustom = !categoryOptions.includes(s.category)
+        setForm({
+            name: s.name || '',
+            category: s.category || 'Backend',
+            description: s.description || ''
+        })
+        setEditId(s.id)
+        setIsCustomCategory(isCustom)
+        setCustomCategory(isCustom ? s.category : '')
+        setModal(true)
+    }
+
+    const handleCategoryChange = e => {
+        const val = e.target.value
+        if (val === '__custom__') {
+            setIsCustomCategory(true)
+            setForm(f => ({ ...f, category: customCategory || '' }))
+        } else {
+            setIsCustomCategory(false)
+            setForm(f => ({ ...f, category: val }))
+        }
+    }
 
     const handleSave = async e => {
         e.preventDefault()
+        setError('')
+        const trimmedName = (form.name || '').trim()
+        if (!trimmedName) {
+            setError('Skill name is required.')
+            return
+        }
+
+        const isDuplicate = (skills || []).some(s =>
+            s.name?.trim().toLowerCase() === trimmedName.toLowerCase() &&
+            (!editId || Number(s.id) !== Number(editId))
+        )
+        if (isDuplicate) {
+            setError(`A skill with the name "${trimmedName}" already exists. Duplicate skills are not allowed.`)
+            return
+        }
+
         setSaving(true)
+        const finalCategory = isCustomCategory ? customCategory.trim() || 'General' : form.category
+        const payload = {
+            ...form,
+            name: trimmedName,
+            category: finalCategory,
+        }
         try {
-            if (editId) await updateSkill(editId, form)
-            else await createSkill(form)
+            if (editId) await updateSkill(editId, payload)
+            else await createSkill(payload)
             setModal(false)
             load()
-        } catch { setError('Save failed') }
-        finally { setSaving(false) }
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || 'Failed to save skill'
+            setError(msg)
+        } finally {
+            setSaving(false)
+        }
     }
 
     const handleDelete = async id => {
         if (!window.confirm('Delete this skill?')) return
-        try { await deleteSkill(id); load() }
-        catch { setError('Delete failed') }
+        try {
+            await deleteSkill(id)
+            load()
+        } catch {
+            setError('Delete failed')
+        }
     }
 
-    const filtered = skills.filter(s =>
+    const filtered = (Array.isArray(skills) ? skills : []).filter(s =>
         s.name?.toLowerCase().includes(search.toLowerCase()) ||
         s.category?.toLowerCase().includes(search.toLowerCase())
     )
@@ -67,7 +147,12 @@ export default function AdminSkillsPage() {
             {error && <div className="admin-error">{error}</div>}
 
             <div className="admin-toolbar">
-                <input className="admin-search" placeholder="Search skills…" value={search} onChange={e => setSearch(e.target.value)} />
+                <input
+                    className="admin-search"
+                    placeholder="Search skills…"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                />
             </div>
 
             {loading ? (
@@ -122,16 +207,47 @@ export default function AdminSkillsPage() {
                             <div className="admin-form-row">
                                 <div className="admin-field">
                                     <label>Name *</label>
-                                    <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                                    <input
+                                        required
+                                        value={form.name || ''}
+                                        placeholder="e.g. Java, React.js"
+                                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                    />
                                 </div>
                                 <div className="admin-field">
-                                    <label>Category</label>
-                                    <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
+                                    <label>Category *</label>
+                                    <select
+                                        required
+                                        value={isCustomCategory ? '__custom__' : form.category}
+                                        onChange={handleCategoryChange}
+                                    >
+                                        <option value="">— Select Category —</option>
+                                        {categoryOptions.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                        <option value="__custom__">+ Add New Category...</option>
+                                    </select>
+                                    {isCustomCategory && (
+                                        <input
+                                            required
+                                            style={{ marginTop: '0.5rem' }}
+                                            placeholder="Enter new category name…"
+                                            value={customCategory}
+                                            onChange={e => {
+                                                setCustomCategory(e.target.value)
+                                                setForm(f => ({ ...f, category: e.target.value }))
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             </div>
                             <div className="admin-field">
                                 <label>Description</label>
-                                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                                <textarea
+                                    value={form.description || ''}
+                                    placeholder="Summary of topics or technologies covered"
+                                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                                />
                             </div>
                             <div className="admin-modal-actions">
                                 <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setModal(false)}>Cancel</button>
@@ -144,3 +260,4 @@ export default function AdminSkillsPage() {
         </div>
     )
 }
+

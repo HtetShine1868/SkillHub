@@ -4,11 +4,13 @@ import com.example.backend.career.dto.CareerResponse;
 import com.example.backend.career.dto.CareerSkillResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CareerService {
 
     private final CareerRepository careerRepository;
@@ -47,28 +49,30 @@ public class CareerService {
 
         return careerSkillRepository.findByCareerId(careerId)
                 .stream()
+                .filter(cs -> cs.getSkill() != null)
                 .map(cs -> new CareerSkillResponse(
                         cs.getSkill().getId(),
                         cs.getSkill().getName(),
                         cs.getSkill().getCategory(),
-                        cs.getRequiredLevel(),
-                        cs.getImportance()
+                        cs.getRequiredLevel() != null ? cs.getRequiredLevel() : 1,
+                        cs.getImportance() != null ? cs.getImportance() : 1.0
                 ))
                 .toList();
     }
 
 
-    CareerResponse toResponse(Career career) {
+    public CareerResponse toResponse(Career career) {
 
         List<CareerSkillResponse> skills = careerSkillRepository
                 .findByCareerId(career.getId())
                 .stream()
+                .filter(cs -> cs.getSkill() != null)
                 .map(cs -> new CareerSkillResponse(
                         cs.getSkill().getId(),
                         cs.getSkill().getName(),
                         cs.getSkill().getCategory(),
-                        cs.getRequiredLevel(),
-                        cs.getImportance()
+                        cs.getRequiredLevel() != null ? cs.getRequiredLevel() : 1,
+                        cs.getImportance() != null ? cs.getImportance() : 1.0
                 ))
                 .toList();
 

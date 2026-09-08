@@ -26,8 +26,13 @@ public class AdminSkillController {
 
     @PostMapping
     public ResponseEntity<SkillResponse> createSkill(@RequestBody SkillRequest request) {
+        if (request.getName() != null && !request.getName().isBlank()) {
+            skillRepository.findByNameIgnoreCase(request.getName().trim()).ifPresent(existing -> {
+                throw new IllegalArgumentException("A skill with the name '" + request.getName().trim() + "' already exists");
+            });
+        }
         Skill skill = Skill.builder()
-                .name(request.getName())
+                .name(request.getName() != null ? request.getName().trim() : "New Skill")
                 .category(request.getCategory())
                 .description(request.getDescription())
                 .build();
@@ -42,7 +47,14 @@ public class AdminSkillController {
     ) {
         Skill skill = skillRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Skill not found: " + id));
-        if (request.getName() != null) skill.setName(request.getName());
+        if (request.getName() != null && !request.getName().isBlank()) {
+            skillRepository.findByNameIgnoreCase(request.getName().trim()).ifPresent(existing -> {
+                if (!existing.getId().equals(id)) {
+                    throw new IllegalArgumentException("A skill with the name '" + request.getName().trim() + "' already exists");
+                }
+            });
+            skill.setName(request.getName().trim());
+        }
         if (request.getCategory() != null) skill.setCategory(request.getCategory());
         if (request.getDescription() != null) skill.setDescription(request.getDescription());
         Skill saved = skillRepository.save(skill);

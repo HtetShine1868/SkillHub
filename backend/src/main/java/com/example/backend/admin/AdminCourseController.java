@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/courses")
@@ -22,11 +23,14 @@ public class AdminCourseController {
     private final CourseRepository courseRepository;
     private final LessonService lessonService;
 
-    /** Returns ALL courses, including unpublished ones */
+    /** Returns ALL courses, with optional status filtering */
     @GetMapping
-    public List<CourseResponse> getAllCourses() {
-        return courseRepository.findAll()
-                .stream()
+    public List<CourseResponse> getAllCourses(@RequestParam(required = false) String status) {
+        List<Course> list = (status != null && !status.isBlank())
+                ? courseRepository.findByStatus(status.toUpperCase())
+                : courseRepository.findAll();
+
+        return list.stream()
                 .map(courseService::toResponse)
                 .toList();
     }
@@ -55,6 +59,36 @@ public class AdminCourseController {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found: " + id));
         course.setPublished(!course.getPublished());
+        course.setStatus(course.getPublished() ? "PUBLISHED" : "DRAFT");
+        Course saved = courseRepository.save(course);
+        return ResponseEntity.ok(courseService.toResponse(saved));
+    }
+
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<CourseResponse> approveCourse(@PathVariable Long id) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
+        course.setPublished(true);
+        course.setStatus("PUBLISHED");
+        course.setRejectionReason(null);
+        Course saved = courseRepository.save(course);
+        return ResponseEntity.ok(courseService.toResponse(saved));
+    }
+
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<CourseResponse> rejectCourse(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> body
+    ) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Course not found: " + id));
+        String reason = (body != null && body.containsKey("reason"))
+                ? body.get("reason")
+                : "Course does not meet platform quality guidelines.";
+
+        course.setPublished(false);
+        course.setStatus("REJECTED");
+        course.setRejectionReason(reason);
         Course saved = courseRepository.save(course);
         return ResponseEntity.ok(courseService.toResponse(saved));
     }

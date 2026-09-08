@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 export default function GenerateRoadmap({
   career,
   onComplete,
 }) {
   const [step, setStep] = useState(0)
+  const onCompleteRef = useRef(onComplete)
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   const steps = [
     'Analyzing your current skills',
@@ -26,17 +31,19 @@ export default function GenerateRoadmap({
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [])
+  }, [steps.length])
 
   useEffect(() => {
     if (step === steps.length - 1) {
       const timer = setTimeout(() => {
-        onComplete()
-      }, 1500)
+        if (onCompleteRef.current) {
+          onCompleteRef.current()
+        }
+      }, 1200)
 
       return () => clearTimeout(timer)
     }
-  }, [step, onComplete])
+  }, [step])
 
   return (
     <section className="generator-screen">

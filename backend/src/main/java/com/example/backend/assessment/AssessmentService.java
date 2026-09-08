@@ -37,10 +37,18 @@ public class AssessmentService {
             skillIds.add(cs.getSkill().getId());
         }
 
-        return questionRepository.findAllByOrderByOrderIndexAsc().stream()
+        List<AssessmentQuestionResponse> questions = questionRepository.findAllByOrderByOrderIndexAsc().stream()
                 .filter(q -> q.getSkill() != null && skillIds.contains(q.getSkill().getId()))
                 .map(this::toResponse)
                 .toList();
+
+        if (questions.isEmpty()) {
+            return questionRepository.findAllByOrderByOrderIndexAsc().stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+
+        return questions;
     }
 
     /**

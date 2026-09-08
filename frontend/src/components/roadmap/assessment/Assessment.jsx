@@ -6,6 +6,7 @@ export default function Assessment({
   questions,
   onComplete,
   onBack,
+  onSkip,
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -43,6 +44,17 @@ export default function Assessment({
 
   return (
     <div className="assessment-container">
+      {/* Top Header Controls */}
+      <div className="assessment-top-bar">
+        <button type="button" className="back-to-career" onClick={onBack}>
+          ← Exit Assessment
+        </button>
+        {onSkip && (
+          <button type="button" className="quick-skip-btn" onClick={onSkip}>
+            ⚡ Quick Skip & Auto-Generate Roadmap →
+          </button>
+        )}
+      </div>
 
       <AssessmentProgress
         current={currentIndex + 1}
