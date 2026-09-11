@@ -6,6 +6,11 @@
 
 SkillHub is a personalized career guidance and learning platform.
 
+> **How to read this document**
+> - Sections **1-44** describe the product workflow and role features (design / intended behavior).
+> - Section **45** records specific shipped fixes and wiring notes.
+> - Section **46** is the **as-built technical guide**: stack, routes, APIs, seeded data, and how the live system actually works end-to-end.
+
 The system helps students:
 
 - Discover a suitable career.
@@ -2789,6 +2794,374 @@ the certificate check waits for that request to finish before
 looking up the certificate — guaranteeing a certificate is issued and
 visible as soon as a Student finishes a course, regardless of the
 order lessons were viewed in.
+
+Endpoint used by the Lesson page:
+
+- `POST /api/enrollments/courses/{courseId}/complete`
+
+
+## 45.4 CAREER DISCOVERY / ASSESSMENT / ROADMAP CONTENT (seed data)
+
+For the career → skill → roadmap pipeline to work completely,
+every career-required skill needs:
+
+1. At least one discovery path that can surface that career.
+2. Assessment questions so the system can estimate the student's level.
+3. At least one course mapped to that skill so the roadmap has something to recommend.
+
+`DataInitializer` now seeds (idempotently on every startup):
+
+- **8 careers** with weighted required skills (Backend, Frontend, Full Stack,
+  Data Scientist, DevOps, Cloud Architect, ML Engineer, Mobile).
+- **7 discovery questions** — original interest questions plus two extra
+  questions that distinguish Data Scientist vs ML Engineer and DevOps vs
+  Cloud Architect (previously those pairs always scored the same).
+- **Assessment questions** (self-reported + knowledge) for every
+  career-required skill, including CSS, Git, Linux, Terraform, Kafka, Redis.
+- **14 courses** with markdown lessons, including Git, Redis, Terraform,
+  and Kafka so every required skill has a matching course for roadmap generation.
+- Course–skill links and course prerequisites for a sensible learning order.
+
+Helpers used for safe re-seeding of already-populated databases:
+
+- `seedDiscoveryQuestionIfMissing`
+- `seedAssessmentQuestionIfMissing`
+- `seedCareerSkill` (upsert of required level / importance)
+- `mergeDuplicateSkill` (e.g. legacy `Docker & K8s` → `Docker & Kubernetes`)
+
+
+# ============================================================
+# 46. AS-BUILT TECHNICAL GUIDE (HOW THE LIVE SYSTEM WORKS)
+# ============================================================
+
+This section describes the **implemented** SkillHub system.
+Where Sections 1-44 describe product intent, this section describes
+what currently runs in the codebase.
+
+
+## 46.1 TECH STACK AND HOW TO RUN
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | React (Vite), React Router, Axios |
+| Backend | Spring Boot, Spring Security, Spring Data JPA |
+| Database | PostgreSQL (Supabase-hosted in this project) |
+| Auth | JWT in HttpOnly cookie `SKILLHUB_TOKEN`; optional Google OAuth2 |
+| AI tutor | Google Gemini via `POST /api/ai/tutor` |
+| Chat | REST + client polling (not WebSockets) |
+
+Project layout (after surface cleanup):
+
+```
+myProject/
+  .env / .env.example     # secrets for start scripts
+  start-all.ps1 / .bat    # load .env, start backend + frontend
+  docs/                   # System_flow.md, System_spec.md, Admin_spec.md
+  backend/                # Spring Boot API (port 8080)
+  frontend/               # React app (port 5173)
+```
+
+Start both services from the repo root:
+
+```
+.\start-all.ps1
+```
+
+Or start only the backend:
+
+```
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+(Real credentials live in `.env`, not in `application.properties`.)
+
+
+## 46.2 ROLES AND GUARDS
+
+| Role | Backend enum | Frontend guard | Default landing |
+|------|--------------|----------------|-----------------|
+| Student | `USER` (`ROLE_USER`) | `ProtectedRoute` | `/dashboard` |
+| Instructor | `INSTRUCTOR` | `InstructorRoute` | `/instructor/dashboard` |
+| Admin | `ADMIN` | `AdminRoute` | `/admin` |
+
+Demo users seeded by `DataInitializer` (password `password123`):
+
+- `admin@skillhub.com`
+- `instructor@skillhub.com`
+- `user@skillhub.com`
+- `alice@skillhub.com`
+- `bob@skillhub.com`
+
+
+## 46.3 AUTHENTICATION FLOW
+
+1. **Register / login** → `POST /api/auth/register` or `/api/auth/login`
+2. Backend issues a JWT and sets HttpOnly cookie `SKILLHUB_TOKEN`
+3. Frontend loads session with `GET /api/auth/me` (`AuthContext`)
+4. Later requests send the cookie automatically (Axios `withCredentials`)
+5. **Logout** → `POST /api/auth/logout` clears the cookie
+6. **Google OAuth** (optional) → Spring `/oauth2/**` → `OAuth2SuccessHandler`
+   creates/finds user → same JWT cookie → redirect to frontend dashboard
+
+Role-based redirect after login uses `/home` → `RootRedirect`.
+
+
+## 46.4 FRONTEND ROUTES (AS BUILT)
+
+### Public
+- `/` — Landing
+- `/login`, `/register`
+- `/home` — role-based redirect
+
+### Student (ProtectedRoute)
+- `/dashboard`, `/profile`
+- **Career hub:** `/onboarding` (NavBar “Career” → Find vs Know)
+- `/discover` — career discovery quiz
+- `/careers`, `/careers/:id` — browse / select known career
+- `/assessment` — skill assessment for selected career
+- `/roadmap` — personalized roadmap
+- `/courses`, `/courses/:id`, `/courses/:id/lessons/:lessonId`
+- `/my-learning`, `/my-certificates`
+- `/chat` — student messages inbox
+- Skill Exchange: `/skill-exchange`, `/skill-exchange/create`,
+  `/skill-exchange/project/:id`, `/skill-exchange/my-projects`
+  (legacy `/forum*` redirects here)
+
+### Instructor (InstructorRoute)
+- `/instructor/dashboard` (tabs include Messages)
+- `/instructor/courses/create`, `/instructor/courses/:id/edit`
+
+### Admin (AdminRoute, nested under `/admin`)
+- stats (index), `users`, `careers`, `skills`, `career-skills`,
+  `discovery`, `assessment`, `courses`, `reviews`, `certificates`,
+  `skill-exchange`
+
+Global wrapper: `ChatNotificationProvider` (unread badge + toast).
+
+
+## 46.5 MAIN STUDENT FLOW (AS BUILT)
+
+```
+Register / Login
+      │
+      ▼
+Dashboard
+      │
+      ▼
+Career tab → /onboarding
+      ├─ Find My Career → /discover
+      │       GET  /api/discovery/questions
+      │       POST /api/discovery/match
+      │       → pick a recommended career
+      │
+      └─ I Know My Career → /careers → /careers/:id
+              │
+              ▼
+        /assessment?careerId=…
+              GET  /api/assessments/questions?careerId=
+              POST /api/assessments/submit
+              → UserSkill levels saved
+              │
+              ▼
+        /roadmap
+              POST /api/roadmap/generate
+              GET  /api/roadmap/my
+              → ordered courses for skill gaps
+              │
+              ▼
+        Enroll course → study lessons (± AI tutor)
+              POST /api/enrollments/courses/{id}
+              POST .../lessons/{lessonId}/complete
+              POST /api/ai/tutor
+              │
+              ▼
+        Complete Course & Rate
+              POST .../courses/{id}/complete
+              POST /api/courses/{id}/reviews
+              GET  /api/certificates/my
+              → certificate + badge; roadmap item unlocked/synced
+```
+
+Supporting loops while learning:
+
+- Message course instructor (floating chat / `/chat`) with global notifications
+- Browse Skill Exchange projects and collaborate
+- Track enrollments on `/my-learning`
+
+
+## 46.6 CAREER DISCOVERY ALGORITHM (AS BUILT)
+
+Each discovery question option stores JSON weights `{ careerId: score }`.
+
+On submit (`POST /api/discovery/match`):
+
+1. For each answered question, add the selected option’s weights to a score map.
+2. Normalize against the maximum possible weight per career.
+3. Return top matching careers sorted by match percentage.
+
+Seeded careers (8): Backend Developer, Frontend Developer, Full Stack Engineer,
+Data Scientist, DevOps Engineer, Cloud Architect, ML Engineer, Mobile Developer.
+
+
+## 46.7 SKILL ASSESSMENT → ROADMAP (AS BUILT)
+
+Assessment (`AssessmentService`):
+
+1. Load questions for skills required by the chosen career.
+2. Grade self-reported and knowledge answers.
+3. Compute final level per skill (blend of assessment + self-report when both exist).
+4. Save/update `UserSkill` rows.
+
+Roadmap (`RoadmapService.generateRoadmap`):
+
+1. Compare user skill levels to career required levels → **skill gaps**.
+2. Find published courses whose `CourseSkill` target level addresses those gaps.
+3. Order courses by prerequisites (topological sort).
+4. Persist `RoadmapItem` rows (AVAILABLE / LOCKED / IN_PROGRESS / COMPLETED).
+5. Sync progress when enrollments/lessons complete.
+
+
+## 46.8 LEARNING, PROGRESS, CERTIFICATES (AS BUILT)
+
+| Action | API |
+|--------|-----|
+| Enroll | `POST /api/enrollments/courses/{courseId}` |
+| Complete lesson | `POST /api/enrollments/courses/{courseId}/lessons/{lessonId}/complete` |
+| Complete whole course | `POST /api/enrollments/courses/{courseId}/complete` |
+| Optional course assessment | `POST /api/enrollments/courses/{courseId}/assessment` |
+| My enrollments | `GET /api/enrollments/my` |
+| My certificates / badges | `GET /api/certificates/my`, `/api/certificates/badges/my` |
+| Rate course | `POST /api/courses/{courseId}/reviews` |
+
+Certificate + badge issuance runs inside enrollment completion when progress
+hits 100% (or via the explicit complete-course endpoint). Roadmap items sync
+from enrollment progress.
+
+
+## 46.9 AI ASSISTANT (AS BUILT)
+
+- UI: floating assistant on lesson pages (and dual chat with instructor).
+- API: `POST /api/ai/tutor` with lesson title/content + user prompt.
+- Provider: Gemini (`AiService`); falls back to a local reply if the API key
+  is missing or the call fails.
+
+
+## 46.10 CHAT AND NOTIFICATIONS (AS BUILT)
+
+REST endpoints under `/api/chat`:
+
+- `GET /conversations` — student thread list (`lastSenderId` included)
+- `GET /instructor/students` — instructor inbox partners
+- `GET|POST /messages` — load / send
+- Helpers: course instructor, available instructors
+
+`ChatNotificationContext` (app-wide for students & instructors):
+
+- Polls every ~5s
+- Persists per-partner “seen” timestamps in `localStorage`
+- Toast + sound for new incoming messages
+- Suppresses duplicates on `/chat`, lesson pages, instructor dashboard
+- NavBar “Messages” badge (student → `/chat`, instructor → dashboard Messages tab)
+
+
+## 46.11 SKILL EXCHANGE (AS BUILT)
+
+Collaborative project board (formerly “forum” routes):
+
+- Browse / create projects
+- Apply to join; owners approve/reject requests
+- Comments and likes
+- Admin can approve, flag, or delete projects
+
+API prefix: `/api/skill-exchange/projects`
+
+
+## 46.12 INSTRUCTOR (AS BUILT)
+
+- Dashboard with stats and course list
+- Create / edit courses and lessons (`CourseEditorPage`)
+- Submit course for admin approval (`POST|PATCH /api/instructor/courses/{id}/submit`)
+- Message enrolled / contacting students (Messages tab)
+- Explore catalog and Skill Exchange as needed
+
+API prefix: `/api/instructor`
+
+
+## 46.13 ADMIN (AS BUILT)
+
+Admin manages the platform structure that Students and Instructors consume:
+
+| Area | API prefix |
+|------|------------|
+| Stats | `/api/admin/stats` |
+| Users (enable/disable) | `/api/admin/users` |
+| Careers + career skills | `/api/admin/careers` |
+| Skills library | `/api/admin/skills` |
+| Discovery questions | `/api/admin/discovery/questions` |
+| Assessment questions | `/api/admin/assessment/questions` |
+| Courses + lessons + approve/reject | `/api/admin/courses` |
+| Reviews | `/api/admin/reviews` |
+| Skill Exchange moderation | `/api/admin/skill-exchange/projects` |
+
+
+## 46.14 KEY API MAP (QUICK REFERENCE)
+
+| Prefix | Purpose |
+|--------|---------|
+| `/api/auth` | register, login, me, logout |
+| `/api/careers` | list / detail / skills |
+| `/api/discovery` | questions, match |
+| `/api/assessments` | questions, submit |
+| `/api/roadmap` | generate, my |
+| `/api/courses` | catalog + CRUD |
+| `/api/courses/{id}/lessons` | lessons |
+| `/api/courses/{id}/reviews` | reviews |
+| `/api/enrollments` | enroll, complete lesson/course, my |
+| `/api/certificates` | my certificates & badges |
+| `/api/chat` | messaging |
+| `/api/ai` | lesson tutor |
+| `/api/skill-exchange/projects` | projects collaboration |
+| `/api/instructor` | instructor courses & stats |
+| `/api/admin/*` | platform administration |
+
+
+## 46.15 SEED DATA SUMMARY (DataInitializer)
+
+On every backend startup the initializer (idempotent where noted):
+
+1. Ensures DB constraints/columns for `INSTRUCTOR` role and course status fields
+2. Merges duplicate skill names if needed
+3. Seeds users, ~18 skills, 8 careers + career-skill weights
+4. Seeds 7 discovery questions and a full assessment question bank
+5. Seeds 14 courses with lessons, course-skills, and prerequisites
+6. Seeds sample Skill Exchange projects if none exist
+
+This is what makes a fresh (or partially filled) database able to run the full
+career → assessment → roadmap → course → certificate loop without manual content entry.
+
+
+## 46.16 SPEC VS IMPLEMENTATION NOTES
+
+Implemented end-to-end today:
+
+- Auth (email/password + optional Google), roles, dashboards
+- Career onboarding (Find vs Know), discovery, assessment, roadmap
+- Courses, lessons, enrollment, progress, reviews, certificates/badges
+- AI lesson tutor, instructor–student chat + global notifications
+- Skill Exchange projects
+- Instructor course authoring + admin approval pipeline
+- Admin CRUD for careers, skills, questions, courses, reviews, users
+
+Described in earlier sections but thinner / partial in the current build:
+
+- Full standalone quiz engine and graded assignments as separate products
+  (course completion assessment exists; rich per-lesson quiz UX is limited)
+- Password-reset email flows (login/register are primary)
+- Some advanced analytics / partner-matching nuance beyond Skill Exchange projects
+
+Use Sections 1-44 for product vision; use **Section 46** for what to demo and
+how to operate the running system.
 
 
 # ============================================================

@@ -3,6 +3,10 @@ HELP.md
 .env
 backend/src/main/resources/application.properties
 
+# JVM crash / dump clutter
+hs_err_pid*.log
+replay_pid*.log
+
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
