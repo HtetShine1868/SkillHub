@@ -73,9 +73,11 @@ public class OAuth2SuccessHandler
                 token
         );
 
+        boolean secure = frontendUrl != null && frontendUrl.toLowerCase().startsWith("https");
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(secure);
         cookie.setPath("/");
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
         cookie.setMaxAge(60 * 60 * 24);
 
         response.addCookie(cookie);

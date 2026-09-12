@@ -14,35 +14,35 @@
 
 # TABLE OF CONTENTS
 
-1. Introduction
-2. Problem Statement
-3. Project Objectives
-4. Scope of the Project
-5. Technologies Used
-6. System Overview
-7. System Architecture
-8. User Roles and Responsibilities
-9. Main System Workflow
-10. Module 1 - Account and Access
-11. Module 2 - Career Guidance
-12. Module 3 - Skills Check and Skill Profile
-13. Module 4 - Personal Roadmap
-14. Module 5 - Courses and Lessons
-15. Module 6 - Learning Support (AI Helper and Messaging)
-16. Module 7 - Progress, Certificates, and Badges
-17. Module 8 - Skill Exchange
-18. Module 9 - Instructor System
-19. Module 10 - Admin System
-20. Entity Relationship (ER) Design
-21. System Flowchart
-22. How All Modules Connect
-23. Detailed Use Case Scenarios
-24. Features Summary by Role
-25. Expected Benefits
-26. Testing and Validation Approach
-27. Limitations and Future Improvements
-28. Conclusion
-29. References / Tools Summary
+1. Introduction ........................ 3
+2. Problem Statement ................... 4
+3. Project Objectives .................. 5
+4. Scope of the Project ................ 6
+5. Technologies Used ................... 7
+6. System Overview ..................... 8
+7. System Architecture ................. 9
+8. User Roles and Responsibilities ..... 10
+9. Main System Workflow ................ 11
+10. Module 1 - Account and Access ...... 12
+11. Module 2 - Career Guidance ......... 13
+12. Module 3 - Skills Check and Skill Profile ... 14
+13. Module 4 - Personal Roadmap ........ 15
+14. Module 5 - Courses and Lessons ..... 16
+15. Module 6 - Learning Support ........ 17
+16. Module 7 - Progress, Certificates, and Badges ... 18
+17. Module 8 - Skill Exchange .......... 19
+18. Module 9 - Instructor System ....... 20
+19. Module 10 - Admin System ........... 21
+20. Entity Relationship (ER) Design .... 22
+21. System Flowchart ................... 23
+22. How All Modules Connect ............ 24
+23. Detailed Use Case Scenarios ........ 25
+24. Features Summary by Role ........... 26
+25. Expected Benefits .................. 27
+26. Testing and Validation Approach .... 28
+27. Limitations and Future Improvements  29
+28. Conclusion ......................... 30
+29. References / Tools Summary ......... 31
 
 # 1. INTRODUCTION
 
@@ -92,12 +92,12 @@ This means every major feature supports a continuous growth cycle rather than di
 
 This project is important because it shows how a practical learning platform can:
 
-1. Guide undecided learners toward suitable careers.  
-2. Measure current ability before recommending content.  
-3. Build personal learning plans based on skill gaps.  
-4. Support instructors in creating and managing courses.  
-5. Allow admins to control quality and platform structure.  
-6. Combine learning, messaging, AI support, and recognition in one product.
+- Guide undecided learners toward suitable careers.
+- Measure current ability before recommending content.
+- Build personal learning plans based on skill gaps.
+- Support instructors in creating and managing courses.
+- Allow admins to control quality and platform structure.
+- Combine learning, messaging, AI support, and recognition in one product.
 
 For academic and project evaluation, SkillHub also demonstrates real full-stack development skills: frontend design, backend APIs, database persistence, authentication, role-based access, and feature integration.
 
@@ -107,28 +107,28 @@ For academic and project evaluation, SkillHub also demonstrates real full-stack 
 
 Traditional online learning platforms often have these weaknesses:
 
-1. **No clear career starting point**  
+- **No clear career starting point**
    Learners browse courses randomly without knowing which career they are aiming for.
 
-2. **No reliable skill measurement**  
+- **No reliable skill measurement**
    Learners do not know their real skill level for a target career.
 
-3. **No personal gap analysis**  
+- **No personal gap analysis**
    Learners do not clearly see which skills are missing.
 
-4. **Generic learning paths**  
+- **Generic learning paths**
    Most platforms recommend the same path to everyone, even when skill levels differ.
 
-5. **Weak support while studying**  
+- **Weak support while studying**
    When learners get stuck, they often have little immediate help.
 
-6. **Weak proof of completion**  
+- **Weak proof of completion**
    Progress may not produce clear certificates or achievement records.
 
-7. **Limited peer practice**  
+- **Limited peer practice**
    Learning is often lonely, with little teamwork or project collaboration.
 
-8. **Unclear content quality control**  
+- **Unclear content quality control**
    Instructor content may be published without a strong approval process.
 
 ## 2.2 Consequences of These Problems
@@ -157,19 +157,19 @@ To design and develop a full-stack career-guided learning platform that helps us
 
 ## 3.2 Specific Objectives
 
-1. Develop a secure registration and login system for Learners, Instructors, and Admins.  
-2. Implement career discovery for undecided users and career browsing for decided users.  
-3. Implement a skills check that estimates learner skill levels for a selected career.  
-4. Automatically identify skill gaps between career requirements and learner ability.  
-5. Generate a personalized roadmap of recommended courses.  
-6. Provide course enrollment, lesson learning, progress tracking, and course completion.  
-7. Provide an AI study helper for lesson support.  
-8. Provide instructor–learner messaging with notifications.  
-9. Issue certificates and badges after eligible course completion.  
-10. Provide Skill Exchange for collaborative learning projects.  
-11. Allow instructors to create, edit, and submit courses for approval.  
-12. Allow admins to manage users, careers, skills, questions, courses, reviews, and projects.  
-13. Use modern web technologies to build a maintainable frontend and backend system.
+- Develop a secure registration and login system for Learners, Instructors, and Admins.
+- Implement career discovery for undecided users and career browsing for decided users.
+- Implement a skills check that estimates learner skill levels for a selected career.
+- Automatically identify skill gaps between career requirements and learner ability.
+- Generate a personalized roadmap of recommended courses.
+- Provide course enrollment, lesson learning, progress tracking, and course completion.
+- Provide an AI study helper for lesson support.
+- Provide instructor–learner messaging with notifications.
+- Issue certificates and badges after eligible course completion.
+- Provide Skill Exchange for collaborative learning projects.
+- Allow instructors to create, edit, and submit courses for approval.
+- Allow admins to manage users, careers, skills, questions, courses, reviews, and projects.
+- Use modern web technologies to build a maintainable frontend and backend system.
 
 ## 3.3 Learning Outcomes Demonstrated by This Project
 
@@ -337,13 +337,13 @@ If the AI key is unavailable, the system can fall back to a basic local response
 
 ## 5.7 High-Level Technical Flow
 
-1. Browser (React Frontend)
-2. HTTPS / API requests (Axios)
-3. Spring Boot Backend (Java)
-4. Security check (JWT / roles)
-5. Business Services
-6. (Career, Assessment, Roadmap, Enrollment, Chat, AI, Admin...)
-7. PostgreSQL Database
+- Browser (React Frontend)
+- HTTPS / API requests (Axios)
+- Spring Boot Backend (Java)
+- Security check (JWT / roles)
+- Business Services
+- (Career, Assessment, Roadmap, Enrollment, Chat, AI, Admin...)
+- PostgreSQL Database
 
 # 6. SYSTEM OVERVIEW
 
@@ -355,15 +355,15 @@ SkillHub is designed as a complete learning journey platform. Its purpose is to 
 
 SkillHub provides:
 
-1. Career discovery and career selection  
-2. Skills assessment and gap detection  
-3. Personalized roadmap generation  
-4. Course and lesson learning  
-5. AI and instructor support  
-6. Progress tracking and certificates  
-7. Peer collaboration through Skill Exchange  
-8. Instructor content creation  
-9. Admin quality and structure control  
+- Career discovery and career selection  
+- Skills assessment and gap detection  
+- Personalized roadmap generation  
+- Course and lesson learning  
+- AI and instructor support  
+- Progress tracking and certificates  
+- Peer collaboration through Skill Exchange  
+- Instructor content creation  
+- Admin quality and structure control  
 
 ## 6.3 Difference From a Normal Course Website
 
@@ -391,9 +391,9 @@ SkillHub provides:
 
 SkillHub uses a **three-tier style architecture**:
 
-1. **Presentation Layer (Frontend)** - what users see and click  
-2. **Application Layer (Backend)** - business rules, security, APIs  
-3. **Data Layer (Database)** - permanent storage  
+- **Presentation Layer (Frontend)** - what users see and click
+- **Application Layer (Backend)** - business rules, security, APIs
+- **Data Layer (Database)** - permanent storage
 
 ## 7.2 Frontend Structure (Conceptual)
 
@@ -424,11 +424,11 @@ The backend is organized by feature domains, such as:
 
 ## 7.4 Security Architecture (Simple Explanation)
 
-1. User logs in with email/password or Google.  
-2. Backend verifies identity and creates a secure session token (JWT).  
-3. Token is stored in a protected browser cookie.  
-4. Later requests are checked for valid login.  
-5. Role checks decide whether the user can access learner, instructor, or admin features.
+- User logs in with email/password or Google.
+- Backend verifies identity and creates a secure session token (JWT).
+- Token is stored in a protected browser cookie.
+- Later requests are checked for valid login.
+- Role checks decide whether the user can access learner, instructor, or admin features.
 
 ## 7.5 Deployment / Run Model (Project Level)
 
@@ -503,37 +503,37 @@ Admins maintain structure and quality.
 
 ## 8.4 Role Collaboration Model
 
-1. Admin builds the structure
-2. (careers, skills, questions, approvals)
-3. Instructor fills the structure
-4. (courses and lessons)
-5. Learner walks the path
-6. (career  to  skills check  to  roadmap  to  learning  to  certificates)
+- Admin builds the structure
+- (careers, skills, questions, approvals)
+- Instructor fills the structure
+- (courses and lessons)
+- Learner walks the path
+- (career  to  skills check  to  roadmap  to  learning  to  certificates)
 
 # 9. MAIN SYSTEM WORKFLOW
 
 ## 9.1 End-to-End Learner Flow
 
-1. Create account / Sign in
-2. Open Dashboard
-3. Open Career
-4. v             v
-5. Find my career   I already know
-6. my career
-7. v             v
-8. Get suggestions  Browse and select
-9. Take skills check
-10. Create skill profile
-11. Identify skill gaps
-12. Generate personal roadmap
-13. Enroll in recommended courses
-14. Study lessons
-15. (AI helper / instructor chat)
-16. Complete course
-17. Rate and review
-18. Earn certificate / badge
-19. Roadmap updates
-20. Next course unlocks
+- Create account / Sign in
+- Open Dashboard
+- Open Career
+- v             v
+- Find my career   I already know
+- my career
+- v             v
+- Get suggestions  Browse and select
+- Take skills check
+- Create skill profile
+- Identify skill gaps
+- Generate personal roadmap
+- Enroll in recommended courses
+- Study lessons
+- (AI helper / instructor chat)
+- Complete course
+- Rate and review
+- Earn certificate / badge
+- Roadmap updates
+- Next course unlocks
 
 ## 9.2 Side Paths Available Anytime
 
@@ -566,11 +566,11 @@ This module manages identity, login, and role-based entry into the correct part 
 
 During registration, a user generally:
 
-1. Chooses role path (Learner or Instructor).  
-2. Enters full name.  
-3. Enters email.  
-4. Creates password and confirmation.  
-5. Submits the form.  
+- Chooses role path (Learner or Instructor).
+- Enters full name.
+- Enters email.
+- Creates password and confirmation.
+- Submits the form.
 
 After success:
 
@@ -624,12 +624,12 @@ The Career area presents two clear options so every learner has a suitable entry
 For undecided learners.
 
 **Detailed process:**
-1. Learner answers interest questions.  
-2. Each answer supports some careers more than others.  
-3. System calculates match scores.  
-4. Ranked career suggestions are displayed.  
-5. Learner compares options and selects one.  
-6. System continues to skills check for that career.
+- Learner answers interest questions.
+- Each answer supports some careers more than others.
+- System calculates match scores.
+- Ranked career suggestions are displayed.
+- Learner compares options and selects one.
+- System continues to skills check for that career.
 
 **Question themes may include:**
 - Preferred work type (systems, interfaces, data, infrastructure)  
@@ -641,11 +641,11 @@ For undecided learners.
 For decided learners.
 
 **Detailed process:**
-1. Browse career list.  
-2. Open career detail page.  
-3. Review description, responsibilities, and required skills.  
-4. Confirm career.  
-5. Continue to skills check.
+- Browse career list.
+- Open career detail page.
+- Review description, responsibilities, and required skills.
+- Confirm career.
+- Continue to skills check.
 
 ## 11.3 Example Careers in the System
 
@@ -708,10 +708,10 @@ Questions are selected according to the skills required by the chosen career.
 
 After submission, the system:
 
-1. Groups answers by skill.  
-2. Uses self-rating values and knowledge correctness.  
-3. Estimates a final level per skill.  
-4. Saves or updates the learner’s skill profile.  
+- Groups answers by skill.
+- Uses self-rating values and knowledge correctness.
+- Estimates a final level per skill.
+- Saves or updates the learner’s skill profile.
 
 This profile becomes the learner’s current ability map for roadmap generation.
 
@@ -746,13 +746,13 @@ Roadmaps are personal because:
 
 ## 13.3 Roadmap Generation Steps (Detailed)
 
-1. Load selected career requirements.  
-2. Load learner skill profile.  
-3. Compute gaps.  
-4. Find courses that teach the missing/weak skills.  
-5. Order courses using prerequisites where needed.  
-6. Save roadmap items with statuses.  
-7. Display plan to the learner.
+- Load selected career requirements.
+- Load learner skill profile.
+- Compute gaps.
+- Find courses that teach the missing/weak skills.
+- Order courses using prerequisites where needed.
+- Save roadmap items with statuses.
+- Display plan to the learner.
 
 ## 13.4 Roadmap Item States
 
@@ -941,11 +941,11 @@ Badges provide lighter recognition for achievements and milestones. They support
 
 ## 16.5 Completion-to-Recognition Flow
 
-1. Learner finishes lessons / completes course.  
-2. System records completion.  
-3. Certificate and/or badge can be issued.  
-4. Learner may rate and review the course.  
-5. Roadmap status updates for next steps.
+- Learner finishes lessons / completes course.
+- System records completion.
+- Certificate and/or badge can be issued.
+- Learner may rate and review the course.
+- Roadmap status updates for next steps.
 
 ## 16.6 Technical Notes
 
@@ -1025,10 +1025,10 @@ Instructors provide:
 
 ## 18.4 Course Lifecycle
 
-1. Draft  
-2. Pending approval  
-3. Published  
-4. Rejected (with reason for improvement)
+- Draft
+- Pending approval
+- Published
+- Rejected (with reason for improvement)
 
 ## 18.5 Instructor Messaging
 
@@ -1084,10 +1084,10 @@ This section is reserved for the Entity Relationship (ER) design of SkillHub. In
 
 ## 20.2 Instructions for Author
 
-1. Insert your ER diagram image below.
-2. List the main entities (for example User, Career, Skill, Course, Lesson, Enrollment, Roadmap Item, Certificate, Chat Message, Project).
-3. Briefly describe important relationships in short paragraphs or a simple table.
-4. Keep explanations clear and related to the system modules already described in this report.
+- Insert your ER diagram image below.
+- List the main entities (for example User, Career, Skill, Course, Lesson, Enrollment, Roadmap Item, Certificate, Chat Message, Project).
+- Briefly describe important relationships in short paragraphs or a simple table.
+- Keep explanations clear and related to the system modules already described in this report.
 
 ## 20.3 Space for ER Diagram
 
@@ -1109,19 +1109,19 @@ This section is reserved for system flowcharts of SkillHub. Insert your flowchar
 
 ## 21.2 Suggested Flowcharts to Include
 
-1. Overall learner journey flowchart
-2. Career discovery and selection flowchart
-3. Skills check and roadmap generation flowchart
-4. Course enrollment and completion flowchart
-5. Instructor course approval flowchart
-6. Admin moderation flowchart (optional)
+- Overall learner journey flowchart
+- Career discovery and selection flowchart
+- Skills check and roadmap generation flowchart
+- Course enrollment and completion flowchart
+- Instructor course approval flowchart
+- Admin moderation flowchart (optional)
 
 ## 21.3 Instructions for Author
 
-1. Insert each flowchart on its own page if possible.
-2. Add a short title above each chart.
-3. Add 3 to 6 lines of explanation under each chart.
-4. Use clear start and end points in every flowchart.
+- Insert each flowchart on its own page if possible.
+- Add a short title above each chart.
+- Add 3 to 6 lines of explanation under each chart.
+- Use clear start and end points in every flowchart.
 
 ## 21.4 Space for Flowcharts
 
@@ -1161,15 +1161,15 @@ Write your explanation here.
 
 ## 21.1 Dependency Chain
 
-1. Skills
-2. to  Careers (required skills)
-3. to  Skills Check (current levels)
-4. to  Skill Gaps
-5. to  Courses that teach those skills
-6. to  Personal Roadmap
-7. to  Lessons + Support
-8. to  Certificates / Badges
-9. to  Skill Exchange practice
+- Skills
+- to  Careers (required skills)
+- to  Skills Check (current levels)
+- to  Skill Gaps
+- to  Courses that teach those skills
+- to  Personal Roadmap
+- to  Lessons + Support
+- to  Certificates / Badges
+- to  Skill Exchange practice
 
 ## 21.2 Failure Impact Table
 
@@ -1197,38 +1197,38 @@ Write your explanation here.
 
 ## 22.1 Use Case A - Undecided Beginner (Maya)
 
-1. Registers as learner and signs in.  
-2. Opens Career  to  Find My Career.  
-3. Answers interest questions.  
-4. Receives Frontend Developer as a top suggestion.  
-5. Confirms career and takes skills check.  
-6. Gets roadmap focused on weaker frontend skills.  
-7. Enrolls, uses AI helper, messages instructor once.  
-8. Completes course, reviews it, earns certificate.  
-9. Next roadmap course unlocks.  
-10. Joins a Skill Exchange practice project.
+- Registers as learner and signs in.
+- Opens Career  to  Find My Career.
+- Answers interest questions.
+- Receives Frontend Developer as a top suggestion.
+- Confirms career and takes skills check.
+- Gets roadmap focused on weaker frontend skills.
+- Enrolls, uses AI helper, messages instructor once.
+- Completes course, reviews it, earns certificate.
+- Next roadmap course unlocks.
+- Joins a Skill Exchange practice project.
 
 ## 22.2 Use Case B - Decided Learner (Arun)
 
-1. Chooses I Know My Career  to  Backend Developer.  
-2. Skills check shows strong databases, weaker containers.  
-3. Roadmap prioritizes missing skills instead of repeating strengths.  
-4. Learns efficiently because the plan is personalized.
+- Chooses I Know My Career  to  Backend Developer.
+- Skills check shows strong databases, weaker containers.
+- Roadmap prioritizes missing skills instead of repeating strengths.
+- Learns efficiently because the plan is personalized.
 
 ## 22.3 Use Case C - Instructor (Lina)
 
-1. Creates a course with lessons and skill mapping.  
-2. Submits for approval.  
-3. Admin publishes it.  
-4. Learners begin receiving it in relevant roadmaps/catalog.  
-5. Lina answers questions and improves content from reviews.
+- Creates a course with lessons and skill mapping.
+- Submits for approval.
+- Admin publishes it.
+- Learners begin receiving it in relevant roadmaps/catalog.
+- Lina answers questions and improves content from reviews.
 
 ## 22.4 Use Case D - Admin (Sam)
 
-1. Improves discovery questions for similar careers.  
-2. Checks assessment and course coverage for key skills.  
-3. Approves new instructor courses.  
-4. Platform recommendations become more accurate.
+- Improves discovery questions for similar careers.
+- Checks assessment and course coverage for key skills.
+- Approves new instructor courses.
+- Platform recommendations become more accurate.
 
 # 24. FEATURES SUMMARY BY ROLE
 
@@ -1334,14 +1334,14 @@ Write your explanation here.
 
 ## 26.2 Future Improvements
 
-1. Richer per-lesson quizzes and graded assignments  
-2. Stronger analytics dashboards for learners and instructors  
-3. Improved career comparison tools  
-4. Smarter long-term recommendations based on learning history  
-5. Enhanced Skill Exchange matching  
-6. Mobile application versions  
-7. Broader career library and multilingual support  
-8. Stronger notification center and email alerts  
+- Richer per-lesson quizzes and graded assignments
+- Stronger analytics dashboards for learners and instructors
+- Improved career comparison tools
+- Smarter long-term recommendations based on learning history
+- Enhanced Skill Exchange matching
+- Mobile application versions
+- Broader career library and multilingual support
+- Stronger notification center and email alerts
 
 # 28. CONCLUSION
 
@@ -1363,9 +1363,9 @@ Technically, SkillHub is built with **React (Vite) on the frontend**, **Spring B
 
 Organizationally, three roles cooperate:
 
-1. **Admins** define structure and quality gates.  
-2. **Instructors** create and support learning content.  
-3. **Learners** follow a personal path from career goal to measurable progress.
+- **Admins** define structure and quality gates.
+- **Instructors** create and support learning content.
+- **Learners** follow a personal path from career goal to measurable progress.
 
 The heart of the system remains:
 

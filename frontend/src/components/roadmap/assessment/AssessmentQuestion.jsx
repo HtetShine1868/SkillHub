@@ -25,8 +25,7 @@ export default function AssessmentQuestion({
       <h1>{question.question}</h1>
 
       <p className="question-subtitle">
-        Choose the option that best describes your
-        current experience.
+        Choose the option that best describes your current experience. You can also press 1–4, then Enter.
       </p>
 
       <div className="assessment-options">

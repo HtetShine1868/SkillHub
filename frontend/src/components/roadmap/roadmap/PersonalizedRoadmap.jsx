@@ -6,6 +6,11 @@ export default function PersonalizedRoadmap({
   onStageClick,
 }) {
   const safeStages = Array.isArray(stages) ? stages : []
+  const languageOptions = safeStages.filter((stage) => stage.choiceGroup === 'starter-language')
+  const linearStages = languageOptions.length >= 2
+    ? safeStages.filter((stage) => stage.choiceGroup !== 'starter-language')
+    : safeStages
+
   const completed = safeStages.filter(
     (stage) => (stage.status || '').toLowerCase() === 'completed' || (stage.progress !== undefined && stage.progress >= 100)
   ).length
@@ -15,13 +20,14 @@ export default function PersonalizedRoadmap({
       const s = (stage.status || '').toLowerCase()
       return s === 'current' || s === 'available' || (stage.progress !== undefined && stage.progress > 0 && stage.progress < 100)
     }
-  )
+  ) || safeStages[0]
 
   const progress = safeStages.length === 0 ? 0 : Math.round(
     (completed / safeStages.length) * 100
   )
 
   const careerTitle = career?.title || career?.name || 'Selected Career'
+  const showLanguageFork = languageOptions.length >= 2
 
   return (
     <section className="roadmap-screen">
@@ -43,8 +49,9 @@ export default function PersonalizedRoadmap({
             </h1>
 
             <p>
-              A learning journey designed around
-              your current skills and goals.
+              {showLanguageFork
+                ? 'Start at the top. Pick a first language, then follow the rest of your path.'
+                : 'A learning journey designed around your current skills and goals. Start at the top.'}
             </p>
 
             <button
@@ -52,7 +59,7 @@ export default function PersonalizedRoadmap({
               style={{ marginTop: '12px', fontSize: '0.82rem', padding: '6px 14px', borderRadius: '999px' }}
               onClick={() => window.location.href = '/careers'}
             >
-              🧭 Switch / Explore Careers →
+              Switch / Explore Careers
             </button>
 
           </div>
@@ -82,9 +89,14 @@ export default function PersonalizedRoadmap({
 
         {safeStages.length > 0 ? (
           <>
-            <div className="roadmap-current">
+            <button
+              type="button"
+              className="roadmap-current roadmap-current--action"
+              onClick={() => current && onStageClick?.(current)}
+              disabled={!current || (current.status || '').toLowerCase() === 'locked'}
+            >
 
-              <span>CURRENTLY LEARNING</span>
+              <span>CURRENTLY LEARNING · TAP TO OPEN COURSES</span>
 
               <strong>
                 {current?.title || safeStages[0]?.title || 'Get Started'}
@@ -94,16 +106,46 @@ export default function PersonalizedRoadmap({
                 Next → {safeStages[completed + 1]?.title || 'Career Goal'}
               </span>
 
-            </div>
+            </button>
 
             <div className="roadmap-path">
 
               <div className="roadmap-start">
-                🎯
-                <span>{careerTitle}</span>
+                <span className="roadmap-start-icon">1</span>
+                <span>Start here</span>
               </div>
 
-              {safeStages.map((stage, index) => (
+              {showLanguageFork && (
+                <div className="roadmap-fork">
+                  <div className="roadmap-fork-title">
+                    Choose a starting language
+                  </div>
+                  <p className="roadmap-fork-copy">
+                    More than one beginner track exists for this career. Pick Java, JavaScript, or Python to begin — you can still take the others later.
+                  </p>
+                  <div className="roadmap-fork-grid">
+                    {languageOptions.map((stage) => (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        className={`roadmap-fork-card ${(stage.status || '').toLowerCase()}`}
+                        onClick={() => onStageClick(stage)}
+                        disabled={(stage.status || '').toLowerCase() === 'locked'}
+                      >
+                        <span className="roadmap-fork-lang">{stage.choiceLabel || stage.title || 'Language'}</span>
+                        <strong>{stage.choiceLabel || stage.title}</strong>
+                        <small>Browse courses for this skill</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {showLanguageFork && linearStages.length > 0 && (
+                <div className="roadmap-connector">↓</div>
+              )}
+
+              {linearStages.map((stage, index) => (
 
                 <div
                   className="roadmap-path-item"
@@ -117,10 +159,10 @@ export default function PersonalizedRoadmap({
                     }
                   />
 
-                  {index < safeStages.length - 1 && (
+                  {index < linearStages.length - 1 && (
                     <div
                       className={`roadmap-connector ${
-                        safeStages[index + 1].status === 'locked'
+                        linearStages[index + 1].status === 'locked'
                           ? 'locked'
                           : ''
                       }`}
@@ -133,9 +175,11 @@ export default function PersonalizedRoadmap({
 
               ))}
 
+              <div className="roadmap-connector">↓</div>
+
               <div className="roadmap-finish">
                 🏆
-                <span>Career Ready</span>
+                <span>{careerTitle} — Career Ready</span>
               </div>
 
             </div>
@@ -143,9 +187,9 @@ export default function PersonalizedRoadmap({
         ) : (
           <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
-            <h3 style={{ color: '#f8fafc', marginBottom: '8px' }}>No roadmap courses found</h3>
+            <h3 style={{ color: '#f8fafc', marginBottom: '8px' }}>No roadmap skills found</h3>
             <p style={{ color: '#94a3b8', maxWidth: '500px', margin: '0 auto' }}>
-              We couldn't find specific course requirements for this career yet. Explore our course catalog to get started manually.
+              We couldn't find skill milestones for this career yet. Explore our course catalog to get started manually.
             </p>
           </div>
         )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
@@ -8,6 +8,7 @@ import AssessmentResult from '../components/roadmap/results/AssessmentResult'
 import SkillGap from '../components/roadmap/gap/SkillGap'
 import GenerateRoadmap from '../components/roadmap/generator/GenerateRoadmap'
 import PersonalizedRoadmap from '../components/roadmap/roadmap/PersonalizedRoadmap'
+import JourneyProgress from '../components/roadmap/JourneyProgress'
 import CourseCard from '../components/roadmap/courses/CourseCard'
 import CourseDetails from '../components/roadmap/courses/CourseDetails'
 
@@ -47,7 +48,9 @@ export default function PersonalizedRoadmapPage() {
   const [selectedStage, setSelectedStage] = useState(null)
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [submittingAssessment, setSubmittingAssessment] = useState(false)
   const [error, setError] = useState(null)
+  const lastGeneratedRef = useRef(null)
 
   // Load initial careers list & check URL param
   useEffect(() => {
@@ -228,12 +231,17 @@ export default function PersonalizedRoadmapPage() {
   };
 
   const handleAssessmentComplete = async (answers) => {
+    if (submittingAssessment || !selectedCareer?.id) return;
+    setSubmittingAssessment(true);
     setLoading(true);
+    setError(null);
     try {
       // Convert all answer values to string for the API request
       const formattedAnswers = {};
-      Object.keys(answers).forEach(k => {
-        formattedAnswers[k] = String(answers[k]);
+      Object.keys(answers || {}).forEach(k => {
+        if (answers[k] !== undefined && answers[k] !== null) {
+          formattedAnswers[k] = String(answers[k]);
+        }
       });
 
       const results = await submitAssessment(selectedCareer.id, formattedAnswers);
@@ -241,9 +249,13 @@ export default function PersonalizedRoadmapPage() {
       setScreen('results');
     } catch (err) {
       console.error(err);
-      setError("Failed to submit assessment.");
+      const status = err?.response?.status;
+      setError(status === 401
+        ? 'Please sign in again to submit your skills check.'
+        : 'Failed to submit assessment. Please try once more.');
     } finally {
       setLoading(false);
+      setSubmittingAssessment(false);
     }
   };
 
@@ -251,33 +263,67 @@ export default function PersonalizedRoadmapPage() {
     setScreen('generate');
   };
 
-  const handleGenerateRoadmapComplete = async () => {
+  const handleGenerateRoadmapRequest = async () => {
+    if (!selectedCareer?.id) {
+      throw new Error('Select a career before generating a roadmap.')
+    }
     try {
-      const response = await generateRoadmap(selectedCareer.id);
-      setRoadmapData(response);
-      setIsPersonalized(true);
+      const response = await generateRoadmap(selectedCareer.id)
+      lastGeneratedRef.current = response
+      setRoadmapData(response)
+      setIsPersonalized(true)
       if (typeof window !== 'undefined') {
         const userKeyPrefix = user?.id ? `_${user.id}` : ''
-        localStorage.setItem(`skillhub_active_roadmap${userKeyPrefix}`, JSON.stringify(response));
-        localStorage.setItem(`skillhub_active_career${userKeyPrefix}`, JSON.stringify(selectedCareer));
+        localStorage.setItem(`skillhub_active_roadmap${userKeyPrefix}`, JSON.stringify(response))
+        localStorage.setItem(`skillhub_active_career${userKeyPrefix}`, JSON.stringify(selectedCareer))
       }
-      setScreen('roadmap');
+      return response
     } catch (err) {
-      console.error(err);
-      setError("Failed to generate personalized roadmap.");
+      setError('Failed to generate personalized roadmap. Please try again.')
+      throw err
     }
-  };
+  }
+
+  const handleGenerateRoadmapReady = () => {
+    if (!lastGeneratedRef.current && !roadmapData) {
+      setError('Failed to generate personalized roadmap. Please try again.')
+      setScreen(gradedResults ? 'gap' : 'career')
+      return
+    }
+    setScreen('roadmap')
+  }
+
+  const resolveStageSkill = (stage) => {
+    if (stage?.choiceLabel) return stage.choiceLabel
+    if (Array.isArray(stage?.skills) && stage.skills.length) return stage.skills[0]
+    return stage?.title || ''
+  }
+
+  const resolveLearnerLevel = (skillName) => {
+    const results = gradedResults?.skillResults || []
+    const match = results.find((r) =>
+      (r.skillName || '').toLowerCase() === String(skillName || '').toLowerCase()
+    )
+    return match?.level ?? 1
+  }
+
+  const openSkillCourses = (skillName) => {
+    const skill = String(skillName || '').trim()
+    if (!skill) return
+    const params = new URLSearchParams({ skill, learnerLevel: String(resolveLearnerLevel(skill)) })
+    navigate(`/courses?${params.toString()}`)
+  }
 
   const handleStageClick = (stage) => {
-    if (stage.status === 'locked') return;
-    const targetCourseId = stage.id || (stage.courses && stage.courses[0]);
-    if (targetCourseId) {
-      navigate(`/courses/${targetCourseId}`);
-    } else {
-      setSelectedStage(stage);
-      setScreen('courses');
+    if (stage.status === 'locked') return
+    const skill = resolveStageSkill(stage)
+    if (skill) {
+      openSkillCourses(skill)
+      return
     }
-  };
+    setSelectedStage(stage)
+    setScreen('courses')
+  }
 
   const handleCourseClick = (course) => {
     if (course) {
@@ -294,9 +340,11 @@ export default function PersonalizedRoadmapPage() {
     if (!gradedResults || !selectedCareer) return [];
     const levelNames = ['None', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
     const scoreMap = [0, 20, 40, 60, 80, 100];
+    const requiredSkills = selectedCareer.rawRequiredSkills || [];
+    const skillResults = gradedResults.skillResults || [];
 
-    return selectedCareer.rawRequiredSkills.map(cs => {
-      const userRes = gradedResults.skillResults.find(r => r.skillId === cs.skillId);
+    return requiredSkills.map(cs => {
+      const userRes = skillResults.find(r => r.skillId === cs.skillId);
       const currentLevel = userRes ? userRes.level : 0;
       const requiredLevel = cs.requiredLevel;
       const gap = requiredLevel - currentLevel;
@@ -341,14 +389,18 @@ export default function PersonalizedRoadmapPage() {
         status = 'available';
       }
 
+      const skillName = item.choiceLabel || (item.skills && item.skills[0]) || item.courseTitle
       return {
         id: item.courseId,
-        title: item.courseTitle,
+        title: skillName,
         status: status,
         progress: item.progress || (isCompleted ? 100 : 0),
         description: item.reason,
         lockedReason: item.status === 'LOCKED' ? item.reason : null,
-        courses: [item.courseId]
+        courses: [item.courseId],
+        choiceGroup: item.choiceGroup || null,
+        choiceLabel: item.choiceLabel || skillName,
+        skills: item.skills || []
       };
     });
   };
@@ -373,6 +425,17 @@ export default function PersonalizedRoadmapPage() {
 
   return (
     <main className="roadmap-page">
+      {['career', 'assessment', 'results', 'gap', 'generate'].includes(screen) && (
+        <JourneyProgress screen={screen} />
+      )}
+      {loading && (
+        <div className="journey-loading-overlay" role="status">
+          <div className="journey-loading-card">
+            <div className="courses__spinner" />
+            <p>Loading the next step…</p>
+          </div>
+        </div>
+      )}
       <div key={screen} className="roadmap-screen-fade">
         {error && (
           <div className="error-toast" onClick={() => setError(null)}>
@@ -386,7 +449,7 @@ export default function PersonalizedRoadmapPage() {
         {screen === 'onboarding' && (
           <section className="career-screen">
             <div className="screen-background-glow" />
-            <div className="career-wrapper">
+            <div className="career-wrapper career-wrapper--stack">
               <div className="career-intro">
                 <span>WELCOME TO SKILLHUB</span>
                 <h2>Define Your Career Path</h2>
@@ -430,7 +493,7 @@ export default function PersonalizedRoadmapPage() {
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: '0.9rem', color: 'rgba(200, 210, 240, 0.75)', lineHeight: 1.5 }}>
-                      Answer a few guided interest questions to receive tailored AI and data-backed career path matches.
+                      Answer a short interest quiz about how you like to work. We will match you to careers — no tech trivia.
                     </p>
                   </div>
                   <span style={{ fontSize: '1.4rem', color: '#a78bfa', opacity: 0.8 }}>→</span>
@@ -488,7 +551,7 @@ export default function PersonalizedRoadmapPage() {
         {screen === 'careers' && (
           <section className="career-screen">
             <div className="screen-background-glow" />
-            <div className="career-wrapper">
+            <div className="career-wrapper career-wrapper--stack">
               <div className="career-intro">
                 <span>CAREERS</span>
                 <h2>Select your goal.</h2>
@@ -518,18 +581,11 @@ export default function PersonalizedRoadmapPage() {
             <div className="assessment-header">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <button className="back-to-career" style={{ margin: 0 }} onClick={() => setScreen('onboarding')}>← Back</button>
-                <button
-                  type="button"
-                  className="quick-skip-btn"
-                  onClick={() => setScreen('careers')}
-                >
-                  🎯 I know my career (Browse all) →
-                </button>
               </div>
 
               <div className="assessment-title">
                 <span>CAREER DISCOVERY</span>
-                <h2>Find Your Perfect Tech Role</h2>
+                <h2>A few questions about you</h2>
                 <div className="assessment-step-badge" style={{ display: 'inline-block', marginTop: '8px' }}>
                   ✨ Question {discoveryIndex + 1} of {discoveryQuestions.length}
                 </div>
@@ -546,7 +602,7 @@ export default function PersonalizedRoadmapPage() {
             <div className="assessment-container">
               <div className="question-card">
                 <h1>{discoveryQuestions[discoveryIndex].question}</h1>
-                <p className="question-subtitle">Select the answer that aligns closest with your passion and goals.</p>
+                <p className="question-subtitle">Pick the option that feels most like you — not your technical background.</p>
 
                 <div className="assessment-options">
                   {discoveryQuestions[discoveryIndex].options.map((opt, i) => {
@@ -601,7 +657,7 @@ export default function PersonalizedRoadmapPage() {
               <div className="career-intro">
                 <span>DISCOVERY RESULTS</span>
                 <h2>Your Top Career Matches</h2>
-                <p>Based on your answers, these paths match your strengths and interests best:</p>
+                <p>Based on your interests and work style, these paths fit you best:</p>
                 <button className="back-to-career" style={{ marginTop: '20px' }} onClick={() => setScreen('onboarding')}>← Start Over</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', width: '100%', maxWidth: '1000px', margin: '40px auto' }}>
@@ -654,9 +710,9 @@ export default function PersonalizedRoadmapPage() {
             <div className="assessment-header">
               <button className="back-to-career" onClick={() => setScreen('career')}>← {selectedCareer?.title}</button>
               <div className="assessment-title">
-                <span>SKILL ASSESSMENT</span>
-                <h2>Verify Your Skills</h2>
-                <p>Help us customize your path by answering these quick questions, or skip to auto-generate.</p>
+                <span>CAREER QUIZ</span>
+                <h2>A short check for this path</h2>
+                <p>Just a few experience questions for this career — no tech trivia. Skip anytime to generate your roadmap.</p>
               </div>
             </div>
             <Assessment
@@ -698,7 +754,9 @@ export default function PersonalizedRoadmapPage() {
         {screen === 'generate' && (
           <GenerateRoadmap
             career={selectedCareer}
-            onComplete={handleGenerateRoadmapComplete}
+            onGenerate={handleGenerateRoadmapRequest}
+            onReady={handleGenerateRoadmapReady}
+            onBack={() => setScreen(gradedResults ? 'gap' : 'career')}
           />
         )}
 
@@ -787,7 +845,7 @@ export default function PersonalizedRoadmapPage() {
                   <strong style={{ fontSize: '17px', color: '#f8fafc' }}>Roadmap Generated & Ready!</strong>
                 </div>
                 <p style={{ margin: 0, fontSize: '14px', color: '#cbd5e1' }}>
-                  Your learning queue has been generated with {roadmapData?.items?.length || 5} course milestones.
+                  Your learning queue has been generated with {roadmapData?.items?.length || 5} skill milestones.
                 </p>
               </div>
               <button
@@ -806,10 +864,9 @@ export default function PersonalizedRoadmapPage() {
                   transition: 'transform 0.2s'
                 }}
                 onClick={() => {
-                  const firstCourseId = (roadmapData?.items && roadmapData.items.length > 0)
-                    ? roadmapData.items[0].courseId
-                    : 1;
-                  navigate(`/courses/${firstCourseId}`);
+                  const first = getMappedRoadmapStages().find((stage) => stage.status !== 'locked')
+                    || getMappedRoadmapStages()[0]
+                  openSkillCourses(resolveStageSkill(first))
                 }}
               >
                 Start Learning Queue →

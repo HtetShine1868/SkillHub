@@ -36,11 +36,9 @@ INSERT INTO career_skills (id, career_id, skill_id, required_level, importance) 
 INSERT INTO career_skills (id, career_id, skill_id, required_level, importance) VALUES
 (7, 1, 7, 2, 0.50) ON CONFLICT (career_id, skill_id) DO NOTHING;
 
--- Seed Career Discovery Questions
+-- Seed Career Discovery Questions (replaced on startup by DataInitializer interest quiz)
 INSERT INTO career_discovery_questions (id, question, options_json, order_index) VALUES
-(1, 'Which type of task sounds more exciting to you?', '[{"index":0,"label":"Building the core logic and systems of an application","description":"Working with databases, APIs, and business systems.","weights":{"1":5,"2":1}},{"index":1,"label":"Designing user experiences and animations","description":"Working with layouts, CSS, React components, and responsive views.","weights":{"1":1,"2":5}}]', 1) ON CONFLICT (id) DO NOTHING;
-INSERT INTO career_discovery_questions (id, question, options_json, order_index) VALUES
-(2, 'How do you feel about working with visual designs and mockups?', '[{"index":0,"label":"I prefer logical architecture over visuals","description":"I would rather optimize search algorithms or query times.","weights":{"1":5,"2":1}},{"index":1,"label":"I love bringing visual interfaces to life","description":"Translating design files into perfect functional web pages.","weights":{"1":1,"2":5}}]', 2) ON CONFLICT (id) DO NOTHING;
+(1, 'What kind of Saturday project would you actually enjoy?', '[{"label":"Fix or automate something so it just works","description":"You like hidden problems and reliable results","weights":{"1":5,"5":4}},{"label":"Redesign how an app or space looks and feels","description":"You care about first impressions","weights":{"2":5,"8":4}}]', 1) ON CONFLICT (id) DO NOTHING;
 
 -- Seed Skill Assessment Questions (Self-reported & Knowledge questions)
 INSERT INTO assessment_questions (id, skill_id, question, type, options_json, correct_answer, difficulty, order_index) VALUES

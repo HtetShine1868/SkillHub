@@ -20,12 +20,10 @@ public class EnrollmentController {
     private final UserRepository userRepository;
 
     private User resolveUser(UserDetails principal) {
-        if (principal != null && principal.getUsername() != null) {
-            return userRepository.findByEmail(principal.getUsername())
-                    .orElseGet(() -> userRepository.findAll().stream().findFirst()
-                            .orElseThrow(() -> new RuntimeException("User not found")));
+        if (principal == null || principal.getUsername() == null) {
+            throw new RuntimeException("User not found");
         }
-        return userRepository.findAll().stream().findFirst()
+        return userRepository.findByEmail(principal.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
@@ -88,7 +86,7 @@ public class EnrollmentController {
         User user = resolveUser(principal);
         boolean enrolled = user.getRole() == com.example.backend.user.entity.Role.INSTRUCTOR ||
                            user.getRole() == com.example.backend.user.entity.Role.ADMIN ||
-                           enrollmentService.getMyEnrollments(user).stream().anyMatch(e -> e.getCourse() != null && e.getCourse().getId().equals(courseId));
+                           enrollmentService.isEnrolled(user.getId(), courseId);
         return ResponseEntity.ok(Map.of("enrolled", enrolled, "courseId", courseId));
     }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { getCourseById, getLessons } from '../services/courseService'
 import { getMyEnrollments, enrollInCourse } from '../services/enrollmentService'
 import DualFloatingChat from '../components/DualFloatingChat'
@@ -18,6 +18,8 @@ const MOCK_LESSONS = [
 const CoursePage = () => {
   const { id }      = useParams()
   const navigate    = useNavigate()
+  const location    = useLocation()
+  const fromSkill   = location.state?.fromSkill
   const [course, setCourse]       = useState(null)
   const [lessons, setLessons]     = useState([])
   const [loading, setLoading]     = useState(true)
@@ -85,7 +87,9 @@ const CoursePage = () => {
       <div className="cpage__inner">
         {/* Breadcrumb */}
         <nav className="cpage__breadcrumb">
-          <button onClick={() => navigate('/courses')}>← Courses</button>
+          <button onClick={() => navigate(fromSkill ? `/courses?skill=${encodeURIComponent(fromSkill)}` : '/courses')}>
+            {fromSkill ? `← ${fromSkill} courses` : '← Courses'}
+          </button>
           <span>/</span>
           <span>{displayCourse.title}</span>
         </nav>

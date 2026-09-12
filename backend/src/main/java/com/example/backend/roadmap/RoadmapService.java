@@ -21,6 +21,17 @@ import java.util.*;
 @Slf4j
 public class RoadmapService {
 
+    /**
+     * Foundation languages that can appear as parallel first-step choices
+     * on developer roadmaps (Java vs JavaScript vs Python).
+     */
+    private static final Map<String, String> STARTER_LANGUAGE_LABELS = Map.of(
+            "java", "Java",
+            "typescript", "JavaScript",
+            "node.js & express", "JavaScript",
+            "python", "Python"
+    );
+
     private final RoadmapItemRepository roadmapItemRepository;
     private final CareerRepository careerRepository;
     private final CareerSkillRepository careerSkillRepository;
@@ -115,6 +126,26 @@ public class RoadmapService {
             }
         }
 
+        // Developer careers: also offer parallel beginner-language tracks when they exist
+        Set<String> wantedLanguages = wantedStarterLabels(careerSkills, career.getName());
+        if (!wantedLanguages.isEmpty()) {
+            Set<Long> candidateIds = new HashSet<>();
+            for (Course c : candidateCourses) {
+                candidateIds.add(c.getId());
+            }
+            for (Course course : allCourses) {
+                if (completedCourseIds.contains(course.getId()) || candidateIds.contains(course.getId())) {
+                    continue;
+                }
+                String lang = starterLanguageLabel(course);
+                if (lang != null && wantedLanguages.contains(lang)) {
+                    candidateCourses.add(course);
+                    candidateIds.add(course.getId());
+                    courseReasons.put(course.getId(), "Optional starting language for " + career.getName() + ": " + lang + ".");
+                }
+            }
+        }
+
         // Fallback: If no candidate courses specifically match the skill gap, include all available courses
         if (candidateCourses.isEmpty()) {
             for (Course course : allCourses) {
@@ -127,6 +158,7 @@ public class RoadmapService {
 
         // Step 5: Topological Sort based on prerequisites to get a logical order
         List<Course> orderedCourses = sortCoursesByPrerequisites(candidateCourses);
+        orderedCourses = promoteStarterLanguageChoices(orderedCourses);
 
         // Step 6: Create or update RoadmapItems
         // Preserving completed items if any exist
@@ -172,6 +204,10 @@ public class RoadmapService {
 
             for (CoursePrerequisite prereq : prerequisites) {
                 Long prereqCourseId = prereq.getRequiredCourse().getId();
+                // Language starters are alternatives, not gates for each other
+                if (starterLanguageLabel(course) != null && starterLanguageLabel(prereq.getRequiredCourse()) != null) {
+                    continue;
+                }
                 // If the prerequisite is part of our roadmap
                 boolean isInRoadmap = orderedCourses.stream().anyMatch(c -> c.getId().equals(prereqCourseId)) 
                         || completedItems.containsKey(prereqCourseId);
@@ -263,10 +299,16 @@ public class RoadmapService {
 
         int progress = items.isEmpty() ? 0 : (completed * 100) / items.size();
 
+        long starterCount = items.stream()
+                .filter(ri -> starterLanguageLabel(ri.getCourse()) != null)
+                .count();
+
         List<RoadmapItemDto> dtos = items.stream().map(ri -> {
             List<String> skills = courseSkillRepository.findByCourseId(ri.getCourse().getId()).stream()
                     .map(cs -> cs.getSkill().getName())
                     .toList();
+            String choiceLabel = starterLanguageLabel(ri.getCourse());
+            String choiceGroup = (choiceLabel != null && starterCount >= 2) ? "starter-language" : null;
 
             return new RoadmapItemDto(
                     ri.getId(),
@@ -278,7 +320,9 @@ public class RoadmapService {
                     ri.getOrderIndex(),
                     ri.getStatus(),
                     ri.getProgress(),
-                    ri.getReason()
+                    ri.getReason(),
+                    choiceGroup,
+                    choiceLabel
             );
         }).toList();
 
@@ -344,5 +388,63 @@ public class RoadmapService {
         }
 
         return sorted;
+    }
+
+    private Set<String> wantedStarterLabels(List<CareerSkill> careerSkills, String careerName) {
+        Set<String> labels = new HashSet<>();
+        for (CareerSkill cs : careerSkills) {
+            if (cs.getSkill() == null) {
+                continue;
+            }
+            String label = STARTER_LANGUAGE_LABELS.get(cs.getSkill().getName().toLowerCase());
+            if (label != null) {
+                labels.add(label);
+            }
+        }
+        String name = careerName == null ? "" : careerName.toLowerCase();
+        if (labels.contains("Java") || name.contains("full stack")) {
+            labels.add("Java");
+            labels.add("JavaScript");
+        }
+        return labels;
+    }
+
+    private String starterLanguageLabel(Course course) {
+        if (course == null) {
+            return null;
+        }
+        for (CourseSkill cs : courseSkillRepository.findByCourseId(course.getId())) {
+            if (cs.getSkill() == null) {
+                continue;
+            }
+            String label = STARTER_LANGUAGE_LABELS.get(cs.getSkill().getName().toLowerCase());
+            if (label != null) {
+                return label;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * When two or more language-foundation courses exist, put them first so the
+     * roadmap can start with a "pick a language" fork instead of a single track.
+     */
+    private List<Course> promoteStarterLanguageChoices(List<Course> orderedCourses) {
+        List<Course> starters = new ArrayList<>();
+        List<Course> rest = new ArrayList<>();
+        for (Course course : orderedCourses) {
+            if (starterLanguageLabel(course) != null) {
+                starters.add(course);
+            } else {
+                rest.add(course);
+            }
+        }
+        if (starters.size() < 2) {
+            return orderedCourses;
+        }
+        List<Course> promoted = new ArrayList<>(starters.size() + rest.size());
+        promoted.addAll(starters);
+        promoted.addAll(rest);
+        return promoted;
     }
 }

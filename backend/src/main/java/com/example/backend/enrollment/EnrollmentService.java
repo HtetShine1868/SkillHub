@@ -219,6 +219,10 @@ public class EnrollmentService {
         return enrollmentRepository.findByUserId(user.getId());
     }
 
+    public boolean isEnrolled(Long userId, Long courseId) {
+        return enrollmentRepository.existsByUserIdAndCourseId(userId, courseId);
+    }
+
     private String LocalDateYear() {
         return String.valueOf(LocalDateTime.now().getYear());
     }

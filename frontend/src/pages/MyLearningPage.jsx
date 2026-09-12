@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PersonalizedRoadmapPage from './PersonalizedRoadmapPage'
+import { useAuth } from '../context/AuthContext'
 import { getMyEnrollments } from '../services/enrollmentService'
 import { getAllCourses } from '../services/courseService'
 import { getMyRoadmap } from '../services/roadmapService'
@@ -9,6 +10,7 @@ import './MyLearningPage.css'
 const CAT_COLOR = { Backend: '#a78bfa', Frontend: '#38bdf8', Data: '#6ee7b7', DevOps: '#fcd34d', Database: '#f9a8d4', Engineering: '#a78bfa' }
 
 const MyLearningPage = () => {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
@@ -38,13 +40,12 @@ const MyLearningPage = () => {
     async function loadData() {
       setLoading(true)
       try {
-        const [myEnrolls, courses] = await Promise.all([
-          getMyEnrollments().catch(() => []),
-          getAllCourses().catch(() => [])
-        ])
-
+        const myEnrolls = await getMyEnrollments().catch(() => [])
         setEnrollments(myEnrolls || [])
-        setAllCourses(courses || [])
+        if (!myEnrolls?.length) {
+          const courses = await getAllCourses().catch(() => [])
+          setAllCourses(courses || [])
+        }
 
         // Attempt to load active user roadmap - check localStorage first
         try {

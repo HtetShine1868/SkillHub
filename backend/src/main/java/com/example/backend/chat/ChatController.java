@@ -47,13 +47,23 @@ public class ChatController {
             latestByPartner.putIfAbsent(partnerId, msg);
         }
 
+        Set<Long> courseIds = latestByPartner.values().stream()
+                .map(ChatMessage::getCourseId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, String> courseTitles = courseIds.isEmpty()
+                ? Map.of()
+                : courseRepo.findAllById(courseIds).stream()
+                .collect(Collectors.toMap(Course::getId, Course::getTitle, (a, b) -> a));
+
         List<Map<String, Object>> result = latestByPartner.entrySet().stream().map(e -> {
-            Long partnerId = e.getKey();
             ChatMessage last = e.getValue();
-            User partner = userRepo.findById(partnerId).orElse(null);
+            User partner = last.getSender().getId().equals(me.getId())
+                    ? last.getReceiver()
+                    : last.getSender();
             if (partner == null) return null;
             Map<String, Object> conv = new HashMap<>();
-            conv.put("partnerId", partnerId);
+            conv.put("partnerId", partner.getId());
             conv.put("partnerName", partner.getName());
             conv.put("partnerEmail", partner.getEmail());
             conv.put("partnerAvatar", partner.getProfileImage());
@@ -64,7 +74,7 @@ public class ChatController {
             conv.put("mode", last.getMode() != null ? last.getMode() : "GENERAL");
             conv.put("courseId", last.getCourseId());
             if (last.getCourseId() != null) {
-                courseRepo.findById(last.getCourseId()).ifPresent(c -> conv.put("courseTitle", c.getTitle()));
+                conv.put("courseTitle", courseTitles.get(last.getCourseId()));
             }
             return conv;
         }).filter(Objects::nonNull).collect(Collectors.toList());
@@ -130,16 +140,16 @@ public class ChatController {
                     : msg.getSender().getId();
 
             if (!studentMap.containsKey(partnerId)) {
-                userRepo.findById(partnerId).ifPresent(p -> {
-                    Map<String, Object> s = new HashMap<>();
-                    s.put("id", p.getId());
-                    s.put("name", p.getName());
-                    s.put("email", p.getEmail());
-                    s.put("avatar", p.getProfileImage());
-                    s.put("role", p.getRole() != null ? p.getRole().name() : "STUDENT");
-                    s.put("courses", new ArrayList<Map<String, Object>>());
-                    studentMap.put(p.getId(), s);
-                });
+                User partner = msg.getSender().getId().equals(me.getId()) ? msg.getReceiver() : msg.getSender();
+                if (partner == null) continue;
+                Map<String, Object> s = new HashMap<>();
+                s.put("id", partner.getId());
+                s.put("name", partner.getName());
+                s.put("email", partner.getEmail());
+                s.put("avatar", partner.getProfileImage());
+                s.put("role", partner.getRole() != null ? partner.getRole().name() : "STUDENT");
+                s.put("courses", new ArrayList<Map<String, Object>>());
+                studentMap.put(partner.getId(), s);
             }
         }
 
@@ -249,11 +259,7 @@ public class ChatController {
         }
 
         if (instructor == null) {
-            // Fallback to any instructor or admin
-            instructor = userRepo.findAll().stream()
-                    .filter(u -> u.getRole() == Role.INSTRUCTOR || u.getRole() == Role.ADMIN)
-                    .findFirst()
-                    .orElse(null);
+            instructor = userRepo.findFirstByRoleIn(List.of(Role.INSTRUCTOR, Role.ADMIN)).orElse(null);
         }
 
         if (instructor == null) {
@@ -297,19 +303,11 @@ public class ChatController {
             }
         }
 
-        // Fallback: show all instructors/admins
+        // Fallback: show instructors/admins without scanning every user
         if (instructorCourses.isEmpty()) {
-            List<User> instructors = userRepo.findAll().stream()
-                    .filter(u -> u.getRole() == Role.INSTRUCTOR || u.getRole() == Role.ADMIN)
+            List<User> instructors = userRepo.findByRoleIn(List.of(Role.INSTRUCTOR, Role.ADMIN)).stream()
                     .filter(u -> !u.getId().equals(me.getId()))
                     .collect(Collectors.toList());
-
-            if (instructors.isEmpty()) {
-                // If no other instructors found, return any other user or empty
-                instructors = userRepo.findAll().stream()
-                        .filter(u -> !u.getId().equals(me.getId()))
-                        .collect(Collectors.toList());
-            }
 
             return ResponseEntity.ok(instructors.stream().map(inst -> {
                 Map<String, Object> m = new HashMap<>();
@@ -327,33 +325,35 @@ public class ChatController {
             }).collect(Collectors.toList()));
         }
 
+        Map<Long, User> instructors = userRepo.findAllById(instructorCourses.keySet()).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<Long, List<Course>> entry : instructorCourses.entrySet()) {
-            userRepo.findById(entry.getKey()).ifPresent(inst -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", inst.getId());
-                m.put("name", inst.getName());
-                m.put("avatar", inst.getProfileImage());
-                m.put("role", inst.getRole() != null ? inst.getRole().name() : "INSTRUCTOR");
-                m.put("courses", entry.getValue().stream().map(c -> {
-                    Map<String, Object> cmap = new HashMap<>();
-                    cmap.put("id", c.getId());
-                    cmap.put("title", c.getTitle());
-                    return cmap;
-                }).collect(Collectors.toList()));
-                result.add(m);
-            });
+            User inst = instructors.get(entry.getKey());
+            if (inst == null) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", inst.getId());
+            m.put("name", inst.getName());
+            m.put("avatar", inst.getProfileImage());
+            m.put("role", inst.getRole() != null ? inst.getRole().name() : "INSTRUCTOR");
+            m.put("courses", entry.getValue().stream().map(c -> {
+                Map<String, Object> cmap = new HashMap<>();
+                cmap.put("id", c.getId());
+                cmap.put("title", c.getTitle());
+                return cmap;
+            }).collect(Collectors.toList()));
+            result.add(m);
         }
 
         return ResponseEntity.ok(result);
     }
 
     private User getUser(UserDetails principal) {
-        if (principal != null && principal.getUsername() != null) {
-            return userRepo.findByEmail(principal.getUsername())
-                    .orElseGet(() -> userRepo.findAll().stream().findFirst().orElse(null));
+        if (principal == null || principal.getUsername() == null) {
+            return null;
         }
-        return userRepo.findAll().stream().findFirst().orElse(null);
+        return userRepo.findByEmail(principal.getUsername()).orElse(null);
     }
 
     public record SendMessageRequest(Long receiverId, String content, String mode, Long courseId) {}

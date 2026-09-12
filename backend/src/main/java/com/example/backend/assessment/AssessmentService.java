@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -31,24 +30,35 @@ public class AssessmentService {
      * Gets all questions relevant to the skills required for the specified career.
      */
     public List<AssessmentQuestionResponse> getQuestionsForCareer(Long careerId) {
-        List<CareerSkill> requiredSkills = careerSkillRepository.findByCareerId(careerId);
-        Set<Long> skillIds = new HashSet<>();
+        List<CareerSkill> requiredSkills = new ArrayList<>(careerSkillRepository.findByCareerId(careerId));
+        requiredSkills.sort(Comparator.comparing(
+                (CareerSkill cs) -> cs.getImportance() != null ? cs.getImportance() : 0.0
+        ).reversed());
+
+        List<AssessmentQuestionResponse> questions = new ArrayList<>();
         for (CareerSkill cs : requiredSkills) {
-            skillIds.add(cs.getSkill().getId());
-        }
-
-        List<AssessmentQuestionResponse> questions = questionRepository.findAllByOrderByOrderIndexAsc().stream()
-                .filter(q -> q.getSkill() != null && skillIds.contains(q.getSkill().getId()))
-                .map(this::toResponse)
-                .toList();
-
-        if (questions.isEmpty()) {
-            return questionRepository.findAllByOrderByOrderIndexAsc().stream()
-                    .map(this::toResponse)
-                    .toList();
+            if (cs.getSkill() == null || questions.size() >= 5) {
+                break;
+            }
+            AssessmentQuestion picked = questionRepository.findBySkillId(cs.getSkill().getId()).stream()
+                    .filter(q -> isExperienceQuestion(q.getType()))
+                    .min(Comparator.comparing(AssessmentQuestion::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
+                    .orElse(null);
+            if (picked != null) {
+                questions.add(toResponse(picked));
+            }
         }
 
         return questions;
+    }
+
+    private boolean isExperienceQuestion(String type) {
+        if (type == null) {
+            return false;
+        }
+        return "SELF_REPORTED".equalsIgnoreCase(type)
+                || "skill-level".equalsIgnoreCase(type)
+                || "experience".equalsIgnoreCase(type);
     }
 
     /**
@@ -57,14 +67,22 @@ public class AssessmentService {
      */
     @Transactional
     public AssessmentResultResponse submitAssessment(User user, AssessmentSubmitRequest request) {
-        Career career = careerRepository.findById(request.careerId())
-                .orElseThrow(() -> new RuntimeException("Career not found"));
-
-        List<CareerSkill> careerSkills = careerSkillRepository.findByCareerId(career.getId());
-        Set<Long> relevantSkillIds = new HashSet<>();
-        for (CareerSkill cs : careerSkills) {
-            relevantSkillIds.add(cs.getSkill().getId());
+        if (request == null || request.careerId() == null) {
+            throw new IllegalArgumentException("careerId is required");
         }
+
+        Career career = careerRepository.findById(request.careerId())
+                .orElseThrow(() -> new IllegalArgumentException("Career not found"));
+
+        Map<Long, CareerSkill> careerSkillsBySkill = new LinkedHashMap<>();
+        for (CareerSkill cs : careerSkillRepository.findByCareerId(career.getId())) {
+            if (cs.getSkill() == null) {
+                continue;
+            }
+            careerSkillsBySkill.putIfAbsent(cs.getSkill().getId(), cs);
+        }
+        List<CareerSkill> careerSkills = new ArrayList<>(careerSkillsBySkill.values());
+        Set<Long> relevantSkillIds = careerSkillsBySkill.keySet();
 
         // Fetch all questions answered by user
         List<AssessmentQuestion> allQuestions = questionRepository.findAll();
@@ -76,9 +94,10 @@ public class AssessmentService {
         // Group answers by Skill
         Map<Long, List<GradedAnswer>> skillAnswers = new HashMap<>();
 
-        request.answers().forEach((questionId, answerValue) -> {
+        Map<Long, String> submittedAnswers = normalizeAnswers(request.answers());
+        submittedAnswers.forEach((questionId, answerValue) -> {
             AssessmentQuestion question = questionMap.get(questionId);
-            if (question == null || question.getSkill() == null) return;
+            if (question == null || question.getSkill() == null || answerValue == null) return;
 
             Long skillId = question.getSkill().getId();
             if (!relevantSkillIds.contains(skillId)) return;
@@ -202,25 +221,32 @@ public class AssessmentService {
         return 5;
     }
 
-    private void saveOrUpdateUserSkill(User user, Skill skill, int level, double confidence, String source) {
-        UserSkill userSkill = userSkillRepository.findByUserIdAndSkillId(user.getId(), skill.getId())
-                .orElse(null);
-
-        if (userSkill == null) {
-            userSkill = UserSkill.builder()
-                    .user(user)
-                    .skill(skill)
-                    .currentLevel(level)
-                    .confidence(confidence)
-                    .source(source)
-                    .build();
-        } else {
-            userSkill.setCurrentLevel(level);
-            userSkill.setConfidence(confidence);
-            userSkill.setSource(source);
+    private Map<Long, String> normalizeAnswers(Map<?, ?> rawAnswers) {
+        Map<Long, String> normalized = new HashMap<>();
+        if (rawAnswers == null) {
+            return normalized;
         }
+        rawAnswers.forEach((key, value) -> {
+            if (key == null || value == null) {
+                return;
+            }
+            try {
+                normalized.put(Long.valueOf(key.toString()), value.toString());
+            } catch (NumberFormatException ignored) {
+                // skip malformed question ids
+            }
+        });
+        return normalized;
+    }
 
-        userSkillRepository.save(userSkill);
+    private void saveOrUpdateUserSkill(User user, Skill skill, int level, double confidence, String source) {
+        userSkillRepository.upsertUserSkill(
+                user.getId(),
+                skill.getId(),
+                level,
+                confidence,
+                source
+        );
     }
 
     private AssessmentQuestionResponse toResponse(AssessmentQuestion q) {

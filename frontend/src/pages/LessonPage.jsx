@@ -690,7 +690,6 @@ const LessonPage = () => {
         </div>
       </main>
 
-      {/* Dual Stacked Floating Chats: AI Tutor (Top) & Instructor Chat (Bottom) */}
       <DualFloatingChat
         courseId={courseId}
         courseTitle={course?.title}

@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import axiosClient from '../api/axiosClient'
+import { getConversations, peekConversations } from '../services/chatService'
 import { useAuth } from './AuthContext'
 import { playNotificationSound } from '../utils/soundUtils'
 import './ChatNotificationContext.css'
 
 const ChatNotificationContext = createContext(null)
 
-const POLL_INTERVAL_MS = 5000
+const POLL_INTERVAL_MS = 20000
 
 function seenStorageKey(userId) {
     return `skillhub_chat_seen_${userId}`
@@ -97,8 +98,8 @@ export function ChatNotificationProvider({ children }) {
             let partners = []
 
             if (isStudent) {
-                const res = await axiosClient.get('/api/chat/conversations').catch(() => null)
-                const data = res?.data || []
+                const cached = peekConversations()
+                const data = cached || await getConversations().catch(() => [])
                 partners = data.map(c => ({
                     id: c.partnerId,
                     name: c.partnerName,

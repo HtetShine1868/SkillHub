@@ -38,7 +38,7 @@ export const getCareerSkills = async (id) => {
 };
 
 export const getDiscoveryQuestions = async () => {
-  const key = 'discovery_questions';
+  const key = 'discovery_questions_interest_v1';
   return getCached(key, async () => {
     const response = await axiosClient.get("/api/discovery/questions");
     return response.data;

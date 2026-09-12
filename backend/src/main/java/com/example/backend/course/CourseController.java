@@ -25,9 +25,19 @@ public class CourseController {
             String search,
 
             @RequestParam(required = false)
-            String category
+            String category,
+
+            @RequestParam(required = false)
+            String skill,
+
+            @RequestParam(required = false)
+            Integer learnerLevel
 
     ) {
+
+        if (skill != null && !skill.isBlank()) {
+            return courseService.getCoursesBySkill(skill, learnerLevel);
+        }
 
         if (search != null && !search.isBlank()) {
 

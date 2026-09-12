@@ -55,7 +55,7 @@ export default function SelectedCareerCard({
         className="primary-button career-start-button"
         onClick={onStart}
       >
-        🚀 Start Skill Assessment
+        🚀 Start this career's quiz
         <span>→</span>
       </button>
 

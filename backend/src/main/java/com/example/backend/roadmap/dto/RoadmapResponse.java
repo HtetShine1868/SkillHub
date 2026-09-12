@@ -18,6 +18,8 @@ public record RoadmapResponse(
             Integer orderIndex,
             String status,
             Integer progress,
-            String reason
+            String reason,
+            String choiceGroup,
+            String choiceLabel
     ) {}
 }

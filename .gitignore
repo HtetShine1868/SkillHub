@@ -1,7 +1,6 @@
 HELP.md
 # Secrets — never commit these
 .env
-backend/src/main/resources/application.properties
 
 # JVM crash / dump clutter
 hs_err_pid*.log

@@ -4,6 +4,7 @@ import com.example.backend.assessment.dto.*;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,8 +41,12 @@ public class AssessmentController {
             @AuthenticationPrincipal UserDetails principal,
             @RequestBody AssessmentSubmitRequest request
     ) {
+        if (principal == null || principal.getUsername() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         User user = userRepository.findByEmail(principal.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         AssessmentResultResponse response = assessmentService.submitAssessment(user, request);
         return ResponseEntity.ok(response);

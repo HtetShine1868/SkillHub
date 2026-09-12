@@ -80,7 +80,8 @@ public class CareerDiscoveryService {
                     maxPossibleScores.merge(careerId, (double) maxWeight, Double::sum));
 
             // Add score from user's selected option
-            Integer selectedIndex = request.answers().get(question.getId());
+            Map<Long, Integer> answers = request.answers() == null ? Map.of() : request.answers();
+            Integer selectedIndex = answers.get(question.getId());
             if (selectedIndex != null && selectedIndex >= 0 && selectedIndex < options.size()) {
 
                 DiscoveryOptionResponse selectedOption = options.get(selectedIndex);
@@ -96,9 +97,9 @@ public class CareerDiscoveryService {
                 .map(career -> {
                     double raw = careerScores.getOrDefault(career.getId(), 0.0);
                     double maxPossible = maxPossibleScores.getOrDefault(career.getId(), 10.0);
-                    double matchPct = (raw > 0 && maxPossible > 0)
-                            ? Math.min(98.0, Math.max(68.0, Math.round((raw / maxPossible) * 10000.0) / 100.0))
-                            : Math.round((72.0 + ((career.getId() * 7) % 20)) * 100.0) / 100.0;
+                    double matchPct = (maxPossible > 0)
+                            ? Math.round((raw / maxPossible) * 1000.0) / 10.0
+                            : 0.0;
                     return new CareerMatchResult(
                             career.getId(),
                             career.getName(),

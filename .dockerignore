@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+**/.env
+**/target
+**/node_modules
+frontend
+docs
+*.md
+!backend/pom.xml

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import axiosClient from '../api/axiosClient'
 import { useAuth } from '../context/AuthContext'
 import { useChatNotifications } from '../context/ChatNotificationContext'
+import { getAvailableInstructors, getChatMessages, getConversations, sendChatMessage } from '../services/chatService'
 import './ChatPage.css'
 
 export default function ChatPage() {
@@ -22,7 +22,8 @@ export default function ChatPage() {
     const [selectedCourseId, setSelectedCourseId] = useState(initialCourseId ? Number(initialCourseId) : null)
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
-    const [loading, setLoading] = useState(true)
+    const [loadingList, setLoadingList] = useState(true)
+    const [loadingThread, setLoadingThread] = useState(false)
     const [sending, setSending] = useState(false)
 
     const messagesEndRef = useRef(null)
@@ -31,70 +32,41 @@ export default function ChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
-    // 1. Fetch initial conversations and available instructors
     useEffect(() => {
         const loadInitialData = async () => {
-            setLoading(true)
+            setLoadingList(true)
             try {
-                const [convRes, instRes] = await Promise.all([
-                    axiosClient.get('/api/chat/conversations'),
-                    axiosClient.get('/api/chat/available-instructors')
-                ])
-
-                const convList = convRes.data || []
-                const instList = instRes.data || []
-
-                setConversations(convList)
+                const instList = await getAvailableInstructors().catch(() => [])
                 setAvailableInstructors(instList)
+                setLoadingList(false)
 
-                // If deep linked with instructorId
-                if (initialInstructorId) {
-                    const foundInst = instList.find(i => String(i.id) === String(initialInstructorId))
-                    if (foundInst) {
-                        setSelectedPartner({
-                            partnerId: foundInst.id,
-                            partnerName: foundInst.name,
-                            partnerAvatar: foundInst.avatar,
-                            partnerRole: foundInst.role,
-                            courses: foundInst.courses || []
-                        })
-                        if (initialCourseId) {
-                            setSelectedCourseId(Number(initialCourseId))
-                        } else if (foundInst.courses?.length > 0) {
-                            setSelectedCourseId(foundInst.courses[0].id)
-                        }
-                    }
-                } else if (convList.length > 0) {
-                    // Default to first conversation
-                    const first = convList[0]
-                    const matchingInst = instList.find(i => i.id === first.partnerId)
+                const deepLinked = initialInstructorId
+                    ? instList.find(i => String(i.id) === String(initialInstructorId))
+                    : null
+                const firstInst = deepLinked || instList[0]
+                if (firstInst) {
                     setSelectedPartner({
-                        ...first,
-                        courses: matchingInst?.courses || []
+                        partnerId: firstInst.id,
+                        partnerName: firstInst.name,
+                        partnerAvatar: firstInst.avatar,
+                        partnerRole: firstInst.role,
+                        courses: firstInst.courses || []
                     })
-                    if (first.courseId) setSelectedCourseId(first.courseId)
-                    if (first.mode) setMode(first.mode)
-                } else if (instList.length > 0) {
-                    // Default to first available instructor
-                    const first = instList[0]
-                    setSelectedPartner({
-                        partnerId: first.id,
-                        partnerName: first.name,
-                        partnerAvatar: first.avatar,
-                        partnerRole: first.role,
-                        courses: first.courses || []
-                    })
-                    if (first.courses?.length > 0) {
-                        setSelectedCourseId(first.courses[0].id)
+                    if (initialCourseId) {
+                        setSelectedCourseId(Number(initialCourseId))
+                    } else if (firstInst.courses?.length > 0) {
+                        setSelectedCourseId(firstInst.courses[0].id)
                     }
                 }
 
-                // Visiting the Chat page means the user has seen all current conversations
-                markAllSeen()
+                getConversations().then((convList) => {
+                    setConversations(convList || [])
+                    markAllSeen()
+                }).catch(() => {})
             } catch (err) {
                 console.error('Failed to load chat data:', err)
             } finally {
-                setLoading(false)
+                setLoadingList(false)
             }
         }
 
@@ -105,6 +77,7 @@ export default function ChatPage() {
     // Helper to fetch messages
     const fetchMessages = useCallback(async (isPolling = false) => {
         if (!selectedPartner?.partnerId) return
+        if (!isPolling) setLoadingThread(true)
 
         try {
             const params = {
@@ -114,22 +87,21 @@ export default function ChatPage() {
             if (mode === 'COURSE' && selectedCourseId) {
                 params.courseId = selectedCourseId
             }
-            const res = await axiosClient.get('/api/chat/messages', { params })
-            const data = res.data || []
+            const data = await getChatMessages(params)
             setMessages(prev => {
-                // If content is identical, do not trigger re-render
                 if (prev.length === data.length && prev[prev.length - 1]?.id === data[data.length - 1]?.id) {
                     return prev
                 }
                 return data
             })
-            // Actively viewing this thread — keep it marked as seen for the global badge
             markThreadSeen(selectedPartner.partnerId)
             if (!isPolling) {
-                setTimeout(scrollToBottom, 100)
+                setTimeout(scrollToBottom, 80)
             }
         } catch (err) {
             console.error('Failed to fetch messages:', err)
+        } finally {
+            if (!isPolling) setLoadingThread(false)
         }
     }, [selectedPartner?.partnerId, mode, selectedCourseId, markThreadSeen])
 
@@ -144,7 +116,7 @@ export default function ChatPage() {
 
         const intervalId = setInterval(() => {
             fetchMessages(true)
-        }, 3000)
+        }, 8000)
 
         return () => clearInterval(intervalId)
     }, [selectedPartner?.partnerId, fetchMessages])
@@ -157,6 +129,18 @@ export default function ChatPage() {
         const messageText = inputValue.trim()
         setInputValue('')
         setSending(true)
+        const tempId = `temp-${Date.now()}`
+        const optimistic = {
+            id: tempId,
+            senderId: user?.id,
+            senderName: user?.name || 'You',
+            content: messageText,
+            sentAt: new Date().toISOString(),
+            mode,
+            pending: true
+        }
+        setMessages(prev => [...prev, optimistic])
+        setTimeout(scrollToBottom, 40)
 
         try {
             const payload = {
@@ -165,14 +149,10 @@ export default function ChatPage() {
                 mode: mode,
                 courseId: mode === 'COURSE' ? selectedCourseId : null
             }
-            const res = await axiosClient.post('/api/chat/messages', payload)
-            const sentMsg = res.data
+            const sentMsg = await sendChatMessage(payload)
 
-            setMessages(prev => {
-                if (prev.some(m => m.id === sentMsg.id)) return prev
-                return [...prev, sentMsg]
-            })
-            setTimeout(scrollToBottom, 100)
+            setMessages(prev => prev.map(m => m.id === tempId ? sentMsg : m))
+            setTimeout(scrollToBottom, 60)
 
             setConversations(prev => {
                 const existing = prev.find(c => c.partnerId === selectedPartner.partnerId)
@@ -196,6 +176,8 @@ export default function ChatPage() {
             })
         } catch (err) {
             console.error('Failed to send message:', err)
+            setMessages(prev => prev.filter(m => m.id !== tempId))
+            setInputValue(messageText)
         } finally {
             setSending(false)
         }
@@ -232,7 +214,12 @@ export default function ChatPage() {
                     {/* Available Enrolled Instructors */}
                     <div className="chat-sidebar__section-title">Instructors (Enrolled Courses)</div>
                     <div className="chat-sidebar__instructors">
-                        {availableInstructors.length === 0 ? (
+                        {loadingList ? (
+                            <div className="chat-sidebar__skeleton">
+                                <div className="chat-skel" />
+                                <div className="chat-skel" />
+                            </div>
+                        ) : availableInstructors.length === 0 ? (
                             <div className="chat-sidebar__empty">
                                 <p>Enroll in a course to start chatting with instructors!</p>
                                 <Link to="/courses" className="chat-sidebar__explore-link">Explore Courses →</Link>
@@ -376,8 +363,12 @@ export default function ChatPage() {
 
                             {/* Messages Container */}
                             <div className="chat-messages">
-                                {loading ? (
-                                    <div className="chat-empty-state">Loading messages...</div>
+                                {loadingThread ? (
+                                    <div className="chat-thread-skel">
+                                        <div className="chat-skel chat-skel--bubble" />
+                                        <div className="chat-skel chat-skel--bubble mine" />
+                                        <div className="chat-skel chat-skel--bubble" />
+                                    </div>
                                 ) : messages.length === 0 ? (
                                     <div className="chat-empty-state">
                                         <div className="chat-empty-icon">{mode === 'COURSE' ? '📚' : '💬'}</div>
@@ -409,7 +400,7 @@ export default function ChatPage() {
                                                         )}
                                                     </div>
                                                 )}
-                                                <div className={`chat-bubble ${isMine ? 'mine' : 'partner'}`}>
+                                                <div className={`chat-bubble ${isMine ? 'mine' : 'partner'} ${msg.pending ? 'pending' : ''}`}>
                                                     <div className="chat-bubble__sender">
                                                         {isMine ? 'You' : msg.senderName}
                                                         {msg.mode === 'COURSE' && (
@@ -417,7 +408,7 @@ export default function ChatPage() {
                                                         )}
                                                     </div>
                                                     <div className="chat-bubble__text">{msg.content}</div>
-                                                    <div className="chat-bubble__time">{sentTime}</div>
+                                                    <div className="chat-bubble__time">{msg.pending ? 'Sending…' : sentTime}</div>
                                                 </div>
                                             </div>
                                         )

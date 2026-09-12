@@ -7,22 +7,22 @@ import './CareerDiscoveryPage.css'
 const MOCK_QUESTIONS = [
   {
     id: 1, orderIndex: 1,
-    question: 'What kind of software development excites you the most?',
+    question: 'What kind of Saturday project would you actually enjoy?',
     options: [
-      { label: '🔧 Backend services & database logic', description: 'Working with APIs, system architecture, and SQL queries', value: 0 },
-      { label: '🎨 Interactive frontend user interfaces', description: 'Working with React, CSS design systems, and animations', value: 1 },
-      { label: '📊 Data analytics & AI models', description: 'Working with Python, dataset processing, and statistics', value: 2 },
-      { label: '⚙️ Cloud infrastructure & DevOps automation', description: 'Working with Docker, Kubernetes, and CI/CD pipelines', value: 3 },
+      { label: 'Fix or automate something so it just works', description: 'You like hidden problems and reliable results', value: 0 },
+      { label: 'Redesign how an app or space looks and feels', description: 'You care about first impressions and ease of use', value: 1 },
+      { label: 'Dig into numbers or a mystery and explain it', description: 'You enjoy patterns, evidence, and stories in data', value: 2 },
+      { label: 'Build a small thing a friend can try end to end', description: 'You like owning the whole idea-to-result path', value: 3 },
     ]
   },
   {
     id: 2, orderIndex: 2,
-    question: 'Which daily tech stack sounds like your ideal work environment?',
+    question: 'Which compliment would make you happiest?',
     options: [
-      { label: '☕ Java, Spring Boot, and PostgreSQL', description: 'Strict typing, robust enterprise services', value: 0 },
-      { label: '⚛️ TypeScript, React, and Tailwind/CSS', description: 'Fast feedback loops, rich visual components', value: 1 },
-      { label: '🐍 Python, Pandas, and Machine Learning', description: 'Data frames, notebooks, and ML pipelines', value: 2 },
-      { label: '🐳 Docker, Kubernetes, Bash, and Linux', description: 'Infrastructure as code, cluster monitoring', value: 3 },
+      { label: 'That was rock-solid — I never have to worry', description: 'Reliability and correctness matter most', value: 0 },
+      { label: 'This is so easy and nice to use', description: 'People’s experience is your measure of success', value: 1 },
+      { label: 'You helped us see something we would have missed', description: 'Insight and evidence drive you', value: 2 },
+      { label: 'You kept everything running when it got chaotic', description: 'You like coordinating moving parts', value: 3 },
     ]
   }
 ]
@@ -109,7 +109,7 @@ const CareerDiscoveryPage = () => {
         <div className="discovery__results">
           <div className="discovery__results-badge">🎯 Career Discovery Complete</div>
           <h1 className="discovery__results-title">Your Top Career Matches</h1>
-          <p className="discovery__results-sub">Based on your preferences and tech interests, here are your personalized career recommendations:</p>
+          <p className="discovery__results-sub">Based on your interests and how you like to work, here are your closest career matches:</p>
           <div className="discovery__match-list">
             {results.slice(0, 3).map((r, i) => {
               const careerId = r.careerId || r.id || (i + 1)
@@ -167,39 +167,6 @@ const CareerDiscoveryPage = () => {
     <div className="discovery">
       <div className="discovery__blob discovery__blob--1" />
       <div className="discovery__blob discovery__blob--2" />
-
-      {/* Top Direct-Select Mode Bar */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '1.5rem', zIndex: 5, position: 'relative' }}>
-        <button
-          style={{
-            padding: '0.5rem 1.1rem',
-            borderRadius: '999px',
-            background: 'linear-gradient(135deg, #7c3aed, #2563eb)',
-            border: 'none',
-            color: '#fff',
-            fontSize: '0.85rem',
-            fontWeight: '600',
-            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)'
-          }}
-        >
-          🧭 Interactive Quiz
-        </button>
-        <button
-          style={{
-            padding: '0.5rem 1.1rem',
-            borderRadius: '999px',
-            background: 'rgba(255, 255, 255, 0.06)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: 'rgba(200, 210, 240, 0.8)',
-            fontSize: '0.85rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-          onClick={() => navigate('/careers')}
-        >
-          🎯 Direct Select Career →
-        </button>
-      </div>
 
       <div className="discovery__card">
         {/* Progress Header */}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AssessmentProgress from './AssessmentProgress'
 import AssessmentQuestion from './AssessmentQuestion'
 
@@ -10,6 +10,7 @@ export default function Assessment({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState({})
+  const [finishing, setFinishing] = useState(false)
 
   const question = questions[currentIndex]
 
@@ -22,11 +23,16 @@ export default function Assessment({
     }))
   }
 
-  const handleNext = () => {
-    if (!currentAnswer) return
+  const handleNext = async () => {
+    if (!currentAnswer || finishing) return
 
     if (currentIndex === questions.length - 1) {
-      onComplete(answers)
+      setFinishing(true)
+      try {
+        await onComplete(answers)
+      } finally {
+        setFinishing(false)
+      }
       return
     }
 
@@ -41,6 +47,21 @@ export default function Assessment({
 
     setCurrentIndex((previous) => previous - 1)
   }
+
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key === 'Enter' && currentAnswer && !finishing) {
+        handleNext()
+        return
+      }
+      const optionIndex = Number(event.key) - 1
+      if (question?.options?.[optionIndex]) {
+        handleSelect(question.options[optionIndex].value)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [currentAnswer, finishing, currentIndex, question])
 
   return (
     <div className="assessment-container">
@@ -80,11 +101,11 @@ export default function Assessment({
         <button
           type="button"
           className="primary-button"
-          disabled={!currentAnswer}
+          disabled={!currentAnswer || finishing}
           onClick={handleNext}
         >
           {currentIndex === questions.length - 1
-            ? 'Finish Assessment'
+            ? (finishing ? 'Submitting…' : 'Finish Assessment')
             : 'Next Question'}
           <span>→</span>
         </button>

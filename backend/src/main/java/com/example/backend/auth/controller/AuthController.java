@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,6 +35,9 @@ public class AuthController {
     private final UserRepository userRepository;
 
     private final JwtService jwtService;
+
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(
@@ -119,9 +123,7 @@ public class AuthController {
                         null
                 );
 
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
+        applyCookieFlags(cookie);
         cookie.setMaxAge(0);
 
         response.addCookie(cookie);
@@ -145,13 +147,19 @@ public class AuthController {
                         token
                 );
 
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
+        applyCookieFlags(cookie);
         cookie.setMaxAge(
                 60 * 60 * 24
         );
 
         response.addCookie(cookie);
+    }
+
+    private void applyCookieFlags(Cookie cookie) {
+        boolean secure = frontendUrl != null && frontendUrl.toLowerCase().startsWith("https");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(secure);
+        cookie.setPath("/");
+        cookie.setAttribute("SameSite", secure ? "None" : "Lax");
     }
 }

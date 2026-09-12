@@ -15,5 +15,12 @@ public interface CourseSkillRepository extends JpaRepository<CourseSkill, Long> 
     @EntityGraph(attributePaths = {"skill"})
     List<CourseSkill> findBySkillId(Long skillId);
 
+    @EntityGraph(attributePaths = {"skill", "course"})
+    List<CourseSkill> findBySkill_NameContainingIgnoreCase(String name);
+
+    @EntityGraph(attributePaths = {"skill", "course"})
+    @Override
+    List<CourseSkill> findAll();
+
     void deleteByCourseId(Long courseId);
 }

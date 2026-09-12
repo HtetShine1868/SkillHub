@@ -191,76 +191,7 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cMobile, sCSS, 3, 0.7);
         seedCareerSkill(cMobile, sGit, 2, 0.6);
 
-        // ===================== DISCOVERY QUESTIONS =====================
-        // NOTE: seeding is idempotent per-question-text (seedDiscoveryQuestionIfMissing)
-        // rather than gated by a one-time count() == 0 check, so it self-heals and
-        // backfills correctly even on databases that only got partially seeded before.
-        seedDiscoveryQuestionIfMissing(
-            "What area of software engineering excites you the most?", 1,
-            "[{\"label\":\"Building robust backend services & APIs\",\"description\":\"I enjoy logic, databases, and system architecture\",\"weights\":{\"1\":5,\"3\":4,\"5\":3}}," +
-             "{\"label\":\"Creating interactive, polished user interfaces\",\"description\":\"I love design systems and great user experiences\",\"weights\":{\"2\":5,\"3\":4,\"8\":4}}," +
-             "{\"label\":\"Analyzing data patterns and building AI models\",\"description\":\"I like math, statistics, and prediction models\",\"weights\":{\"4\":5,\"7\":5}}," +
-             "{\"label\":\"Automating deployments & cloud infrastructure\",\"description\":\"I prefer Docker, CI/CD, and cluster reliability\",\"weights\":{\"5\":5,\"6\":4}}]"
-        );
-        seedDiscoveryQuestionIfMissing(
-            "Which tech stack would you prefer working with daily?", 2,
-            "[{\"label\":\"Java, Spring Boot, and PostgreSQL\",\"description\":\"Strict typing, powerful enterprise frameworks\",\"weights\":{\"1\":5,\"3\":4}}," +
-             "{\"label\":\"TypeScript, React, and modern CSS\",\"description\":\"Fast feedback loops, rich visual interfaces\",\"weights\":{\"2\":5,\"3\":3,\"8\":4}}," +
-             "{\"label\":\"Python, Pandas, and Jupyter Notebooks\",\"description\":\"Data frames, machine learning pipelines\",\"weights\":{\"4\":5,\"7\":5}}," +
-             "{\"label\":\"Docker, Kubernetes, Bash, and Terraform\",\"description\":\"Infrastructure as code, cluster management\",\"weights\":{\"5\":5,\"6\":5}}]"
-        );
-        seedDiscoveryQuestionIfMissing(
-            "How do you prefer to spend most of your workday?", 3,
-            "[{\"label\":\"Writing and debugging server-side code\",\"description\":\"APIs, data models, and system performance\",\"weights\":{\"1\":5,\"3\":3}}," +
-             "{\"label\":\"Designing and coding pixel-perfect UIs\",\"description\":\"Components, layouts, and animations\",\"weights\":{\"2\":5,\"8\":4}}," +
-             "{\"label\":\"Exploring datasets and training models\",\"description\":\"Statistical analysis and experimentation\",\"weights\":{\"4\":5,\"7\":5}}," +
-             "{\"label\":\"Maintaining servers, pipelines and cloud resources\",\"description\":\"Reliability, automation, and monitoring\",\"weights\":{\"5\":5,\"6\":5}}]"
-        );
-        seedDiscoveryQuestionIfMissing(
-            "What kind of impact do you want your work to have?", 4,
-            "[{\"label\":\"Power reliable systems that millions depend on\",\"description\":\"Scalability and performance matter to me\",\"weights\":{\"1\":4,\"5\":4,\"6\":4}}," +
-             "{\"label\":\"Delight users with beautiful, intuitive experiences\",\"description\":\"Design and usability drive my decisions\",\"weights\":{\"2\":5,\"8\":5}}," +
-             "{\"label\":\"Help organizations make smarter data-driven decisions\",\"description\":\"Insights and predictions create business value\",\"weights\":{\"4\":5,\"7\":5}}," +
-             "{\"label\":\"Enable teams to ship faster and more reliably\",\"description\":\"DevOps culture and automation are my passion\",\"weights\":{\"5\":5,\"6\":4}}]"
-        );
-        seedDiscoveryQuestionIfMissing(
-            "How comfortable are you with mathematics and statistics?", 5,
-            "[{\"label\":\"Very comfortable — I enjoy math and algorithms\",\"description\":\"Linear algebra and statistics are my friends\",\"weights\":{\"4\":4,\"7\":4}}," +
-             "{\"label\":\"Comfortable with basic logic and data structures\",\"description\":\"Problem solving through code is my strength\",\"weights\":{\"1\":4,\"3\":4}}," +
-             "{\"label\":\"I prefer visual and creative problem-solving\",\"description\":\"Design thinking appeals more to me\",\"weights\":{\"2\":5,\"8\":4}}," +
-             "{\"label\":\"I like process automation and systems thinking\",\"description\":\"I prefer structured repeatable workflows\",\"weights\":{\"5\":5,\"6\":5}}]"
-        );
-
-        // Additional discovery questions to better differentiate careers that share
-        // very similar skill sets (Data Scientist vs ML Engineer, DevOps vs Cloud
-        // Architect). Added idempotently (by question text) so they also backfill
-        // onto databases that were already seeded with the original 5 questions.
-        seedDiscoveryQuestionIfMissing(
-            "When working with data and models, which excites you more?", 6,
-            String.format(
-                "[{\"label\":\"Exploring datasets to find patterns and tell a data story\",\"description\":\"I enjoy statistical analysis and generating insights\",\"weights\":{\"%d\":5,\"%d\":2,\"%d\":1}}," +
-                 "{\"label\":\"Building and deploying the pipeline that serves a model to real users\",\"description\":\"I enjoy engineering and productionizing ML systems\",\"weights\":{\"%d\":5,\"%d\":2,\"%d\":2}}," +
-                 "{\"label\":\"Designing the UI that presents insights to end users\",\"description\":\"I enjoy visual storytelling and interface design\",\"weights\":{\"%d\":4,\"%d\":2}}," +
-                 "{\"label\":\"Automating the infrastructure that the whole data platform runs on\",\"description\":\"I enjoy reliability, pipelines, and automation\",\"weights\":{\"%d\":4,\"%d\":3}}]",
-                cData.getId(), cMLEng.getId(), cBackend.getId(),
-                cMLEng.getId(), cData.getId(), cDevOps.getId(),
-                cFrontend.getId(), cFullStack.getId(),
-                cDevOps.getId(), cCloud.getId()
-            )
-        );
-        seedDiscoveryQuestionIfMissing(
-            "What part of cloud & infrastructure work interests you most?", 7,
-            String.format(
-                "[{\"label\":\"Automating CI/CD pipelines and keeping deployments smooth day-to-day\",\"description\":\"I enjoy build automation and operational reliability\",\"weights\":{\"%d\":5,\"%d\":2}}," +
-                 "{\"label\":\"Designing the overall cloud architecture and optimizing costs at scale\",\"description\":\"I enjoy big-picture system design and trade-off decisions\",\"weights\":{\"%d\":5,\"%d\":2}}," +
-                 "{\"label\":\"Writing the backend services that need to run reliably on that infrastructure\",\"description\":\"I enjoy application-level engineering\",\"weights\":{\"%d\":4,\"%d\":2}}," +
-                 "{\"label\":\"Training and scaling machine learning workloads in the cloud\",\"description\":\"I enjoy ML infrastructure and distributed training\",\"weights\":{\"%d\":4,\"%d\":2}}]",
-                cDevOps.getId(), cBackend.getId(),
-                cCloud.getId(), cDevOps.getId(),
-                cBackend.getId(), cFullStack.getId(),
-                cMLEng.getId(), cData.getId()
-            )
-        );
+        replaceInterestDiscoveryQuestions(cBackend, cFrontend, cFullStack, cData, cDevOps, cCloud, cMLEng, cMobile);
 
         // ===================== ASSESSMENT QUESTIONS =====================
         // NOTE: seeding is idempotent per-skill+question-text (seedAssessmentQuestionIfMissing)
@@ -803,6 +734,105 @@ public class DataInitializer implements CommandLineRunner {
             existing.setImportance(importance);
             careerSkillRepository.save(existing);
         }
+    }
+
+    private void replaceInterestDiscoveryQuestions(
+            Career backend, Career frontend, Career fullStack, Career data,
+            Career devops, Career cloud, Career ml, Career mobile
+    ) {
+        Long be = backend.getId();
+        Long fe = frontend.getId();
+        Long fs = fullStack.getId();
+        Long ds = data.getId();
+        Long dv = devops.getId();
+        Long cl = cloud.getId();
+        Long mlId = ml.getId();
+        Long mo = mobile.getId();
+
+        discoveryQuestionRepository.deleteAll();
+        discoveryQuestionRepository.flush();
+
+        seedDiscoveryQuestion(
+            "What kind of Saturday project would you actually enjoy?", 1,
+            opts(
+                opt("Fix or automate something so it just works", "You like hidden problems and reliable results", be, 5, dv, 4, cl, 3, fs, 2),
+                opt("Redesign how an app or space looks and feels", "You care about first impressions and ease of use", fe, 5, mo, 5, fs, 2),
+                opt("Dig into numbers or a mystery and explain what you found", "You enjoy patterns, evidence, and stories", ds, 5, mlId, 4),
+                opt("Build a small thing a friend can try end to end", "You like owning the whole idea-to-result path", fs, 5, mo, 3, be, 2),
+                opt("Set up gadgets, networks, or a home lab", "You like systems, tools, and making environments work", cl, 5, dv, 4, mlId, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which compliment would make you happiest?", 2,
+            opts(
+                opt("That was rock-solid — I never have to worry about it", "Reliability and correctness matter most", be, 5, cl, 4, dv, 3),
+                opt("This is so easy and nice to use", "People's experience is your measure of success", fe, 5, mo, 5, fs, 2),
+                opt("You helped us see something we would have missed", "Insight and evidence drive you", ds, 5, mlId, 3),
+                opt("You can do the whole thing yourself", "You like end-to-end ownership", fs, 5, mo, 3, be, 2),
+                opt("You kept everything running when it got chaotic", "You like coordinating moving parts", dv, 5, cl, 4, fs, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "How do you like to spend focused time?", 3,
+            opts(
+                opt("Quiet deep work on a hidden problem", "Logic, structure, and figuring things out", be, 5, ds, 3, mlId, 3),
+                opt("Visual work you can see immediately", "You want fast, visible feedback", fe, 5, mo, 4),
+                opt("Talking to people, then turning their need into something real", "You enjoy translating ideas into a product", fs, 5, fe, 2, mo, 2),
+                opt("Keeping many moving parts coordinated", "You like process, timing, and reliability", dv, 5, cl, 4, fs, 2),
+                opt("Running small experiments and comparing results", "You like testing hunches with evidence", ds, 4, mlId, 5)
+            )
+        );
+        seedDiscoveryQuestion(
+            "What kind of impact would make you proud?", 4,
+            opts(
+                opt("People never notice the work because nothing breaks", "Invisible reliability is the win", be, 4, cl, 5, dv, 4),
+                opt("People smile when they use something you shaped", "Human reaction matters more than hidden machinery", fe, 5, mo, 5),
+                opt("A decision was made because of what you uncovered", "You want work that changes minds with evidence", ds, 5, mlId, 3),
+                opt("A friend can open what you shipped and try it today", "Finished products excite you", fs, 5, mo, 3),
+                opt("Something gets smarter over time without extra babysitting", "You like systems that learn and improve", mlId, 5, ds, 3, dv, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "When a group project goes wrong, what do you jump to first?", 5,
+            opts(
+                opt("The logic or information underneath", "You look for root causes and structure", be, 5, ds, 4),
+                opt("How confusing or unpleasant it felt to use", "You start from the person's experience", fe, 5, mo, 4),
+                opt("Who needs what to get unblocked", "You coordinate people and pieces", fs, 4, cl, 3, dv, 2),
+                opt("The process, tools, or environment", "You fix how the work gets done", dv, 5, cl, 4),
+                opt("Whether we measured the right thing", "You check the evidence before guessing", mlId, 4, ds, 5)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which class or hobby would you pick if grades did not matter?", 6,
+            opts(
+                opt("Logic games, chess, or taking machines apart", "You like how things work under the surface", be, 4, mlId, 3, cl, 2),
+                opt("Art, photography, fashion, or interior design", "Taste and presentation pull you in", fe, 5, mo, 4),
+                opt("Psychology, economics, or sports analytics", "People and patterns fascinate you", ds, 5, mlId, 3),
+                opt("Organizing events or running a club smoothly", "You enjoy making groups and systems click", dv, 4, cl, 3, fs, 3),
+                opt("Building robots, apps, or inventions", "Making something new from parts excites you", mlId, 4, mo, 4, fs, 4, be, 2)
+            )
+        );
+    }
+
+    private String opt(String label, String description, Object... weightPairs) {
+        StringBuilder weights = new StringBuilder("{");
+        for (int i = 0; i < weightPairs.length; i += 2) {
+            if (i > 0) {
+                weights.append(',');
+            }
+            weights.append('"').append(weightPairs[i]).append("\":").append(weightPairs[i + 1]);
+        }
+        weights.append('}');
+        return "{\"label\":\"" + escapeJson(label) + "\",\"description\":\"" + escapeJson(description)
+                + "\",\"weights\":" + weights + "}";
+    }
+
+    private String opts(String... options) {
+        return "[" + String.join(",", options) + "]";
+    }
+
+    private String escapeJson(String value) {
+        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private void seedDiscoveryQuestion(String question, int orderIndex, String optionsJson) {

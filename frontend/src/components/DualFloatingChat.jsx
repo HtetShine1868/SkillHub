@@ -4,12 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import { playNotificationSound } from '../utils/soundUtils'
 import './DualFloatingChat.css'
 
-export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, lessonContent }) {
+export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, lessonContent, variant = 'floating' }) {
+    const embedded = variant === 'embedded'
     const { user } = useAuth()
 
     // ── Open/Close states for the two floating chats ──
     const [aiOpen, setAiOpen] = useState(false)
     const [instOpen, setInstOpen] = useState(false)
+    const [embeddedTab, setEmbeddedTab] = useState('AI')
 
     // ── AI State ──
     const [aiChat, setAiChat] = useState([
@@ -63,9 +65,9 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
         })
     }
 
-    // 1. Fetch Instructor for this Course & Check Enrollment
+    // Load instructor only when the learner opens that chat
     useEffect(() => {
-        if (!courseId) return
+        if (!courseId || !instOpen) return
         const fetchInstAndEnrollment = async () => {
             setLoadingInstructor(true)
             try {
@@ -100,7 +102,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
             }
         }
         fetchInstAndEnrollment()
-    }, [courseId])
+    }, [courseId, instOpen])
 
     // Quick Enroll Action inside chat
     const handleQuickEnroll = async () => {
@@ -146,7 +148,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                     if (last && last.senderId !== user?.id) {
                         playNotificationSound()
                         showToast(`💬 New message from ${last.senderName || instructor.name}: "${last.content}"`)
-                        if (!instOpen) {
+                        if (!instOpen && !(embedded && embeddedTab === 'INSTRUCTOR')) {
                             setUnreadInstCount(c => c + 1)
                         }
                     }
@@ -166,24 +168,23 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
         } finally {
             if (!isPolling) setLoadingMessages(false)
         }
-    }, [instructor?.id, instructorMode, courseId, user?.id, instOpen, instructor?.name])
+    }, [instructor?.id, instructorMode, courseId, user?.id, instOpen, instructor?.name, embedded, embeddedTab])
 
     useEffect(() => {
-        if (instOpen) {
+        if (instOpen || (embedded && embeddedTab === 'INSTRUCTOR')) {
             fetchInstructorMessages(false)
         }
-    }, [instOpen, fetchInstructorMessages])
+    }, [instOpen, embedded, embeddedTab, fetchInstructorMessages])
 
-    // 3. Background Polling
     useEffect(() => {
-        if (!instructor?.id) return
+        if (!instructor?.id || !instOpen) return
 
         const interval = setInterval(() => {
             fetchInstructorMessages(true)
-        }, 3000)
+        }, 8000)
 
         return () => clearInterval(interval)
-    }, [instructor?.id, fetchInstructorMessages])
+    }, [instructor?.id, instOpen, fetchInstructorMessages])
 
     // ── AI Handlers ──
     const handleAiSendPrompt = async (promptText) => {
@@ -286,8 +287,11 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
         'Could you review my learning roadmap progress?'
     ]
 
+    const showAiPanel = embedded ? embeddedTab === 'AI' : aiOpen
+    const showInstPanel = embedded ? embeddedTab === 'INSTRUCTOR' : instOpen
+
     return (
-        <div className="dual-floating-chat-container">
+        <div className={embedded ? 'dual-embedded-chat' : 'dual-floating-wrapper'} data-lesson-help={embedded ? 'true' : undefined}>
             {/* Global Notification Toast */}
             {toastNotify && (
                 <div className="dual-toast-notification">
@@ -296,9 +300,28 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                 </div>
             )}
 
+            {embedded && (
+                <div className="dual-embedded-tabs">
+                    <button
+                        type="button"
+                        className={`dual-embedded-tab ${embeddedTab === 'AI' ? 'active ai' : ''}`}
+                        onClick={() => setEmbeddedTab('AI')}
+                    >
+                        AI Study Tutor
+                    </button>
+                    <button
+                        type="button"
+                        className={`dual-embedded-tab ${embeddedTab === 'INSTRUCTOR' ? 'active inst' : ''}`}
+                        onClick={() => setEmbeddedTab('INSTRUCTOR')}
+                    >
+                        Instructor
+                    </button>
+                </div>
+            )}
+
             {/* ═════════ 1. AI TUTOR POPUP PANEL ═════════ */}
-            {aiOpen && (
-                <div className="dual-chat-panel ai-panel" role="dialog">
+            {showAiPanel && (
+                <div className={`dual-chat-panel ai-panel ${embedded ? 'embedded' : ''}`} role="dialog">
                     <div className="dual-panel-header ai">
                         <div className="dual-header-info">
                             <div className="dual-avatar ai-head">🤖</div>
@@ -307,7 +330,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                                 <span className="dual-header-sub">Powered by Gemini 2.0 • 24/7 Assistance</span>
                             </div>
                         </div>
-                        <button className="dual-panel-close" onClick={() => setAiOpen(false)}>✕</button>
+                        {!embedded && <button className="dual-panel-close" onClick={() => setAiOpen(false)}>✕</button>}
                     </div>
 
                     <div className="dual-chat-stream">
@@ -361,8 +384,8 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
             )}
 
             {/* ═════════ 2. INSTRUCTOR CHAT POPUP PANEL ═════════ */}
-            {instOpen && (
-                <div className="dual-chat-panel inst-panel" role="dialog">
+            {showInstPanel && (
+                <div className={`dual-chat-panel inst-panel ${embedded ? 'embedded' : ''}`} role="dialog">
                     <div className="dual-panel-header inst">
                         <div className="dual-header-info">
                             <div className="dual-avatar inst-head">
@@ -380,7 +403,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                                 </span>
                             </div>
                         </div>
-                        <button className="dual-panel-close" onClick={() => setInstOpen(false)}>✕</button>
+                        {!embedded && <button className="dual-panel-close" onClick={() => setInstOpen(false)}>✕</button>}
                     </div>
 
                     {/* Mode Selector */}
@@ -511,7 +534,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
             )}
 
             {/* ═════════ TWO FLOATING BUTTONS (STACKED VERTICALLY) ═════════ */}
-            <div className="dual-floating-buttons">
+            {!embedded && <div className="dual-floating-buttons">
                 {/* 1. TOP BUTTON: AI ASSISTANT */}
                 <button
                     type="button"
@@ -538,7 +561,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                     {unreadInstCount > 0 && <span className="dual-unread-badge">{unreadInstCount}</span>}
                     {!instOpen && unreadInstCount === 0 && <span className="dual-fab-online-dot"></span>}
                 </button>
-            </div>
+            </div>}
         </div>
     )
 }

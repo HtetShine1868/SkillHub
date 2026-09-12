@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getAllCourses } from '../services/courseService'
 import './CoursesPage.css'
 
@@ -28,8 +28,11 @@ const ICON_MAP = {
 
 const CoursesPage = () => {
   const navigate  = useNavigate()
-  const [courses, setCourses]   = useState(MOCK_COURSES)
-  const [filtered, setFiltered] = useState(MOCK_COURSES)
+  const [searchParams] = useSearchParams()
+  const skillFilter = (searchParams.get('skill') || '').trim()
+  const learnerLevel = searchParams.get('learnerLevel')
+  const [courses, setCourses]   = useState(skillFilter ? [] : MOCK_COURSES)
+  const [filtered, setFiltered] = useState(skillFilter ? [] : MOCK_COURSES)
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('All')
   const [diff, setDiff]         = useState('All')
@@ -37,27 +40,45 @@ const CoursesPage = () => {
 
   useEffect(() => {
     setLoading(true)
-    getAllCourses()
+    const params = skillFilter
+      ? { skill: skillFilter, ...(learnerLevel ? { learnerLevel: Number(learnerLevel) } : {}) }
+      : {}
+    getAllCourses(params)
       .then(data => {
         if (data?.length) {
           setCourses(data)
           setFiltered(data)
+        } else if (skillFilter) {
+          setCourses([])
+          setFiltered([])
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (skillFilter) {
+          const fallback = MOCK_COURSES.filter(c =>
+            c.title.toLowerCase().includes(skillFilter.toLowerCase())
+            || c.description?.toLowerCase().includes(skillFilter.toLowerCase())
+          )
+          setCourses(fallback)
+          setFiltered(fallback)
+        }
+      })
       .finally(() => setLoading(false))
-  }, [])
+  }, [skillFilter, learnerLevel])
 
   useEffect(() => {
     let list = [...courses]
     if (category !== 'All') list = list.filter(c => c.category === category)
     if (diff !== 'All')     list = list.filter(c => c.difficulty === diff)
     if (search.trim())      list = list.filter(c => c.title.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()))
-    setFiltered(list)
+    const recommended = list.filter(c => c.recommended)
+    const rest = list.filter(c => !c.recommended)
+    setFiltered([...recommended, ...rest])
   }, [category, diff, search, courses])
 
-  const categories = ['All', ...Array.from(new Set(courses.map(c => c.category)))]
+  const categories = ['All', ...Array.from(new Set(courses.map(c => c.category).filter(Boolean)))]
   const diffs = ['All', 'BEGINNER', 'INTERMEDIATE', 'ADVANCED']
+  const recommendedCourse = filtered.find(c => c.recommended)
 
   return (
     <div className="courses">
@@ -66,9 +87,22 @@ const CoursesPage = () => {
 
       <div className="courses__inner">
         <div className="courses__header">
-          <div className="courses__badge">📚 Course Library</div>
-          <h1 className="courses__title">Build Skills That <span className="courses__hl">Matter</span></h1>
-          <p className="courses__subtitle">{courses.length} expert-crafted courses aligned to real career paths.</p>
+          <div className="courses__badge">{skillFilter ? '🎯 Skill Courses' : '📚 Course Library'}</div>
+          <h1 className="courses__title">
+            {skillFilter
+              ? <>Courses for <span className="courses__hl">{skillFilter}</span></>
+              : <>Build Skills That <span className="courses__hl">Matter</span></>}
+          </h1>
+          <p className="courses__subtitle">
+            {skillFilter
+              ? `${courses.length} published course${courses.length === 1 ? '' : 's'} that teach ${skillFilter}. The top pick is recommended for you.`
+              : `${courses.length} expert-crafted courses aligned to real career paths.`}
+          </p>
+          {skillFilter && (
+            <button className="courses__clear" onClick={() => navigate('/courses')}>
+              View all courses →
+            </button>
+          )}
         </div>
 
         {/* Toolbar */}
@@ -108,16 +142,30 @@ const CoursesPage = () => {
           <div className="courses__grid">
             {filtered.map(course => {
               const dc = DIFF_COLOR[course.difficulty] || DIFF_COLOR.INTERMEDIATE
+              const isRecommended = Boolean(course.recommended)
               return (
-                <button key={course.id} id={`course-${course.id}`} className="courses__card" onClick={() => navigate(`/courses/${course.id}`)}>
+                <button
+                  key={course.id}
+                  id={`course-${course.id}`}
+                  className={`courses__card ${isRecommended ? 'courses__card--recommended' : ''}`}
+                  onClick={() => navigate(`/courses/${course.id}`, { state: { fromSkill: skillFilter || undefined } })}
+                >
                   <div className="courses__card-top">
                     <span className="courses__card-icon">{ICON_MAP[course.category] || '📖'}</span>
-                    <span className="courses__card-diff" style={{ background: dc.bg, color: dc.color }}>
-                      {course.difficulty?.charAt(0) + course.difficulty?.slice(1).toLowerCase()}
-                    </span>
+                    <div className="courses__card-badges">
+                      {isRecommended && (
+                        <span className="courses__card-recommended">Recommended for you</span>
+                      )}
+                      <span className="courses__card-diff" style={{ background: dc.bg, color: dc.color }}>
+                        {course.difficulty?.charAt(0) + course.difficulty?.slice(1).toLowerCase()}
+                      </span>
+                    </div>
                   </div>
                   <h2 className="courses__card-title">{course.title}</h2>
                   <p className="courses__card-desc">{course.description}</p>
+                  {isRecommended && course.recommendationReason && (
+                    <p className="courses__card-reason">{course.recommendationReason}</p>
+                  )}
                   <div className="courses__card-footer">
                     <span>⏱ {course.durationHours}h</span>
                     <span>⭐ {course.rating?.toFixed(1)}</span>
@@ -132,8 +180,14 @@ const CoursesPage = () => {
         {!loading && filtered.length === 0 && (
           <div className="courses__empty">
             <span>🔎</span>
-            <p>No courses match your filters.</p>
+            <p>{skillFilter ? `No published courses found for ${skillFilter} yet.` : 'No courses match your filters.'}</p>
           </div>
+        )}
+
+        {!loading && skillFilter && recommendedCourse && filtered.length > 1 && (
+          <p className="courses__recommend-note">
+            Other instructors’ courses for {skillFilter} are listed below the recommended pick.
+          </p>
         )}
       </div>
     </div>

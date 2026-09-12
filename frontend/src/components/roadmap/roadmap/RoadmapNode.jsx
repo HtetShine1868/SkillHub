@@ -26,12 +26,15 @@ export default function RoadmapNode({
 
   const normalizedKey = (stage.status || 'available').toLowerCase()
   const config = status[normalizedKey] || status.available
+  const skill = stage.choiceLabel || stage.title
+  const progress = Number(stage.progress) || 0
+  const locked = normalizedKey === 'locked'
 
   return (
     <button
       className={`roadmap-node ${normalizedKey}`}
       onClick={onClick}
-      disabled={normalizedKey === 'locked'}
+      disabled={locked}
     >
 
       <div className="roadmap-node-icon">
@@ -44,19 +47,29 @@ export default function RoadmapNode({
           {config.label}
         </span>
 
-        <h3>{stage.title}</h3>
+        <h3>{skill}</h3>
 
-        <p>{stage.description}</p>
+        <p>{locked ? stage.lockedReason : 'Open matching courses and start with the recommended pick.'}</p>
 
-        {stage.status === 'locked' && (
-          <small>
-            {stage.lockedReason}
-          </small>
+        {!locked && (
+          <div className="roadmap-node-meta">
+            <span className="roadmap-node-skill-chip">{skill}</span>
+            {progress > 0 && (
+              <span className="roadmap-node-progress-label">{progress}% done</span>
+            )}
+            <span className="roadmap-node-cta">View courses</span>
+          </div>
+        )}
+
+        {!locked && progress > 0 && (
+          <div className="roadmap-node-track" aria-hidden="true">
+            <div style={{ width: `${Math.min(progress, 100)}%` }} />
+          </div>
         )}
 
       </div>
 
-      {stage.status !== 'locked' && (
+      {!locked && (
         <span className="roadmap-node-arrow">
           →
         </span>
