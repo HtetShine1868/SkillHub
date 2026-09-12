@@ -38,7 +38,9 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
         Path cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         List<Path> candidates = List.of(
                 cwd.resolve(".env"),
+                cwd.resolve("backend").resolve(".env"),
                 cwd.resolve("..").resolve(".env").normalize(),
+                cwd.resolve("..").resolve("backend").resolve(".env").normalize(),
                 cwd.getParent() != null ? cwd.getParent().resolve(".env") : null
         );
         for (Path candidate : candidates) {
@@ -65,6 +67,9 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor 
                 String value = stripQuotes(line.substring(eq + 1).trim());
                 if (!key.isEmpty()) {
                     values.put(key, value);
+                    if ("GEMINI_API_KEY".equals(key)) {
+                        values.put("gemini.api-key", value);
+                    }
                 }
             }
         } catch (IOException ignored) {

@@ -30,7 +30,7 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(allowedOrigins());
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns());
 
         configuration.setAllowedMethods(
                 List.of(
@@ -62,10 +62,14 @@ public class CorsConfig {
         return new CorsFilter(corsConfigurationSource());
     }
 
-    private List<String> allowedOrigins() {
+    private List<String> allowedOriginPatterns() {
         Set<String> origins = new LinkedHashSet<>();
-        origins.add("http://localhost:3000");
-        origins.add("http://localhost:5173");
+        origins.add("http://localhost:*");
+        origins.add("http://127.0.0.1:*");
+        origins.add("https://skill-hub-dusky.vercel.app");
+        origins.add("https://skill-hub-dusky-*.vercel.app");
+        origins.add("https://skill-hub-phi-seven.vercel.app");
+        origins.add("https://skill-hub-phi-seven-*.vercel.app");
         addOrigins(origins, frontendUrl);
         addOrigins(origins, extraOrigins);
         return new ArrayList<>(origins);
