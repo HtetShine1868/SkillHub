@@ -1,5 +1,19 @@
 import RoadmapNode from './RoadmapNode'
 
+function uniqueLanguageOptions(stages) {
+  const picked = new Map()
+  for (const stage of stages) {
+    if (stage.choiceGroup !== 'starter-language' || !stage.choiceLabel) continue
+    const current = picked.get(stage.choiceLabel)
+    const title = (stage.title || '').toLowerCase()
+    const prefer = /fundamental|javascript fundamental|java fundamental|fastapi|react native|flutter/.test(title)
+    if (!current || prefer) {
+      picked.set(stage.choiceLabel, stage)
+    }
+  }
+  return [...picked.values()]
+}
+
 export default function PersonalizedRoadmap({
   career,
   stages,
@@ -7,8 +21,17 @@ export default function PersonalizedRoadmap({
   nextCourseTitle,
 }) {
   const safeStages = Array.isArray(stages) ? stages : []
-  const requiredStages = safeStages.filter((stage) => (stage.requirement || 'REQUIRED') !== 'ALREADY_HAVE')
+  const languageOptions = uniqueLanguageOptions(safeStages)
+  const forkIds = new Set(languageOptions.map((stage) => stage.id))
+  const extraChoiceStages = safeStages.filter((stage) =>
+    stage.requirement === 'CHOICE' && !forkIds.has(stage.id)
+  )
+  const requiredStages = safeStages.filter((stage) => (stage.requirement || 'REQUIRED') === 'REQUIRED')
   const alreadyStages = safeStages.filter((stage) => stage.requirement === 'ALREADY_HAVE')
+  const showLanguageFork = languageOptions.length >= 2
+  const forkTitle = languageOptions.some((s) => ['React Native', 'Flutter'].includes(s.choiceLabel))
+    ? 'Choose a mobile stack'
+    : 'Choose a language track'
 
   const requiredLeft = requiredStages.filter((stage) => {
     const s = (stage.status || '').toLowerCase()
@@ -31,7 +54,9 @@ export default function PersonalizedRoadmap({
             <span className="roadmap-eyebrow">YOUR PERSONALIZED PATH</span>
             <h1>{careerTitle}</h1>
             <p>
-              Required courses come first. Courses you already cover from your skill check stay on the path, marked as not needed.
+              {showLanguageFork
+                ? 'Start by picking a language or stack. Shared career courses come next. Courses you already cover are marked as not required.'
+                : 'Required courses come first. Courses you already cover from your skill check stay on the path, marked as not needed.'}
             </p>
             <button
               className="secondary-button"
@@ -75,8 +100,52 @@ export default function PersonalizedRoadmap({
             <div className="roadmap-path">
               <div className="roadmap-start">
                 <span className="roadmap-start-icon">1</span>
-                <span>Required first</span>
+                <span>{showLanguageFork ? 'Pick a track, then required courses' : 'Required first'}</span>
               </div>
+
+              {showLanguageFork && (
+                <div className="roadmap-fork">
+                  <div className="roadmap-fork-title">{forkTitle}</div>
+                  <p className="roadmap-fork-copy">
+                    You do not need every language. Pick Java, JavaScript, Python — or React Native vs Flutter — then continue with the shared courses.
+                  </p>
+                  <div className="roadmap-fork-grid">
+                    {languageOptions.map((stage) => (
+                      <button
+                        key={stage.id}
+                        type="button"
+                        className={`roadmap-fork-card ${(stage.status || '').toLowerCase()}`}
+                        onClick={() => onStageClick(stage)}
+                        disabled={(stage.status || '').toLowerCase() === 'locked'}
+                      >
+                        <span className="roadmap-fork-lang">{stage.choiceLabel || 'Track'}</span>
+                        <strong>{stage.title}</strong>
+                        <small>
+                          {stage.requirement === 'ALREADY_HAVE'
+                            ? 'You already cover this track'
+                            : 'Optional — choose this stack'}
+                        </small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {showLanguageFork && extraChoiceStages.length > 0 && (
+                <>
+                  <div className="roadmap-already-banner">More courses in those language tracks (optional)</div>
+                  {extraChoiceStages.map((stage, index) => (
+                    <div className="roadmap-path-item" key={stage.id || `choice-${index}`}>
+                      <RoadmapNode stage={stage} onClick={() => onStageClick(stage)} />
+                      {index < extraChoiceStages.length - 1 && <div className="roadmap-connector">↓</div>}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {showLanguageFork && requiredStages.length > 0 && (
+                <div className="roadmap-connector">↓</div>
+              )}
 
               {requiredStages.map((stage, index) => (
                 <div className="roadmap-path-item" key={stage.id || `req-${index}`}>

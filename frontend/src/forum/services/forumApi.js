@@ -38,6 +38,14 @@ export async function getProjectById(id) {
 }
 
 /**
+ * Catalog skills for project requirements (select, not free text).
+ */
+export async function getCatalogSkills() {
+  const { data } = await axiosClient.get('/api/skills')
+  return Array.isArray(data) ? data : []
+}
+
+/**
  * Create a new project.
  * @param {object} projectData
  */

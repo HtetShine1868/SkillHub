@@ -27,11 +27,16 @@ public class RoadmapService {
      * Foundation languages that can appear as parallel first-step choices
      * on developer roadmaps (Java vs JavaScript vs Python).
      */
-    private static final Map<String, String> STARTER_LANGUAGE_LABELS = Map.of(
-            "java", "Java",
-            "typescript", "JavaScript",
-            "node.js & express", "JavaScript",
-            "python", "Python"
+    private static final Map<String, String> STARTER_LANGUAGE_LABELS = Map.ofEntries(
+            Map.entry("java", "Java"),
+            Map.entry("spring boot", "Java"),
+            Map.entry("javascript", "JavaScript"),
+            Map.entry("typescript", "JavaScript"),
+            Map.entry("node.js & express", "JavaScript"),
+            Map.entry("python", "Python"),
+            Map.entry("fastapi", "Python"),
+            Map.entry("react native", "React Native"),
+            Map.entry("flutter", "Flutter")
     );
 
     private final RoadmapItemRepository roadmapItemRepository;
@@ -192,15 +197,22 @@ public class RoadmapService {
                 courseReasons
         );
 
+        Map<Long, String> choiceLabels = new HashMap<>();
+        applyLanguageChoices(career.getName(), careerCourses, requiredByCourse, courseReasons, choiceLabels);
+
         List<Course> requiredCourses = careerCourses.stream()
-                .filter(c -> Boolean.TRUE.equals(requiredByCourse.get(c.getId())))
+                .filter(c -> "REQUIRED".equals(requirementOf(c.getId(), requiredByCourse, choiceLabels)))
+                .toList();
+        List<Course> choiceCourses = careerCourses.stream()
+                .filter(c -> "CHOICE".equals(requirementOf(c.getId(), requiredByCourse, choiceLabels)))
                 .toList();
         List<Course> alreadyCourses = careerCourses.stream()
-                .filter(c -> !Boolean.TRUE.equals(requiredByCourse.get(c.getId())))
+                .filter(c -> "ALREADY_HAVE".equals(requirementOf(c.getId(), requiredByCourse, choiceLabels)))
                 .toList();
 
         List<Course> orderedRequired = sortCoursesByPrerequisites(new ArrayList<>(requiredCourses));
-        List<Course> orderedCourses = new ArrayList<>(orderedRequired);
+        List<Course> orderedCourses = new ArrayList<>(choiceCourses);
+        orderedCourses.addAll(orderedRequired);
         orderedCourses.addAll(alreadyCourses);
 
         roadmapItemRepository.deleteByUserIdAndCareerId(user.getId(), careerId);
@@ -218,9 +230,11 @@ public class RoadmapService {
                 continue;
             }
 
-            boolean needed = Boolean.TRUE.equals(requiredByCourse.get(course.getId()));
-            String requirement = needed ? "REQUIRED" : "ALREADY_HAVE";
+            String requirement = requirementOf(course.getId(), requiredByCourse, choiceLabels);
+            boolean needed = "REQUIRED".equals(requirement);
             boolean courseDone = completedCourseIds.contains(course.getId());
+            String choiceLabel = choiceLabels.get(course.getId());
+            String choiceGroup = choiceLabel != null ? "starter-language" : null;
 
             boolean isLocked = false;
             String lockedReason = null;
@@ -242,7 +256,9 @@ public class RoadmapService {
             String reason = isLocked
                     ? lockedReason
                     : courseReasons.getOrDefault(course.getId(),
-                    needed ? "Required for your skill gap." : "You already cover this skill.");
+                    "CHOICE".equals(requirement)
+                            ? "Optional language track — pick " + (choiceLabel == null ? "one stack" : choiceLabel) + " if you want this backend."
+                            : needed ? "Required for your skill gap." : "You already cover this skill.");
 
             if (!courseDone && !isLocked && needed) {
                 Optional<Enrollment> enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), course.getId());
@@ -260,6 +276,8 @@ public class RoadmapService {
                     .progress(courseDone ? 100 : 0)
                     .reason(reason)
                     .requirement(requirement)
+                    .choiceGroup(choiceGroup)
+                    .choiceLabel(choiceLabel)
                     .build());
         }
 
@@ -325,8 +343,10 @@ public class RoadmapService {
             List<String> skills = courseSkillRepository.findByCourseId(ri.getCourse().getId()).stream()
                     .map(cs -> cs.getSkill().getName())
                     .toList();
-            String choiceLabel = starterLanguageLabel(ri.getCourse());
-            String choiceGroup = (choiceLabel != null && starterCount >= 2) ? "starter-language" : null;
+            String choiceLabel = ri.getChoiceLabel() != null ? ri.getChoiceLabel() : starterLanguageLabel(ri.getCourse());
+            String choiceGroup = ri.getChoiceGroup() != null
+                    ? ri.getChoiceGroup()
+                    : (choiceLabel != null && starterCount >= 2 ? "starter-language" : null);
 
             String requirement = ri.getRequirement() == null ? "REQUIRED" : ri.getRequirement();
             return new RoadmapItemDto(
@@ -350,7 +370,8 @@ public class RoadmapService {
         String nextCourseTitle = null;
         for (RoadmapItemDto dto : dtos) {
             boolean alreadyHave = "ALREADY_HAVE".equalsIgnoreCase(dto.requirement());
-            if (!alreadyHave
+            boolean choice = "CHOICE".equalsIgnoreCase(dto.requirement());
+            if (!alreadyHave && !choice
                     && !"COMPLETED".equalsIgnoreCase(dto.status())
                     && !"LOCKED".equalsIgnoreCase(dto.status())) {
                 nextCourseId = dto.courseId();
@@ -516,6 +537,84 @@ public class RoadmapService {
         return sorted;
     }
 
+    private String requirementOf(Long courseId, Map<Long, Boolean> requiredByCourse, Map<Long, String> choiceLabels) {
+        if (choiceLabels.containsKey(courseId)) {
+            return Boolean.TRUE.equals(requiredByCourse.get(courseId)) ? "CHOICE" : "ALREADY_HAVE";
+        }
+        return Boolean.TRUE.equals(requiredByCourse.get(courseId)) ? "REQUIRED" : "ALREADY_HAVE";
+    }
+
+    private Set<String> languageChoicesForCareer(String careerName) {
+        String name = careerName == null ? "" : careerName.toLowerCase();
+        if (name.contains("full stack") || name.contains("backend")) {
+            return new LinkedHashSet<>(List.of("Java", "JavaScript", "Python"));
+        }
+        if (name.contains("mobile")) {
+            return new LinkedHashSet<>(List.of("React Native", "Flutter"));
+        }
+        return Set.of();
+    }
+
+    private void applyLanguageChoices(
+            String careerName,
+            List<Course> careerCourses,
+            Map<Long, Boolean> requiredByCourse,
+            Map<Long, String> courseReasons,
+            Map<Long, String> choiceLabels
+    ) {
+        Set<String> wanted = languageChoicesForCareer(careerName);
+        if (wanted.size() < 2) {
+            return;
+        }
+
+        Set<Long> present = new HashSet<>();
+        for (Course course : careerCourses) {
+            present.add(course.getId());
+            String label = starterLanguageLabel(course);
+            if (label != null && wanted.contains(label)) {
+                choiceLabels.put(course.getId(), label);
+                courseReasons.putIfAbsent(course.getId(),
+                        "Choose this " + label + " track — you do not have to learn every language.");
+            }
+        }
+
+        for (String label : wanted) {
+            boolean hasLabel = choiceLabels.values().stream().anyMatch(label::equals);
+            if (hasLabel) {
+                continue;
+            }
+            Course extra = findStarterCourse(label, present);
+            if (extra == null) {
+                continue;
+            }
+            careerCourses.add(extra);
+            present.add(extra.getId());
+            requiredByCourse.putIfAbsent(extra.getId(), true);
+            choiceLabels.put(extra.getId(), label);
+            courseReasons.put(extra.getId(),
+                    "Choose this " + label + " track — you do not have to learn every language.");
+        }
+    }
+
+    private Course findStarterCourse(String label, Set<Long> already) {
+        Course best = null;
+        double bestScore = -1;
+        for (Course course : courseRepository.findAll()) {
+            if (already.contains(course.getId()) || Boolean.FALSE.equals(course.getPublished())) {
+                continue;
+            }
+            if (!label.equals(starterLanguageLabel(course))) {
+                continue;
+            }
+            double score = (course.getRating() == null ? 0 : course.getRating());
+            if (score > bestScore) {
+                best = course;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
     private Set<String> wantedStarterLabels(List<CareerSkill> careerSkills, String careerName) {
         Set<String> labels = new HashSet<>();
         for (CareerSkill cs : careerSkills) {
@@ -543,7 +642,11 @@ public class RoadmapService {
             if (cs.getSkill() == null) {
                 continue;
             }
-            String label = STARTER_LANGUAGE_LABELS.get(cs.getSkill().getName().toLowerCase());
+            String skillName = cs.getSkill().getName().toLowerCase();
+            if ("typescript".equals(skillName) || "css & tailwind".equals(skillName)) {
+                continue;
+            }
+            String label = STARTER_LANGUAGE_LABELS.get(skillName);
             if (label != null) {
                 return label;
             }

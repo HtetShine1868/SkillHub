@@ -109,6 +109,14 @@ public class DataInitializer implements CommandLineRunner {
         Skill sTerraform  = seedSkill("Terraform",             "Cloud",       "Infrastructure as Code, providers, modules, and state management");
         Skill sTest       = seedSkill("Software Testing",      "Engineering", "JUnit, Mockito, API tests, and test-driven Java services");
         Skill sRest       = seedSkill("REST APIs",             "Backend",     "Resource design, HTTP methods, status codes, and versioning");
+        Skill sJS         = seedSkill("JavaScript",            "Frontend",    "ES6+, DOM, async/await, modules, and browser APIs");
+        Skill sRN         = seedSkill("React Native",          "Mobile",      "Cross-platform iOS/Android apps with React Native");
+        Skill sFlutter    = seedSkill("Flutter",               "Mobile",      "Cross-platform apps with Dart, widgets, and Flutter tooling");
+        Skill sCICD       = seedSkill("CI/CD",                 "DevOps",      "GitHub Actions, pipelines, automated test and deploy");
+        Skill sViz        = seedSkill("Data Visualization",    "Data",        "Charts, dashboards, Matplotlib, and Plotly storytelling");
+        Skill sFastApi    = seedSkill("FastAPI",               "Backend",     "Python APIs, Pydantic models, and async endpoints");
+        Skill sAnsible    = seedSkill("Ansible",               "DevOps",      "Configuration management and server automation");
+        Skill sSec        = seedSkill("Cloud Security",        "Cloud",       "IAM, least privilege, secrets, and network isolation");
 
         // ===================== CAREERS =====================
         Career cBackend = seedCareer("Backend Developer", "Engineering", "🔧",
@@ -152,6 +160,8 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cBackend, sGit, 3, 0.7);
         seedCareerSkill(cBackend, sTest, 2, 0.55);
         seedCareerSkill(cBackend, sRest, 3, 0.8);
+        seedCareerSkill(cBackend, sJS, 2, 0.4);
+        seedCareerSkill(cBackend, sFastApi, 2, 0.35);
 
         seedCareerSkill(cFrontend, sReact, 4, 0.95);
         seedCareerSkill(cFrontend, sTS, 3, 0.85);
@@ -159,6 +169,7 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cFrontend, sGit, 2, 0.6);
         seedCareerSkill(cFrontend, sSql, 1, 0.3);
         seedCareerSkill(cFrontend, sGraphQL, 2, 0.45);
+        seedCareerSkill(cFrontend, sJS, 3, 0.8);
 
         seedCareerSkill(cFullStack, sJava, 3, 0.8);
         seedCareerSkill(cFullStack, sSpring, 3, 0.8);
@@ -171,11 +182,15 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cFullStack, sGraphQL, 2, 0.4);
         seedCareerSkill(cFullStack, sRest, 3, 0.7);
         seedCareerSkill(cFullStack, sNodeJS, 2, 0.45);
+        seedCareerSkill(cFullStack, sJS, 3, 0.55);
+        seedCareerSkill(cFullStack, sFastApi, 2, 0.35);
+        seedCareerSkill(cFullStack, sPython, 2, 0.35);
 
         seedCareerSkill(cData, sPython, 5, 0.95);
         seedCareerSkill(cData, sML, 4, 0.9);
         seedCareerSkill(cData, sSql, 4, 0.8);
         seedCareerSkill(cData, sAWS, 2, 0.5);
+        seedCareerSkill(cData, sViz, 3, 0.7);
 
         seedCareerSkill(cDevOps, sDocker, 5, 0.95);
         seedCareerSkill(cDevOps, sLinux, 4, 0.9);
@@ -183,22 +198,29 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cDevOps, sTerraform, 3, 0.75);
         seedCareerSkill(cDevOps, sKafka, 2, 0.5);
         seedCareerSkill(cDevOps, sSql, 2, 0.4);
+        seedCareerSkill(cDevOps, sCICD, 4, 0.85);
+        seedCareerSkill(cDevOps, sAnsible, 3, 0.65);
 
         seedCareerSkill(cCloud, sAWS, 5, 0.95);
         seedCareerSkill(cCloud, sTerraform, 4, 0.9);
         seedCareerSkill(cCloud, sDocker, 3, 0.75);
         seedCareerSkill(cCloud, sLinux, 3, 0.7);
+        seedCareerSkill(cCloud, sSec, 4, 0.85);
 
         seedCareerSkill(cMLEng, sPython, 5, 0.95);
         seedCareerSkill(cMLEng, sML, 5, 0.95);
         seedCareerSkill(cMLEng, sDocker, 3, 0.7);
         seedCareerSkill(cMLEng, sAWS, 3, 0.65);
         seedCareerSkill(cMLEng, sSql, 3, 0.6);
+        seedCareerSkill(cMLEng, sFastApi, 3, 0.7);
 
         seedCareerSkill(cMobile, sReact, 4, 0.9);
         seedCareerSkill(cMobile, sTS, 3, 0.8);
         seedCareerSkill(cMobile, sCSS, 3, 0.7);
         seedCareerSkill(cMobile, sGit, 2, 0.6);
+        seedCareerSkill(cMobile, sRN, 4, 0.9);
+        seedCareerSkill(cMobile, sFlutter, 3, 0.75);
+        seedCareerSkill(cMobile, sJS, 3, 0.7);
 
         replaceInterestDiscoveryQuestions(cBackend, cFrontend, cFullStack, cData, cDevOps, cCloud, cMLEng, cMobile);
 
@@ -627,6 +649,72 @@ public class DataInitializer implements CommandLineRunner {
                 "### Faster reads\n\nAdd indexes for common filters and run a simple aggregation pipeline.", 18);
         seedCourseSkill(c19, sMongoDB, 3);
 
+        Course c20 = seedCourse("Java Fundamentals", "Backend",
+                "Learn Java syntax, OOP, collections, and exceptions so backend and full-stack learners can start on a Java track.",
+                "Beginner", 8, 4.8, 640);
+        seedLesson(c20, "Java Syntax & OOP", 1, "### Classes and objects\n\nWrite classes, constructors, and inheritance before moving to Spring.", 20);
+        seedLesson(c20, "Collections, Exceptions & Streams", 2, "### Core libraries\n\nUse List, Map, try/catch, and streams in everyday Java.", 22);
+        seedCourseSkill(c20, sJava, 4);
+
+        Course c21 = seedCourse("JavaScript Fundamentals", "Frontend",
+                "Modern JavaScript — ES6, async/await, modules, and the DOM — so full-stack and frontend learners can start on a JS track.",
+                "Beginner", 7, 4.8, 710);
+        seedLesson(c21, "ES6+ Syntax & Functions", 1, "### Modern JS\n\nLet/const, arrow functions, destructuring, and modules.", 18);
+        seedLesson(c21, "Async JavaScript & the DOM", 2, "### Promises and the browser\n\nFetch data and update the page without blocking.", 20);
+        seedCourseSkill(c21, sJS, 4);
+
+        Course c22 = seedCourse("FastAPI for Python Backends", "Backend",
+                "Build typed Python APIs with FastAPI and Pydantic — an alternative backend language for full-stack, backend, and ML paths.",
+                "Intermediate", 6, 4.7, 268);
+        seedLesson(c22, "Routes, Models & Validation", 1, "### FastAPI basics\n\nDefine paths and Pydantic models for request and response bodies.", 18);
+        seedLesson(c22, "Auth & Deploying a Model API", 2, "### Production endpoints\n\nProtect routes and serve a simple ML or CRUD API.", 18);
+        seedCourseSkill(c22, sFastApi, 4);
+        seedCourseSkill(c22, sPython, 3);
+
+        Course c23 = seedCourse("React Native Mobile Apps", "Mobile",
+                "Build iOS and Android apps with React Native — one of two mobile stacks learners can choose.",
+                "Intermediate", 10, 4.7, 312);
+        seedLesson(c23, "Components, Navigation & Lists", 1, "### App structure\n\nScreens, stacks, and FlatList for mobile UI.", 22);
+        seedLesson(c23, "Device APIs & Publishing", 2, "### Camera, storage, stores\n\nUse device features and prepare a store build.", 20);
+        seedCourseSkill(c23, sRN, 4);
+        seedCourseSkill(c23, sReact, 3);
+        seedCourseSkill(c23, sJS, 3);
+
+        Course c24 = seedCourse("Flutter & Dart", "Mobile",
+                "Build cross-platform apps with Flutter widgets and Dart — the other mobile stack learners can choose.",
+                "Intermediate", 10, 4.6, 254);
+        seedLesson(c24, "Dart & Widget Trees", 1, "### Flutter UI\n\nStateless and stateful widgets, layout, and theme.", 22);
+        seedLesson(c24, "State, Navigation & Platform", 2, "### Real apps\n\nNavigate, persist data, and call platform channels.", 20);
+        seedCourseSkill(c24, sFlutter, 4);
+
+        Course c25 = seedCourse("CI/CD with GitHub Actions", "DevOps",
+                "Automate test and deploy pipelines so DevOps and full-stack paths include a real CI/CD course.",
+                "Intermediate", 5, 4.7, 221);
+        seedLesson(c25, "Workflows, Jobs & Secrets", 1, "### Your first pipeline\n\nRun tests on pull request and deploy on main.", 18);
+        seedCourseSkill(c25, sCICD, 4);
+        seedCourseSkill(c25, sGit, 2);
+
+        Course c26 = seedCourse("Data Visualization with Python", "Data",
+                "Turn analysis into charts and dashboards with Matplotlib and Plotly for data science roadmaps.",
+                "Intermediate", 5, 4.6, 198);
+        seedLesson(c26, "Charts that tell a story", 1, "### Plot types\n\nBars, lines, scatter, and when to use each.", 16);
+        seedCourseSkill(c26, sViz, 4);
+        seedCourseSkill(c26, sPython, 2);
+
+        Course c27 = seedCourse("Ansible Automation", "DevOps",
+                "Configure servers with playbooks and roles so DevOps roadmaps cover configuration management.",
+                "Intermediate", 5, 4.5, 156);
+        seedLesson(c27, "Inventory, Playbooks & Roles", 1, "### Repeatable servers\n\nIdempotent tasks and variables for staging and prod.", 18);
+        seedCourseSkill(c27, sAnsible, 4);
+        seedCourseSkill(c27, sLinux, 2);
+
+        Course c28 = seedCourse("Cloud Security & IAM", "Cloud",
+                "Design least-privilege IAM, secrets, and network isolation for cloud architect roadmaps.",
+                "Advanced", 6, 4.8, 174);
+        seedLesson(c28, "IAM Roles, Policies & Secrets", 1, "### Who can do what\n\nUsers, roles, policies, and secret managers.", 20);
+        seedCourseSkill(c28, sSec, 4);
+        seedCourseSkill(c28, sAWS, 2);
+
         // Prerequisites: logical learning order
         seedCoursePrerequisite(c1, c2);   // Spring Boot requires SQL basics
         seedCoursePrerequisite(c6, c5);   // ML requires Python basics
@@ -635,6 +723,10 @@ public class DataInitializer implements CommandLineRunner {
         seedCoursePrerequisite(c3, c17);  // React easier after HTML/CSS
         seedCoursePrerequisite(c1, c18);  // Spring APIs after REST design
         seedCoursePrerequisite(c10, c19); // Node APIs after MongoDB basics
+        seedCoursePrerequisite(c1, c20);  // Spring after Java fundamentals
+        seedCoursePrerequisite(c10, c21); // Node after JavaScript fundamentals
+        seedCoursePrerequisite(c23, c21); // React Native after JavaScript
+        seedCoursePrerequisite(c3, c21);  // React after JavaScript
 
         // ===================== SKILL EXCHANGE PROJECTS =====================
         if (projectRepository.count() == 0) {

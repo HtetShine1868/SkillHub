@@ -7,12 +7,14 @@ export default function RoadmapNode({
     current: { icon: '●', label: 'Currently learning' },
     available: { icon: '→', label: 'Required next' },
     already: { icon: '○', label: 'Not required' },
+    choice: { icon: '◇', label: 'Language option' },
     locked: { icon: '🔒', label: 'Locked' },
   }
 
   const normalizedKey = (stage.status || 'available').toLowerCase()
   const config = status[normalizedKey] || status.available
   const already = normalizedKey === 'already' || stage.requirement === 'ALREADY_HAVE'
+  const choice = normalizedKey === 'choice' || stage.requirement === 'CHOICE'
   const locked = normalizedKey === 'locked'
   const title = stage.title || stage.choiceLabel
   const skills = Array.isArray(stage.skills) ? stage.skills : []
@@ -29,7 +31,11 @@ export default function RoadmapNode({
 
       <div className="roadmap-node-content">
         <span className="roadmap-node-status">
-          {already && normalizedKey !== 'completed' ? 'Not required for you' : config.label}
+          {already && normalizedKey !== 'completed'
+            ? 'Not required for you'
+            : choice
+              ? 'Optional language track'
+              : config.label}
         </span>
         <h3>{title}</h3>
         <p>
@@ -41,7 +47,7 @@ export default function RoadmapNode({
         </p>
         <div className="roadmap-node-meta">
           <span className={`roadmap-node-skill-chip ${already ? 'is-skip' : 'is-need'}`}>
-            {already ? 'Already skilled' : 'Required'}
+            {already ? 'Already skilled' : choice ? 'Your choice' : 'Required'}
           </span>
           {skills.slice(0, 2).map((skill) => (
             <span key={skill} className="roadmap-node-skill-chip">{skill}</span>

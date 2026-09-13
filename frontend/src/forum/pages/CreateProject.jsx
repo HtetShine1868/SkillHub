@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Layers, FileText, Tag, Users,
-  Clock, CheckCircle
+  CheckCircle
 } from 'lucide-react'
 import ForumNavbar from '../components/ForumNavbar'
 import SkillChip from '../components/SkillChip'
-import { createProject } from '../services/forumApi'
+import { createProject, getCatalogSkills } from '../services/forumApi'
 import '../forum.css'
 
 const CATEGORIES = [
@@ -17,6 +17,14 @@ const CATEGORIES = [
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DURATIONS = ['1–2 weeks', '3–4 weeks', '1–2 months', '2–3 months', '3+ months']
 const COMMITMENTS = ['2–4 hrs/week', '5–8 hrs/week', '10–15 hrs/week', '15+ hrs/week']
+
+const FALLBACK_SKILLS = [
+  'Java', 'Spring Boot', 'React.js', 'TypeScript', 'JavaScript', 'CSS & Tailwind',
+  'Node.js & Express', 'Python', 'FastAPI', 'SQL & PostgreSQL', 'MongoDB', 'Redis',
+  'REST APIs', 'GraphQL', 'Apache Kafka', 'Docker & Kubernetes', 'Git & GitHub',
+  'CI/CD', 'Linux & Bash', 'Terraform', 'Ansible', 'AWS Cloud', 'Cloud Security',
+  'Machine Learning', 'Data Visualization', 'Software Testing', 'React Native', 'Flutter',
+]
 
 const INITIAL_FORM = {
   title: '',
@@ -34,34 +42,47 @@ export default function CreateProject() {
   const navigate = useNavigate()
   const [form, setForm] = useState(INITIAL_FORM)
   const [skills, setSkills] = useState([])
-  const [skillInput, setSkillInput] = useState('')
+  const [catalogSkills, setCatalogSkills] = useState(FALLBACK_SKILLS)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    getCatalogSkills()
+      .then((list) => {
+        if (cancelled) return
+        const names = list
+          .map((s) => (typeof s === 'string' ? s : s?.name))
+          .filter(Boolean)
+        if (names.length > 0) setCatalogSkills(names)
+      })
+      .catch(() => {
+        if (!cancelled) setCatalogSkills(FALLBACK_SKILLS)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const availableSkills = useMemo(
+    () => catalogSkills.filter((name) => !skills.includes(name)),
+    [catalogSkills, skills]
+  )
 
   function setField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors((prev) => { const e = { ...prev }; delete e[field]; return e })
   }
 
-  function addSkill() {
-    const trimmed = skillInput.trim()
+  function addSkill(name) {
+    const trimmed = name.trim()
     if (trimmed && !skills.includes(trimmed)) {
       setSkills((prev) => [...prev, trimmed])
       if (errors.skills) setErrors((prev) => { const e = { ...prev }; delete e.skills; return e })
     }
-    setSkillInput('')
   }
 
   function removeSkill(skill) {
     setSkills((prev) => prev.filter((s) => s !== skill))
-  }
-
-  function handleSkillKeyDown(e) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addSkill()
-    }
   }
 
   function validate() {
@@ -245,26 +266,33 @@ export default function CreateProject() {
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label" htmlFor="skill-input">
+            <label className="form-label" htmlFor="skill-select">
               Skills needed <span>*</span>
             </label>
-            <div className={`skill-input-area ${errors.skills ? 'error' : ''}`}>
-              {skills.map((skill) => (
-                <SkillChip key={skill} skill={skill} onRemove={removeSkill} />
+            <select
+              id="skill-select"
+              className={`form-select ${errors.skills ? 'error' : ''}`}
+              value=""
+              onChange={(e) => addSkill(e.target.value)}
+              aria-required="true"
+              aria-label="Select a required skill"
+            >
+              <option value="">
+                {availableSkills.length === 0 ? 'All catalog skills added' : 'Select a skill...'}
+              </option>
+              {availableSkills.map((name) => (
+                <option key={name} value={name}>{name}</option>
               ))}
-              <input
-                id="skill-input"
-                type="text"
-                value={skillInput}
-                onChange={(e) => setSkillInput(e.target.value)}
-                onKeyDown={handleSkillKeyDown}
-                onBlur={addSkill}
-                placeholder={skills.length === 0 ? 'Type a skill and press Enter...' : 'Add more...'}
-                aria-label="Add required skill"
-              />
-            </div>
+            </select>
+            {skills.length > 0 && (
+              <div className="skill-input-area" style={{ marginTop: 10 }}>
+                {skills.map((skill) => (
+                  <SkillChip key={skill} skill={skill} onRemove={removeSkill} />
+                ))}
+              </div>
+            )}
             {errors.skills && <div className="form-error" role="alert">{errors.skills}</div>}
-            <p className="form-hint">Press Enter or comma to add each skill</p>
+            <p className="form-hint">Choose skills from the catalog. You can add more than one.</p>
           </div>
         </motion.div>
 

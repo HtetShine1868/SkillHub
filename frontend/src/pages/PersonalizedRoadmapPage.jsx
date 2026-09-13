@@ -466,6 +466,8 @@ export default function PersonalizedRoadmapPage() {
 
       if (item.requirement === 'ALREADY_HAVE' && !isCompleted) {
         status = 'already';
+      } else if (item.requirement === 'CHOICE' && !isCompleted && !isInProgress) {
+        status = 'choice';
       } else if (isCompleted) {
         status = 'completed';
       } else if (isInProgress) {
@@ -483,7 +485,7 @@ export default function PersonalizedRoadmapPage() {
         lockedReason: item.status === 'LOCKED' ? item.reason : null,
         courses: [item.courseId],
         choiceGroup: item.choiceGroup || null,
-        choiceLabel: item.courseTitle,
+        choiceLabel: item.choiceLabel || item.courseTitle,
         skills: item.skills || [],
         requirement: item.requirement || 'REQUIRED',
         skillLabel: (item.skills && item.skills[0]) || ''
