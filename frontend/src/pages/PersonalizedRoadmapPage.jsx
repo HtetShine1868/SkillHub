@@ -394,7 +394,7 @@ export default function PersonalizedRoadmapPage() {
   }
 
   const handleStageClick = (stage) => {
-    if (stage.status === 'locked') return
+    if ((stage.status || '').toLowerCase() === 'locked') return
     if (stage.id) {
       navigate(`/courses/${stage.id}`)
       return
@@ -464,7 +464,9 @@ export default function PersonalizedRoadmapPage() {
       const isCompleted = item.status === 'COMPLETED' || (item.progress !== undefined && item.progress >= 100);
       const isInProgress = item.status === 'IN_PROGRESS' || (item.progress !== undefined && item.progress > 0);
 
-      if (isCompleted) {
+      if (item.requirement === 'ALREADY_HAVE' && !isCompleted) {
+        status = 'already';
+      } else if (isCompleted) {
         status = 'completed';
       } else if (isInProgress) {
         status = 'current';
@@ -476,14 +478,14 @@ export default function PersonalizedRoadmapPage() {
         id: item.courseId,
         title: item.courseTitle || (item.skills && item.skills[0]) || 'Course',
         status: status,
-        progress: item.progress || (isCompleted ? 100 : 0),
+        progress: 0,
         description: item.reason,
         lockedReason: item.status === 'LOCKED' ? item.reason : null,
         courses: [item.courseId],
         choiceGroup: item.choiceGroup || null,
         choiceLabel: item.courseTitle,
         skills: item.skills || [],
-        nextCourseId: item.courseId,
+        requirement: item.requirement || 'REQUIRED',
         skillLabel: (item.skills && item.skills[0]) || ''
       };
     });
@@ -872,7 +874,7 @@ export default function PersonalizedRoadmapPage() {
                     onClick={() => switchSavedRoadmap(summary.careerId)}
                   >
                     <strong>{summary.careerName}</strong>
-                    <span>{summary.progress}% · {summary.completedCount}/{summary.totalCount}</span>
+                    <span>{summary.complete ? 'Complete' : `${summary.completedCount} of ${summary.totalCount} done`}</span>
                   </button>
                 ))}
                 {roadmapSummaries.length < 2 && (

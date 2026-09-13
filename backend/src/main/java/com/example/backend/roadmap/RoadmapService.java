@@ -170,137 +170,97 @@ public class RoadmapService {
             }
         }
 
-        // Step 4: Find courses that can address those gaps
-        List<Course> allCourses = courseRepository.findAll();
-        List<Course> candidateCourses = new ArrayList<>();
-        Map<Long, String> courseReasons = new HashMap<>();
-
-        // Fetch completed enrollments to skip completed courses
-        List<Enrollment> completedEnrollments = enrollmentRepository.findByUserId(user.getId()).stream()
-                .filter(e -> e.getCompleted() != null && e.getCompleted())
-                .toList();
+        List<Enrollment> userEnrollments = enrollmentRepository.findByUserId(user.getId());
         Set<Long> completedCourseIds = new HashSet<>();
-        for (Enrollment e : completedEnrollments) {
-            completedCourseIds.add(e.getCourse().getId());
-        }
-
-        Set<Long> coveredSkills = new HashSet<>();
-        for (Long completedId : completedCourseIds) {
-            for (CourseSkill cs : courseSkillRepository.findByCourseId(completedId)) {
-                if (cs.getSkill() != null) {
-                    coveredSkills.add(cs.getSkill().getId());
-                }
+        for (Enrollment e : userEnrollments) {
+            if (e.getCourse() != null && Boolean.TRUE.equals(e.getCompleted())) {
+                completedCourseIds.add(e.getCourse().getId());
             }
         }
 
-        Set<Long> remainingGaps = new HashSet<>(gaps.keySet());
-        remainingGaps.removeAll(coveredSkills);
-
-        pickUniqueCoursesForGaps(
+        List<Course> allCourses = courseRepository.findAll();
+        Map<Long, Boolean> requiredByCourse = new LinkedHashMap<>();
+        Map<Long, String> courseReasons = new HashMap<>();
+        List<Course> careerCourses = pickAllCareerCourses(
+                careerSkills,
                 allCourses,
-                completedCourseIds,
-                remainingGaps,
+                gaps,
                 userSkillLevels,
-                candidateCourses,
+                requiredSkills,
+                completedCourseIds,
+                requiredByCourse,
                 courseReasons
         );
 
-        // One optional starter-language course only if that language is still a gap
-        Set<String> wantedLanguages = wantedStarterLabels(careerSkills, career.getName());
-        Set<Long> candidateIds = new HashSet<>();
-        for (Course c : candidateCourses) {
-            candidateIds.add(c.getId());
-        }
-        for (Course course : allCourses) {
-            if (completedCourseIds.contains(course.getId()) || candidateIds.contains(course.getId())) {
-                continue;
-            }
-            String lang = starterLanguageLabel(course);
-            if (lang == null || !wantedLanguages.contains(lang)) {
-                continue;
-            }
-            boolean coversNewGap = courseSkillRepository.findByCourseId(course.getId()).stream()
-                    .anyMatch(cs -> cs.getSkill() != null && remainingGaps.contains(cs.getSkill().getId()));
-            if (coversNewGap) {
-                candidateCourses.add(course);
-                candidateIds.add(course.getId());
-                courseReasons.put(course.getId(), "Starting language for " + career.getName() + ": " + lang + ".");
-                courseSkillRepository.findByCourseId(course.getId()).forEach(cs -> {
-                    if (cs.getSkill() != null) {
-                        remainingGaps.remove(cs.getSkill().getId());
-                    }
-                });
-            }
-        }
+        List<Course> requiredCourses = careerCourses.stream()
+                .filter(c -> Boolean.TRUE.equals(requiredByCourse.get(c.getId())))
+                .toList();
+        List<Course> alreadyCourses = careerCourses.stream()
+                .filter(c -> !Boolean.TRUE.equals(requiredByCourse.get(c.getId())))
+                .toList();
 
-        // Step 5: Topological Sort based on prerequisites to get a logical order
-        List<Course> orderedCourses = sortCoursesByPrerequisites(candidateCourses);
-        orderedCourses = promoteStarterLanguageChoices(orderedCourses);
-
-        Map<Long, RoadmapItem> completedItems = new HashMap<>();
-        for (Enrollment e : completedEnrollments) {
-            if (e.getCourse() != null) {
-                completedItems.put(e.getCourse().getId(), null);
-            }
-        }
+        List<Course> orderedRequired = sortCoursesByPrerequisites(new ArrayList<>(requiredCourses));
+        List<Course> orderedCourses = new ArrayList<>(orderedRequired);
+        orderedCourses.addAll(alreadyCourses);
 
         roadmapItemRepository.deleteByUserIdAndCareerId(user.getId(), careerId);
 
         List<RoadmapItem> newRoadmapItems = new ArrayList<>();
         int orderIndex = 1;
         Set<Long> addedCourseIds = new HashSet<>();
+        Set<Long> requiredIds = new HashSet<>();
+        for (Course c : orderedRequired) {
+            requiredIds.add(c.getId());
+        }
 
         for (Course course : orderedCourses) {
-            if (addedCourseIds.contains(course.getId()) || completedCourseIds.contains(course.getId())) {
+            if (!addedCourseIds.add(course.getId())) {
                 continue;
             }
 
-            // Determine locked status: locked if any prerequisite course is in the roadmap and not yet completed
-            List<CoursePrerequisite> prerequisites = prerequisiteRepository.findByCourseId(course.getId());
+            boolean needed = Boolean.TRUE.equals(requiredByCourse.get(course.getId()));
+            String requirement = needed ? "REQUIRED" : "ALREADY_HAVE";
+            boolean courseDone = completedCourseIds.contains(course.getId());
+
             boolean isLocked = false;
             String lockedReason = null;
-
-            for (CoursePrerequisite prereq : prerequisites) {
-                Long prereqCourseId = prereq.getRequiredCourse().getId();
-                // Language starters are alternatives, not gates for each other
-                if (starterLanguageLabel(course) != null && starterLanguageLabel(prereq.getRequiredCourse()) != null) {
-                    continue;
-                }
-                // If the prerequisite is part of our roadmap
-                boolean isInRoadmap = orderedCourses.stream().anyMatch(c -> c.getId().equals(prereqCourseId)) 
-                        || completedItems.containsKey(prereqCourseId);
-                
-                // And it's not completed
-                boolean isCompleted = completedItems.containsKey(prereqCourseId);
-                if (isInRoadmap && !isCompleted) {
-                    isLocked = true;
-                    lockedReason = "Locked: Complete " + prereq.getRequiredCourse().getTitle() + " first.";
-                    break;
+            if (needed && !courseDone) {
+                for (CoursePrerequisite prereq : prerequisiteRepository.findByCourseId(course.getId())) {
+                    Long prereqCourseId = prereq.getRequiredCourse().getId();
+                    if (!requiredIds.contains(prereqCourseId)) {
+                        continue;
+                    }
+                    if (!completedCourseIds.contains(prereqCourseId)) {
+                        isLocked = true;
+                        lockedReason = "Complete " + prereq.getRequiredCourse().getTitle() + " first.";
+                        break;
+                    }
                 }
             }
 
-            String status = isLocked ? "LOCKED" : "AVAILABLE";
-            String reason = isLocked ? lockedReason : courseReasons.get(course.getId());
+            String status = courseDone ? "COMPLETED" : (isLocked ? "LOCKED" : "AVAILABLE");
+            String reason = isLocked
+                    ? lockedReason
+                    : courseReasons.getOrDefault(course.getId(),
+                    needed ? "Required for your skill gap." : "You already cover this skill.");
 
-            // Check if user has an active enrollment to mark as IN_PROGRESS
-            if (!isLocked) {
+            if (!courseDone && !isLocked && needed) {
                 Optional<Enrollment> enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), course.getId());
-                if (enrollment.isPresent() && (enrollment.get().getCompleted() == null || !enrollment.get().getCompleted())) {
+                if (enrollment.isPresent() && !Boolean.TRUE.equals(enrollment.get().getCompleted())) {
                     status = "IN_PROGRESS";
                 }
             }
 
-            RoadmapItem ri = RoadmapItem.builder()
+            newRoadmapItems.add(RoadmapItem.builder()
                     .user(user)
                     .career(career)
                     .course(course)
                     .orderIndex(orderIndex++)
                     .status(status)
-                    .progress(0)
+                    .progress(courseDone ? 100 : 0)
                     .reason(reason)
-                    .build();
-
-            newRoadmapItems.add(ri);
+                    .requirement(requirement)
+                    .build());
         }
 
         roadmapItemRepository.saveAll(newRoadmapItems);
@@ -368,6 +328,7 @@ public class RoadmapService {
             String choiceLabel = starterLanguageLabel(ri.getCourse());
             String choiceGroup = (choiceLabel != null && starterCount >= 2) ? "starter-language" : null;
 
+            String requirement = ri.getRequirement() == null ? "REQUIRED" : ri.getRequirement();
             return new RoadmapItemDto(
                     ri.getId(),
                     ri.getCourse().getId(),
@@ -380,14 +341,17 @@ public class RoadmapService {
                     ri.getProgress(),
                     ri.getReason(),
                     choiceGroup,
-                    choiceLabel
+                    choiceLabel,
+                    requirement
             );
         }).toList();
 
         Long nextCourseId = null;
         String nextCourseTitle = null;
         for (RoadmapItemDto dto : dtos) {
-            if (!"COMPLETED".equalsIgnoreCase(dto.status())
+            boolean alreadyHave = "ALREADY_HAVE".equalsIgnoreCase(dto.requirement());
+            if (!alreadyHave
+                    && !"COMPLETED".equalsIgnoreCase(dto.status())
                     && !"LOCKED".equalsIgnoreCase(dto.status())) {
                 nextCourseId = dto.courseId();
                 nextCourseTitle = dto.courseTitle();
@@ -399,66 +363,96 @@ public class RoadmapService {
     }
 
     /**
-     * One course per remaining skill gap. Prefers a course that closes more
-     * leftover skills so React/Docker never appear twice.
+     * One best course per career skill so the full path is visible.
+     * Courses the learner already covers are kept and marked ALREADY_HAVE.
      */
-    private void pickUniqueCoursesForGaps(
+    private List<Course> pickAllCareerCourses(
+            List<CareerSkill> careerSkills,
             List<Course> allCourses,
-            Set<Long> completedCourseIds,
-            Set<Long> remainingGaps,
+            Map<Long, Integer> gaps,
             Map<Long, Integer> userSkillLevels,
-            List<Course> candidateCourses,
+            Map<Long, CareerSkill> requiredSkills,
+            Set<Long> completedCourseIds,
+            Map<Long, Boolean> requiredByCourse,
             Map<Long, String> courseReasons
     ) {
-        while (!remainingGaps.isEmpty()) {
-            Course best = null;
-            int bestCover = 0;
-            double bestScore = -1;
-            String bestSkillName = "";
-            Set<Long> bestSkillIds = Set.of();
+        List<Course> selected = new ArrayList<>();
+        Set<Long> added = new HashSet<>();
 
-            for (Course course : allCourses) {
-                if (completedCourseIds.contains(course.getId())
-                        || candidateCourses.stream().anyMatch(c -> c.getId().equals(course.getId()))) {
+        List<CareerSkill> orderedSkills = new ArrayList<>(careerSkills);
+        orderedSkills.sort((a, b) -> Double.compare(
+                b.getImportance() == null ? 0 : b.getImportance(),
+                a.getImportance() == null ? 0 : a.getImportance()
+        ));
+
+        for (CareerSkill careerSkill : orderedSkills) {
+            if (careerSkill.getSkill() == null) {
+                continue;
+            }
+            Long skillId = careerSkill.getSkill().getId();
+            Course best = bestCourseForSkill(skillId, allCourses, added);
+            if (best == null || !added.add(best.getId())) {
+                continue;
+            }
+            selected.add(best);
+            boolean needed = courseIsRequired(best, gaps, userSkillLevels, requiredSkills, completedCourseIds);
+            requiredByCourse.put(best.getId(), needed);
+            String skillName = careerSkill.getSkill().getName();
+            courseReasons.put(best.getId(), needed
+                    ? "Required: close your gap in " + skillName + "."
+                    : "Already covered: your " + skillName + " level meets this career.");
+        }
+        return selected;
+    }
+
+    private Course bestCourseForSkill(Long skillId, List<Course> allCourses, Set<Long> alreadyPicked) {
+        Course best = null;
+        double bestScore = -1;
+        for (Course course : allCourses) {
+            if (alreadyPicked.contains(course.getId()) || Boolean.FALSE.equals(course.getPublished())) {
+                continue;
+            }
+            for (CourseSkill cs : courseSkillRepository.findByCourseId(course.getId())) {
+                if (cs.getSkill() == null || !cs.getSkill().getId().equals(skillId)) {
                     continue;
                 }
-                Set<Long> covers = new HashSet<>();
-                String skillName = "";
-                for (CourseSkill cs : courseSkillRepository.findByCourseId(course.getId())) {
-                    if (cs.getSkill() == null) {
-                        continue;
-                    }
-                    Long skillId = cs.getSkill().getId();
-                    int current = userSkillLevels.getOrDefault(skillId, 0);
-                    if (remainingGaps.contains(skillId) && cs.getTargetLevel() > current) {
-                        covers.add(skillId);
-                        if (skillName.isBlank()) {
-                            skillName = cs.getSkill().getName();
-                        }
-                    }
-                }
-                if (covers.isEmpty()) {
-                    continue;
-                }
-                double score = covers.size() * 10
+                double score = (cs.getTargetLevel() == null ? 1 : cs.getTargetLevel()) * 10
                         + (course.getRating() == null ? 0 : course.getRating())
                         + Math.log1p(course.getEnrollmentCount() == null ? 0 : course.getEnrollmentCount());
-                if (covers.size() > bestCover || (covers.size() == bestCover && score > bestScore)) {
+                if (score > bestScore) {
                     best = course;
-                    bestCover = covers.size();
                     bestScore = score;
-                    bestSkillName = skillName;
-                    bestSkillIds = covers;
                 }
             }
-
-            if (best == null) {
-                break;
-            }
-            candidateCourses.add(best);
-            courseReasons.put(best.getId(), "Recommended to close your gap in " + bestSkillName + ".");
-            remainingGaps.removeAll(bestSkillIds);
         }
+        return best;
+    }
+
+    private boolean courseIsRequired(
+            Course course,
+            Map<Long, Integer> gaps,
+            Map<Long, Integer> userSkillLevels,
+            Map<Long, CareerSkill> requiredSkills,
+            Set<Long> completedCourseIds
+    ) {
+        if (completedCourseIds.contains(course.getId())) {
+            return false;
+        }
+        for (CourseSkill cs : courseSkillRepository.findByCourseId(course.getId())) {
+            if (cs.getSkill() == null) {
+                continue;
+            }
+            Long skillId = cs.getSkill().getId();
+            if (!requiredSkills.containsKey(skillId)) {
+                continue;
+            }
+            int current = userSkillLevels.getOrDefault(skillId, 0);
+            int required = requiredSkills.get(skillId).getRequiredLevel();
+            if (current < required || gaps.containsKey(skillId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

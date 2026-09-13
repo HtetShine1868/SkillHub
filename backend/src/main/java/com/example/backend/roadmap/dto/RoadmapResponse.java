@@ -25,6 +25,7 @@ public record RoadmapResponse(
             Integer progress,
             String reason,
             String choiceGroup,
-            String choiceLabel
+            String choiceLabel,
+            String requirement
     ) {}
 }

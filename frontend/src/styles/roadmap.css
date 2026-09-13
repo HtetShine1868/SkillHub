@@ -2492,3 +2492,38 @@
 }
 .roadmap-confirm-cancel { background: rgba(255,255,255,0.08); color: #e2e8f0; }
 .roadmap-confirm-ok { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }
+
+.roadmap-already-banner {
+  margin: 8px auto 16px;
+  padding: 10px 16px;
+  max-width: 640px;
+  text-align: center;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.roadmap-node.already {
+  opacity: 0.78;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.roadmap-node.already .roadmap-node-icon {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+.roadmap-node-skill-chip.is-need {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+}
+
+.roadmap-node-skill-chip.is-skip {
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}

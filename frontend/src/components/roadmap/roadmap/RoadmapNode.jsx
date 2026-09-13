@@ -3,78 +3,56 @@ export default function RoadmapNode({
   onClick,
 }) {
   const status = {
-    completed: {
-      icon: '✓',
-      label: 'Completed',
-    },
-
-    current: {
-      icon: '●',
-      label: 'Currently Learning',
-    },
-
-    available: {
-      icon: '→',
-      label: 'Ready to Start',
-    },
-
-    locked: {
-      icon: '🔒',
-      label: 'Locked',
-    },
+    completed: { icon: '✓', label: 'Completed' },
+    current: { icon: '●', label: 'Currently learning' },
+    available: { icon: '→', label: 'Required next' },
+    already: { icon: '○', label: 'Not required' },
+    locked: { icon: '🔒', label: 'Locked' },
   }
 
   const normalizedKey = (stage.status || 'available').toLowerCase()
   const config = status[normalizedKey] || status.available
-  const skill = stage.choiceLabel || stage.title
-  const progress = Number(stage.progress) || 0
+  const already = normalizedKey === 'already' || stage.requirement === 'ALREADY_HAVE'
   const locked = normalizedKey === 'locked'
+  const title = stage.title || stage.choiceLabel
+  const skills = Array.isArray(stage.skills) ? stage.skills : []
 
   return (
     <button
-      className={`roadmap-node ${normalizedKey}`}
+      className={`roadmap-node ${normalizedKey}${already ? ' already' : ''}`}
       onClick={onClick}
       disabled={locked}
     >
-
       <div className="roadmap-node-icon">
         {config.icon}
       </div>
 
       <div className="roadmap-node-content">
-
         <span className="roadmap-node-status">
-          {config.label}
+          {already && normalizedKey !== 'completed' ? 'Not required for you' : config.label}
         </span>
-
-        <h3>{skill}</h3>
-
-        <p>{locked ? stage.lockedReason : 'Open matching courses and start with the recommended pick.'}</p>
-
-        {!locked && (
-          <div className="roadmap-node-meta">
-            <span className="roadmap-node-skill-chip">{skill}</span>
-            {progress > 0 && (
-              <span className="roadmap-node-progress-label">{progress}% done</span>
-            )}
-            <span className="roadmap-node-cta">View courses</span>
-          </div>
-        )}
-
-        {!locked && progress > 0 && (
-          <div className="roadmap-node-track" aria-hidden="true">
-            <div style={{ width: `${Math.min(progress, 100)}%` }} />
-          </div>
-        )}
-
+        <h3>{title}</h3>
+        <p>
+          {locked
+            ? stage.lockedReason
+            : already
+              ? (stage.description || 'Your skill check already covers this course.')
+              : (stage.description || 'Required from your skill gap. Open the course to start.')}
+        </p>
+        <div className="roadmap-node-meta">
+          <span className={`roadmap-node-skill-chip ${already ? 'is-skip' : 'is-need'}`}>
+            {already ? 'Already skilled' : 'Required'}
+          </span>
+          {skills.slice(0, 2).map((skill) => (
+            <span key={skill} className="roadmap-node-skill-chip">{skill}</span>
+          ))}
+          {!locked && <span className="roadmap-node-cta">Open course</span>}
+        </div>
       </div>
 
       {!locked && (
-        <span className="roadmap-node-arrow">
-          →
-        </span>
+        <span className="roadmap-node-arrow">→</span>
       )}
-
     </button>
   )
 }

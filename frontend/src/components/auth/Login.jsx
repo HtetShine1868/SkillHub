@@ -62,8 +62,8 @@ export default function Login() {
                     loggedInUser?.role === 'ROLE_ADMIN'
                         ? '/admin'
                         : loggedInUser?.role === 'ROLE_INSTRUCTOR'
-                        ? '/instructor/dashboard'
-                        : '/dashboard';
+                            ? '/instructor/dashboard'
+                            : '/dashboard';
 
                 navigate(destination);
 
@@ -121,13 +121,7 @@ export default function Login() {
                 />
 
 
-                <div className="forgot-row">
 
-                    <Link to="#">
-                        Forgot password?
-                    </Link>
-
-                </div>
 
 
                 <button

@@ -48,6 +48,11 @@ public class RoadmapItem {
     @Column(columnDefinition = "TEXT")
     private String reason; // Explanation of why it was recommended (spec §62)
 
+    /** REQUIRED = skill gap; ALREADY_HAVE = user already meets this skill */
+    @Column(length = 20)
+    @Builder.Default
+    private String requirement = "REQUIRED";
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

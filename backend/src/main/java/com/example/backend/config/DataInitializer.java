@@ -108,6 +108,7 @@ public class DataInitializer implements CommandLineRunner {
         Skill sLinux      = seedSkill("Linux & Bash",          "DevOps",      "Shell scripting, system administration, cron jobs, and file I/O");
         Skill sTerraform  = seedSkill("Terraform",             "Cloud",       "Infrastructure as Code, providers, modules, and state management");
         Skill sTest       = seedSkill("Software Testing",      "Engineering", "JUnit, Mockito, API tests, and test-driven Java services");
+        Skill sRest       = seedSkill("REST APIs",             "Backend",     "Resource design, HTTP methods, status codes, and versioning");
 
         // ===================== CAREERS =====================
         Career cBackend = seedCareer("Backend Developer", "Engineering", "🔧",
@@ -150,6 +151,7 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cBackend, sRedis, 2, 0.5);
         seedCareerSkill(cBackend, sGit, 3, 0.7);
         seedCareerSkill(cBackend, sTest, 2, 0.55);
+        seedCareerSkill(cBackend, sRest, 3, 0.8);
 
         seedCareerSkill(cFrontend, sReact, 4, 0.95);
         seedCareerSkill(cFrontend, sTS, 3, 0.85);
@@ -167,6 +169,8 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cFullStack, sGit, 3, 0.7);
         seedCareerSkill(cFullStack, sTest, 2, 0.5);
         seedCareerSkill(cFullStack, sGraphQL, 2, 0.4);
+        seedCareerSkill(cFullStack, sRest, 3, 0.7);
+        seedCareerSkill(cFullStack, sNodeJS, 2, 0.45);
 
         seedCareerSkill(cData, sPython, 5, 0.95);
         seedCareerSkill(cData, sML, 4, 0.9);
@@ -596,11 +600,41 @@ public class DataInitializer implements CommandLineRunner {
                 "### Test the HTTP layer\n\nVerify status codes and JSON without starting a full browser.", 16);
         seedCourseSkill(c16, sTest, 3);
 
+        Course c17 = seedCourse("HTML, CSS & Responsive Layouts", "Frontend",
+                "Build accessible page structure, Flexbox/Grid layouts, and mobile-first CSS so frontend paths have a dedicated UI foundations course.",
+                "Beginner", 6, 4.7, 520);
+        seedLesson(c17, "Semantic HTML & Page Structure", 1,
+                "### Structure before style\n\nUse headings, landmarks, and forms so a page is usable without CSS.", 16);
+        seedLesson(c17, "Flexbox, Grid & Responsive Design", 2,
+                "### Layout systems\n\nBuild two-column and card layouts that adapt from mobile to desktop.", 20);
+        seedCourseSkill(c17, sCSS, 4);
+
+        Course c18 = seedCourse("REST API Design", "Backend",
+                "Design clear HTTP resources, status codes, pagination, and error bodies so backend and full-stack roadmaps include a dedicated API course.",
+                "Intermediate", 5, 4.8, 301);
+        seedLesson(c18, "Resources, Verbs & Status Codes", 1,
+                "### HTTP as a contract\n\nMap create/read/update/delete to POST/GET/PUT/DELETE and return the right status code.", 18);
+        seedLesson(c18, "Pagination, Errors & Versioning", 2,
+                "### Production API habits\n\nPage large lists, return consistent error JSON, and version breaking changes.", 16);
+        seedCourseSkill(c18, sRest, 4);
+
+        Course c19 = seedCourse("MongoDB Essentials", "Database",
+                "Model documents, query collections, and use indexes so Node and data-adjacent paths have a dedicated NoSQL course.",
+                "Beginner", 5, 4.6, 247);
+        seedLesson(c19, "Documents, Collections & CRUD", 1,
+                "### Document data\n\nCreate, read, update, and delete documents with filters and projections.", 16);
+        seedLesson(c19, "Indexes & Aggregation", 2,
+                "### Faster reads\n\nAdd indexes for common filters and run a simple aggregation pipeline.", 18);
+        seedCourseSkill(c19, sMongoDB, 3);
+
         // Prerequisites: logical learning order
         seedCoursePrerequisite(c1, c2);   // Spring Boot requires SQL basics
         seedCoursePrerequisite(c6, c5);   // ML requires Python basics
         seedCoursePrerequisite(c4, c9);   // Docker/K8s easier with Linux knowledge
         seedCoursePrerequisite(c3, c8);   // React easier with TypeScript knowledge
+        seedCoursePrerequisite(c3, c17);  // React easier after HTML/CSS
+        seedCoursePrerequisite(c1, c18);  // Spring APIs after REST design
+        seedCoursePrerequisite(c10, c19); // Node APIs after MongoDB basics
 
         // ===================== SKILL EXCHANGE PROJECTS =====================
         if (projectRepository.count() == 0) {
