@@ -2428,3 +2428,67 @@
   }
 
 }
+
+.roadmap-map-switcher {
+  max-width: 1050px;
+  margin: 0 auto 16px;
+  padding: 0 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.roadmap-map-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.roadmap-map-chip strong { font-size: 0.9rem; }
+.roadmap-map-chip span { font-size: 0.75rem; color: #94a3b8; }
+.roadmap-map-chip.is-active {
+  border-color: #a78bfa;
+  background: rgba(124, 58, 237, 0.2);
+}
+.roadmap-map-chip--add { color: #86efac; border-style: dashed; }
+
+.roadmap-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(8, 11, 20, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.roadmap-confirm-card {
+  width: min(480px, 100%);
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 24px;
+  color: #f8fafc;
+}
+
+.roadmap-confirm-card h3 { margin: 0 0 10px; font-size: 1.15rem; }
+.roadmap-confirm-card p { margin: 0 0 18px; color: #cbd5e1; line-height: 1.5; }
+.roadmap-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.roadmap-confirm-cancel,
+.roadmap-confirm-ok {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.roadmap-confirm-cancel { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+.roadmap-confirm-ok { background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; }

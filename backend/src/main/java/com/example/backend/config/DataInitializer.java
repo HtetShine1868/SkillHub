@@ -107,6 +107,7 @@ public class DataInitializer implements CommandLineRunner {
         Skill sKafka      = seedSkill("Apache Kafka",          "Backend",     "Event streaming, producers/consumers, topics, and partitions");
         Skill sLinux      = seedSkill("Linux & Bash",          "DevOps",      "Shell scripting, system administration, cron jobs, and file I/O");
         Skill sTerraform  = seedSkill("Terraform",             "Cloud",       "Infrastructure as Code, providers, modules, and state management");
+        Skill sTest       = seedSkill("Software Testing",      "Engineering", "JUnit, Mockito, API tests, and test-driven Java services");
 
         // ===================== CAREERS =====================
         Career cBackend = seedCareer("Backend Developer", "Engineering", "🔧",
@@ -148,12 +149,14 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cBackend, sDocker, 2, 0.6);
         seedCareerSkill(cBackend, sRedis, 2, 0.5);
         seedCareerSkill(cBackend, sGit, 3, 0.7);
+        seedCareerSkill(cBackend, sTest, 2, 0.55);
 
         seedCareerSkill(cFrontend, sReact, 4, 0.95);
         seedCareerSkill(cFrontend, sTS, 3, 0.85);
         seedCareerSkill(cFrontend, sCSS, 4, 0.9);
         seedCareerSkill(cFrontend, sGit, 2, 0.6);
         seedCareerSkill(cFrontend, sSql, 1, 0.3);
+        seedCareerSkill(cFrontend, sGraphQL, 2, 0.45);
 
         seedCareerSkill(cFullStack, sJava, 3, 0.8);
         seedCareerSkill(cFullStack, sSpring, 3, 0.8);
@@ -162,6 +165,8 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cFullStack, sSql, 3, 0.75);
         seedCareerSkill(cFullStack, sDocker, 2, 0.5);
         seedCareerSkill(cFullStack, sGit, 3, 0.7);
+        seedCareerSkill(cFullStack, sTest, 2, 0.5);
+        seedCareerSkill(cFullStack, sGraphQL, 2, 0.4);
 
         seedCareerSkill(cData, sPython, 5, 0.95);
         seedCareerSkill(cData, sML, 4, 0.9);
@@ -572,6 +577,24 @@ public class DataInitializer implements CommandLineRunner {
         seedCourseSkill(c12, sRedis, 3);
         seedCourseSkill(c13, sTerraform, 4);
         seedCourseSkill(c14, sKafka, 2);
+
+        Course c15 = seedCourse("GraphQL APIs for Modern Frontends", "Frontend",
+                "Design schemas, write resolvers, and query GraphQL APIs from React so frontend and full-stack paths have a dedicated API course.",
+                "Intermediate", 6, 4.7, 188);
+        seedLesson(c15, "GraphQL Schema & Queries", 1,
+                "### Schema-first APIs\n\nDefine types, queries, and mutations, then fetch only the fields a screen needs.\n\n```graphql\ntype Course {\n  id: ID!\n  title: String!\n  lessons: [Lesson!]!\n}\n\ntype Query {\n  course(id: ID!): Course\n}\n```\n\n**Topics:**\n- Types, queries, and mutations\n- Resolver functions\n- Over-fetching vs under-fetching", 20);
+        seedLesson(c15, "GraphQL from React", 2,
+                "### Client queries\n\nCall GraphQL from a React page and handle loading and errors.\n\n```javascript\nconst COURSE_QUERY = `\n  query Course($id: ID!) {\n    course(id: $id) { id title }\n  }\n`;\n```", 18);
+        seedCourseSkill(c15, sGraphQL, 3);
+
+        Course c16 = seedCourse("Automated Testing for Java APIs", "Backend",
+                "Write unit and API tests so backend and full-stack roadmaps include a real testing course instead of repeating Spring or Docker.",
+                "Intermediate", 5, 4.6, 164);
+        seedLesson(c16, "JUnit & Mockito", 1,
+                "### Test the service layer\n\nIsolate business rules with JUnit 5 and Mockito.\n\n```java\n@Test\nvoid completesOnlyWhenQuizDone() {\n    assertFalse(service.canComplete(user, courseId));\n}\n```", 18);
+        seedLesson(c16, "API tests with MockMvc", 2,
+                "### Test the HTTP layer\n\nVerify status codes and JSON without starting a full browser.", 16);
+        seedCourseSkill(c16, sTest, 3);
 
         // Prerequisites: logical learning order
         seedCoursePrerequisite(c1, c2);   // Spring Boot requires SQL basics

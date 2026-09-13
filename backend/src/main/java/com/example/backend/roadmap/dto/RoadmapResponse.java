@@ -6,8 +6,13 @@ public record RoadmapResponse(
         Long careerId,
         String careerName,
         Integer progress, // overall roadmap progress percentage
-        List<RoadmapItemDto> items
+        List<RoadmapItemDto> items,
+        Long nextCourseId,
+        String nextCourseTitle
 ) {
+    public RoadmapResponse(Long careerId, String careerName, Integer progress, List<RoadmapItemDto> items) {
+        this(careerId, careerName, progress, items, null, null);
+    }
     public record RoadmapItemDto(
             Long id,
             Long courseId,

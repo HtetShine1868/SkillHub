@@ -4,6 +4,7 @@ export default function PersonalizedRoadmap({
   career,
   stages,
   onStageClick,
+  nextCourseTitle,
 }) {
   const safeStages = Array.isArray(stages) ? stages : []
   const languageOptions = safeStages.filter((stage) => stage.choiceGroup === 'starter-language')
@@ -96,14 +97,16 @@ export default function PersonalizedRoadmap({
               disabled={!current || (current.status || '').toLowerCase() === 'locked'}
             >
 
-              <span>CURRENTLY LEARNING · TAP TO OPEN COURSES</span>
+              <span>{completed > 0 ? 'UP NEXT · OPEN THIS COURSE' : 'START HERE · OPEN THIS COURSE'}</span>
 
               <strong>
-                {current?.title || safeStages[0]?.title || 'Get Started'}
+                {nextCourseTitle || current?.title || safeStages[0]?.title || 'Get Started'}
               </strong>
 
               <span>
-                Next → {safeStages[completed + 1]?.title || 'Career Goal'}
+                {completed > 0
+                  ? `You finished ${completed} course${completed === 1 ? '' : 's'}. Continue with this next step.`
+                  : `Then → ${safeStages[1]?.title || 'the rest of your path'}`}
               </span>
 
             </button>

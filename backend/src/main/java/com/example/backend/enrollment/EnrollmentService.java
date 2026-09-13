@@ -273,10 +273,16 @@ public class EnrollmentService {
 
     private void syncRoadmapProgress(User user, Long courseId, int percent) {
         try {
-            List<RoadmapItem> userRoadmapItems = roadmapItemRepository.findByUserIdOrderByOrderIndexAsc(user.getId());
+            List<RoadmapItem> matches = roadmapItemRepository.findByUserIdAndCourseId(user.getId(), courseId);
+            Long careerId = matches.isEmpty() || matches.get(0).getCareer() == null
+                    ? null
+                    : matches.get(0).getCareer().getId();
+            List<RoadmapItem> userRoadmapItems = careerId == null
+                    ? roadmapItemRepository.findByUserIdOrderByOrderIndexAsc(user.getId())
+                    : roadmapItemRepository.findByUserIdAndCareerIdOrderByOrderIndexAsc(user.getId(), careerId);
+
             boolean unlockedNext = false;
-            for (int i = 0; i < userRoadmapItems.size(); i++) {
-                RoadmapItem ri = userRoadmapItems.get(i);
+            for (RoadmapItem ri : userRoadmapItems) {
                 if (ri.getCourse() != null && ri.getCourse().getId().equals(courseId)) {
                     ri.setProgress(percent);
                     if (percent >= 100) {
@@ -289,7 +295,7 @@ public class EnrollmentService {
                 } else if (unlockedNext && "LOCKED".equalsIgnoreCase(ri.getStatus())) {
                     ri.setStatus("AVAILABLE");
                     roadmapItemRepository.save(ri);
-                    unlockedNext = false; // Only unlock the immediate next stage
+                    unlockedNext = false;
                 }
             }
         } catch (Exception e) {

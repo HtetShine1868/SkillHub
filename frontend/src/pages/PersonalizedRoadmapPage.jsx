@@ -15,7 +15,7 @@ import CourseDetails from '../components/roadmap/courses/CourseDetails'
 // Real API Services
 import { getAllCareers, getCareerById, getDiscoveryQuestions, submitDiscoveryAnswers } from '../services/careerService'
 import { getAssessmentQuestions, submitAssessment } from '../services/assessmentService'
-import { generateRoadmap, getMyRoadmap } from '../services/roadmapService'
+import { generateRoadmap, getMyRoadmap, listRoadmaps } from '../services/roadmapService'
 
 import '../styles/roadmap.css'
 
@@ -51,6 +51,9 @@ export default function PersonalizedRoadmapPage() {
   const [submittingAssessment, setSubmittingAssessment] = useState(false)
   const [error, setError] = useState(null)
   const lastGeneratedRef = useRef(null)
+  const confirmGenerateRef = useRef(false)
+  const [roadmapSummaries, setRoadmapSummaries] = useState([])
+  const [confirmModal, setConfirmModal] = useState(null)
 
   // Load initial careers list & check URL param
   useEffect(() => {
@@ -113,6 +116,9 @@ export default function PersonalizedRoadmapPage() {
             }
           }).catch(() => {})
         }
+        listRoadmaps().then((summaries) => {
+          setRoadmapSummaries(Array.isArray(summaries) ? summaries : [])
+        }).catch(() => {})
       } catch (e) {
         console.error("Error restoring saved roadmap", e)
       }
@@ -259,28 +265,101 @@ export default function PersonalizedRoadmapPage() {
     }
   };
 
-  const handleGenerateRoadmap = () => {
-    setScreen('generate');
-  };
+  const persistActiveRoadmap = (career, roadmap) => {
+    if (typeof window === 'undefined') return
+    const userKeyPrefix = user?.id ? `_${user.id}` : ''
+    localStorage.setItem(`skillhub_active_roadmap${userKeyPrefix}`, JSON.stringify(roadmap))
+    localStorage.setItem(`skillhub_active_career${userKeyPrefix}`, JSON.stringify(career))
+  }
+
+  const refreshRoadmapSummaries = async () => {
+    try {
+      const summaries = await listRoadmaps()
+      setRoadmapSummaries(Array.isArray(summaries) ? summaries : [])
+    } catch {
+      setRoadmapSummaries([])
+    }
+  }
+
+  const handleGenerateRoadmap = async () => {
+    if (!selectedCareer?.id) return
+    try {
+      const summaries = await listRoadmaps()
+      setRoadmapSummaries(Array.isArray(summaries) ? summaries : [])
+      const others = (summaries || []).filter((s) => String(s.careerId) !== String(selectedCareer.id))
+      if (others.length === 1) {
+        const first = others[0]
+        setConfirmModal({
+          reason: first.complete ? 'COMPLETE' : 'INCOMPLETE',
+          message: first.complete
+            ? `Your ${first.careerName} roadmap is complete. Do you want another roadmap for ${selectedCareer.title || selectedCareer.name}?`
+            : `Your ${first.careerName} roadmap is not complete yet. Are you sure you want to generate another roadmap?`
+        })
+        return
+      }
+      if (others.length >= 2) {
+        const oldest = others[0]
+        setConfirmModal({
+          reason: 'REPLACE',
+          message: `You already have two roadmaps. Generating this one will replace ${oldest.careerName}. Continue?`
+        })
+        return
+      }
+      confirmGenerateRef.current = false
+      setScreen('generate')
+    } catch {
+      confirmGenerateRef.current = false
+      setScreen('generate')
+    }
+  }
+
+  const acceptGenerateConfirm = () => {
+    confirmGenerateRef.current = true
+    setConfirmModal(null)
+    setScreen('generate')
+  }
 
   const handleGenerateRoadmapRequest = async () => {
     if (!selectedCareer?.id) {
       throw new Error('Select a career before generating a roadmap.')
     }
     try {
-      const response = await generateRoadmap(selectedCareer.id)
+      const response = await generateRoadmap(selectedCareer.id, confirmGenerateRef.current)
       lastGeneratedRef.current = response
       setRoadmapData(response)
       setIsPersonalized(true)
-      if (typeof window !== 'undefined') {
-        const userKeyPrefix = user?.id ? `_${user.id}` : ''
-        localStorage.setItem(`skillhub_active_roadmap${userKeyPrefix}`, JSON.stringify(response))
-        localStorage.setItem(`skillhub_active_career${userKeyPrefix}`, JSON.stringify(selectedCareer))
-      }
+      persistActiveRoadmap(selectedCareer, response)
+      await refreshRoadmapSummaries()
       return response
     } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.needsConfirmation) {
+        setConfirmModal({
+          reason: err.response.data.reason,
+          message: err.response.data.message
+        })
+        setScreen(gradedResults ? 'gap' : 'career')
+        throw err
+      }
       setError('Failed to generate personalized roadmap. Please try again.')
       throw err
+    }
+  }
+
+  const switchSavedRoadmap = async (careerId) => {
+    try {
+      const live = await getMyRoadmap(careerId)
+      const career = {
+        id: live.careerId,
+        title: live.careerName,
+        name: live.careerName
+      }
+      setSelectedCareer(career)
+      setRoadmapData(live)
+      setIsPersonalized(true)
+      persistActiveRoadmap(career, live)
+      setScreen('roadmap')
+    } catch {
+      setError('Could not open that roadmap.')
     }
   }
 
@@ -316,6 +395,10 @@ export default function PersonalizedRoadmapPage() {
 
   const handleStageClick = (stage) => {
     if (stage.status === 'locked') return
+    if (stage.id) {
+      navigate(`/courses/${stage.id}`)
+      return
+    }
     const skill = resolveStageSkill(stage)
     if (skill) {
       openSkillCourses(skill)
@@ -389,18 +472,19 @@ export default function PersonalizedRoadmapPage() {
         status = 'available';
       }
 
-      const skillName = item.choiceLabel || (item.skills && item.skills[0]) || item.courseTitle
       return {
         id: item.courseId,
-        title: skillName,
+        title: item.courseTitle || (item.skills && item.skills[0]) || 'Course',
         status: status,
         progress: item.progress || (isCompleted ? 100 : 0),
         description: item.reason,
         lockedReason: item.status === 'LOCKED' ? item.reason : null,
         courses: [item.courseId],
         choiceGroup: item.choiceGroup || null,
-        choiceLabel: item.choiceLabel || skillName,
-        skills: item.skills || []
+        choiceLabel: item.courseTitle,
+        skills: item.skills || [],
+        nextCourseId: item.courseId,
+        skillLabel: (item.skills && item.skills[0]) || ''
       };
     });
   };
@@ -763,8 +847,41 @@ export default function PersonalizedRoadmapPage() {
         {/* =====================================
             SCREEN 6 — ROADMAP PATH
         ===================================== */}
+        {confirmModal && (
+          <div className="roadmap-confirm-backdrop" onClick={() => setConfirmModal(null)}>
+            <div className="roadmap-confirm-card" onClick={(e) => e.stopPropagation()}>
+              <h3>{confirmModal.reason === 'REPLACE' ? 'Replace a roadmap?' : 'Generate another roadmap?'}</h3>
+              <p>{confirmModal.message}</p>
+              <div className="roadmap-confirm-actions">
+                <button type="button" className="roadmap-confirm-cancel" onClick={() => setConfirmModal(null)}>Cancel</button>
+                <button type="button" className="roadmap-confirm-ok" onClick={acceptGenerateConfirm}>Yes, generate</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {screen === 'roadmap' && roadmapData && (
           <div style={{ position: 'relative', width: '100%' }}>
+            {roadmapSummaries.length > 0 && (
+              <div className="roadmap-map-switcher">
+                {roadmapSummaries.map((summary) => (
+                  <button
+                    key={summary.careerId}
+                    type="button"
+                    className={`roadmap-map-chip ${String(summary.careerId) === String(selectedCareer?.id) ? 'is-active' : ''}`}
+                    onClick={() => switchSavedRoadmap(summary.careerId)}
+                  >
+                    <strong>{summary.careerName}</strong>
+                    <span>{summary.progress}% · {summary.completedCount}/{summary.totalCount}</span>
+                  </button>
+                ))}
+                {roadmapSummaries.length < 2 && (
+                  <button type="button" className="roadmap-map-chip roadmap-map-chip--add" onClick={() => setScreen('onboarding')}>
+                    + Another roadmap
+                  </button>
+                )}
+              </div>
+            )}
             <div style={{ maxWidth: '1100px', margin: '0 auto 20px', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button
                 className="back-to-career"
@@ -864,9 +981,9 @@ export default function PersonalizedRoadmapPage() {
                   transition: 'transform 0.2s'
                 }}
                 onClick={() => {
-                  const first = getMappedRoadmapStages().find((stage) => stage.status !== 'locked')
-                    || getMappedRoadmapStages()[0]
-                  openSkillCourses(resolveStageSkill(first))
+                  const nextId = roadmapData?.nextCourseId
+                    || getMappedRoadmapStages().find((stage) => stage.status !== 'locked' && stage.status !== 'completed')?.id
+                  if (nextId) navigate(`/courses/${nextId}`)
                 }}
               >
                 Start Learning Queue →
@@ -877,6 +994,7 @@ export default function PersonalizedRoadmapPage() {
               career={selectedCareer}
               stages={getMappedRoadmapStages()}
               onStageClick={handleStageClick}
+              nextCourseTitle={roadmapData?.nextCourseTitle}
             />
           </div>
         )}

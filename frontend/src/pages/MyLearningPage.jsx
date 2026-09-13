@@ -4,7 +4,7 @@ import PersonalizedRoadmapPage from './PersonalizedRoadmapPage'
 import { useAuth } from '../context/AuthContext'
 import { getMyEnrollments } from '../services/enrollmentService'
 import { getAllCourses } from '../services/courseService'
-import { getMyRoadmap } from '../services/roadmapService'
+import { getMyRoadmap, listRoadmaps } from '../services/roadmapService'
 import './MyLearningPage.css'
 
 const CAT_COLOR = { Backend: '#a78bfa', Frontend: '#38bdf8', Data: '#6ee7b7', DevOps: '#fcd34d', Database: '#f9a8d4', Engineering: '#a78bfa' }
@@ -26,6 +26,7 @@ const MyLearningPage = () => {
   // Roadmap state
   const [userRoadmap, setUserRoadmap] = useState(null)
   const [roadmapCompleteness, setRoadmapCompleteness] = useState(0)
+  const [roadmapCount, setRoadmapCount] = useState(0)
 
   useEffect(() => {
     if (tabFromUrl === 'roadmap') {
@@ -47,8 +48,10 @@ const MyLearningPage = () => {
           setAllCourses(courses || [])
         }
 
-        // Attempt to load active user roadmap - check localStorage first
         try {
+          const summaries = await listRoadmaps().catch(() => [])
+          setRoadmapCount(Array.isArray(summaries) ? summaries.length : 0)
+
           const userKeyPrefix = user?.id ? `_${user.id}` : ''
           const roadmapKey = `skillhub_active_roadmap${userKeyPrefix}`
           const careerKey = `skillhub_active_career${userKeyPrefix}`
@@ -75,6 +78,13 @@ const MyLearningPage = () => {
                 const pct = roadmap.items.length > 0 ? Math.round((completedCount / roadmap.items.length) * 100) : 0
                 setRoadmapCompleteness(pct)
               }
+            }
+          } else if (summaries?.length) {
+            const first = summaries[0]
+            const roadmap = await getMyRoadmap(first.careerId).catch(() => null)
+            if (roadmap?.items) {
+              setUserRoadmap(roadmap)
+              setRoadmapCompleteness(first.progress || 0)
             }
           }
         } catch {
@@ -151,7 +161,7 @@ const MyLearningPage = () => {
               className={`mylearn__tab-btn ${activeTab === 'roadmap' ? 'mylearn__tab-btn--active' : ''}`}
               onClick={() => handleTabChange('roadmap')}
             >
-              🗺️ My Career Roadmap {userRoadmap ? `(${roadmapCompleteness}%)` : ''}
+              🗺️ My Career Roadmap {roadmapCount ? `(${roadmapCount})` : userRoadmap ? `(${roadmapCompleteness}%)` : ''}
             </button>
           </div>
         </div>

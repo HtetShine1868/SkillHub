@@ -6,6 +6,7 @@ import com.example.backend.enrollment.Enrollment;
 import com.example.backend.enrollment.EnrollmentRepository;
 import com.example.backend.roadmap.dto.RoadmapResponse;
 import com.example.backend.roadmap.dto.RoadmapResponse.RoadmapItemDto;
+import com.example.backend.roadmap.dto.RoadmapSummary;
 import com.example.backend.skill.UserSkill;
 import com.example.backend.skill.UserSkillRepository;
 import com.example.backend.user.entity.User;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -42,10 +44,97 @@ public class RoadmapService {
     private final EnrollmentRepository enrollmentRepository;
 
     /**
-     * Generates a personalized roadmap for a user for a specific career goal.
+     * Generates a personalized roadmap. A user may keep two career maps.
+     * A third career replaces the oldest map after the client confirms.
      */
     @Transactional
+    public RoadmapResponse generateRoadmap(User user, Long careerId, boolean confirmed) {
+        prepareGenerationSlot(user, careerId, confirmed);
+        return buildRoadmap(user, careerId);
+    }
+
+    @Transactional
     public RoadmapResponse generateRoadmap(User user, Long careerId) {
+        return generateRoadmap(user, careerId, false);
+    }
+
+    public List<RoadmapSummary> listRoadmaps(User user) {
+        return summariesFor(user);
+    }
+
+    private void prepareGenerationSlot(User user, Long careerId, boolean confirmed) {
+        List<RoadmapSummary> existing = summariesFor(user);
+        boolean alreadyHasCareer = existing.stream().anyMatch(s -> s.careerId().equals(careerId));
+        if (alreadyHasCareer) {
+            return;
+        }
+
+        if (existing.size() == 1 && !confirmed) {
+            RoadmapSummary first = existing.get(0);
+            String reason = first.complete() ? "COMPLETE" : "INCOMPLETE";
+            String message = first.complete()
+                    ? "Your " + first.careerName() + " roadmap is complete. Generate another roadmap?"
+                    : "Your " + first.careerName() + " roadmap is not complete yet. Are you sure you want to generate another roadmap?";
+            throw new RoadmapConfirmRequiredException(message, reason, null, null, existing);
+        }
+
+        if (existing.size() >= 2) {
+            RoadmapSummary oldest = existing.get(0);
+            if (!confirmed) {
+                throw new RoadmapConfirmRequiredException(
+                        "You already have two roadmaps. Generating this one will replace "
+                                + oldest.careerName() + ".",
+                        "REPLACE",
+                        oldest.careerId(),
+                        oldest.careerName(),
+                        existing
+                );
+            }
+            roadmapItemRepository.deleteByUserIdAndCareerId(user.getId(), oldest.careerId());
+        }
+    }
+
+    private List<RoadmapSummary> summariesFor(User user) {
+        List<RoadmapItem> items = roadmapItemRepository.findByUserId(user.getId());
+        Map<Long, List<RoadmapItem>> byCareer = new LinkedHashMap<>();
+        for (RoadmapItem item : items) {
+            if (item.getCareer() == null) {
+                continue;
+            }
+            byCareer.computeIfAbsent(item.getCareer().getId(), k -> new ArrayList<>()).add(item);
+        }
+
+        List<RoadmapSummary> summaries = new ArrayList<>();
+        for (Map.Entry<Long, List<RoadmapItem>> entry : byCareer.entrySet()) {
+            List<RoadmapItem> group = entry.getValue();
+            group.sort(Comparator.comparing(RoadmapItem::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+            int total = group.size();
+            int done = (int) group.stream().filter(ri ->
+                    "COMPLETED".equalsIgnoreCase(ri.getStatus())
+                            || (ri.getProgress() != null && ri.getProgress() >= 100)
+            ).count();
+            LocalDateTime created = group.stream()
+                    .map(RoadmapItem::getCreatedAt)
+                    .filter(Objects::nonNull)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(null);
+            String name = group.get(0).getCareer().getName();
+            int progress = total == 0 ? 0 : (done * 100) / total;
+            summaries.add(new RoadmapSummary(
+                    entry.getKey(),
+                    name,
+                    progress,
+                    done,
+                    total,
+                    total > 0 && done >= total,
+                    created
+            ));
+        }
+        summaries.sort(Comparator.comparing(RoadmapSummary::createdAt, Comparator.nullsLast(Comparator.naturalOrder())));
+        return summaries;
+    }
+
+    private RoadmapResponse buildRoadmap(User user, Long careerId) {
         Career career = careerRepository.findById(careerId)
                 .orElse(null);
         if (career == null) {
@@ -95,64 +184,52 @@ public class RoadmapService {
             completedCourseIds.add(e.getCourse().getId());
         }
 
-        for (Course course : allCourses) {
-            if (completedCourseIds.contains(course.getId())) {
-                continue; // Skip already completed
-            }
-
-            List<CourseSkill> courseSkills = courseSkillRepository.findByCourseId(course.getId());
-            boolean addressesGap = false;
-            double maxGapAddressed = 0;
-            String gapSkillName = "";
-
-            for (CourseSkill cs : courseSkills) {
-                Long skillId = cs.getSkill().getId();
-                if (gaps.containsKey(skillId)) {
-                    int currentUserLevel = userSkillLevels.getOrDefault(skillId, 0);
-                    if (cs.getTargetLevel() > currentUserLevel) {
-                        addressesGap = true;
-                        double gapSize = cs.getTargetLevel() - currentUserLevel;
-                        if (gapSize > maxGapAddressed) {
-                            maxGapAddressed = gapSize;
-                            gapSkillName = cs.getSkill().getName();
-                        }
-                    }
+        Set<Long> coveredSkills = new HashSet<>();
+        for (Long completedId : completedCourseIds) {
+            for (CourseSkill cs : courseSkillRepository.findByCourseId(completedId)) {
+                if (cs.getSkill() != null) {
+                    coveredSkills.add(cs.getSkill().getId());
                 }
-            }
-
-            if (addressesGap) {
-                candidateCourses.add(course);
-                courseReasons.put(course.getId(), "Recommended to address your skill gap in " + gapSkillName + ".");
             }
         }
 
-        // Developer careers: also offer parallel beginner-language tracks when they exist
+        Set<Long> remainingGaps = new HashSet<>(gaps.keySet());
+        remainingGaps.removeAll(coveredSkills);
+
+        pickUniqueCoursesForGaps(
+                allCourses,
+                completedCourseIds,
+                remainingGaps,
+                userSkillLevels,
+                candidateCourses,
+                courseReasons
+        );
+
+        // One optional starter-language course only if that language is still a gap
         Set<String> wantedLanguages = wantedStarterLabels(careerSkills, career.getName());
-        if (!wantedLanguages.isEmpty()) {
-            Set<Long> candidateIds = new HashSet<>();
-            for (Course c : candidateCourses) {
-                candidateIds.add(c.getId());
-            }
-            for (Course course : allCourses) {
-                if (completedCourseIds.contains(course.getId()) || candidateIds.contains(course.getId())) {
-                    continue;
-                }
-                String lang = starterLanguageLabel(course);
-                if (lang != null && wantedLanguages.contains(lang)) {
-                    candidateCourses.add(course);
-                    candidateIds.add(course.getId());
-                    courseReasons.put(course.getId(), "Optional starting language for " + career.getName() + ": " + lang + ".");
-                }
-            }
+        Set<Long> candidateIds = new HashSet<>();
+        for (Course c : candidateCourses) {
+            candidateIds.add(c.getId());
         }
-
-        // Fallback: If no candidate courses specifically match the skill gap, include all available courses
-        if (candidateCourses.isEmpty()) {
-            for (Course course : allCourses) {
-                if (!completedCourseIds.contains(course.getId())) {
-                    candidateCourses.add(course);
-                    courseReasons.put(course.getId(), "Recommended course for " + career.getName() + " roadmap.");
-                }
+        for (Course course : allCourses) {
+            if (completedCourseIds.contains(course.getId()) || candidateIds.contains(course.getId())) {
+                continue;
+            }
+            String lang = starterLanguageLabel(course);
+            if (lang == null || !wantedLanguages.contains(lang)) {
+                continue;
+            }
+            boolean coversNewGap = courseSkillRepository.findByCourseId(course.getId()).stream()
+                    .anyMatch(cs -> cs.getSkill() != null && remainingGaps.contains(cs.getSkill().getId()));
+            if (coversNewGap) {
+                candidateCourses.add(course);
+                candidateIds.add(course.getId());
+                courseReasons.put(course.getId(), "Starting language for " + career.getName() + ": " + lang + ".");
+                courseSkillRepository.findByCourseId(course.getId()).forEach(cs -> {
+                    if (cs.getSkill() != null) {
+                        remainingGaps.remove(cs.getSkill().getId());
+                    }
+                });
             }
         }
 
@@ -160,40 +237,21 @@ public class RoadmapService {
         List<Course> orderedCourses = sortCoursesByPrerequisites(candidateCourses);
         orderedCourses = promoteStarterLanguageChoices(orderedCourses);
 
-        // Step 6: Create or update RoadmapItems
-        // Preserving completed items if any exist
-        List<RoadmapItem> existingItems = roadmapItemRepository.findByUserIdAndCareerIdOrderByOrderIndexAsc(user.getId(), careerId);
         Map<Long, RoadmapItem> completedItems = new HashMap<>();
-        for (RoadmapItem ri : existingItems) {
-            if ("COMPLETED".equalsIgnoreCase(ri.getStatus())) {
-                completedItems.put(ri.getCourse().getId(), ri);
+        for (Enrollment e : completedEnrollments) {
+            if (e.getCourse() != null) {
+                completedItems.put(e.getCourse().getId(), null);
             }
         }
 
-        // Clear existing non-completed roadmap items
         roadmapItemRepository.deleteByUserIdAndCareerId(user.getId(), careerId);
 
         List<RoadmapItem> newRoadmapItems = new ArrayList<>();
         int orderIndex = 1;
-
-        // Re-add completed ones first, then add future ones
         Set<Long> addedCourseIds = new HashSet<>();
-        for (RoadmapItem completedItem : completedItems.values()) {
-            RoadmapItem ri = RoadmapItem.builder()
-                    .user(user)
-                    .career(career)
-                    .course(completedItem.getCourse())
-                    .orderIndex(orderIndex++)
-                    .status("COMPLETED")
-                    .progress(100)
-                    .reason(completedItem.getReason())
-                    .build();
-            newRoadmapItems.add(ri);
-            addedCourseIds.add(ri.getCourse().getId());
-        }
 
         for (Course course : orderedCourses) {
-            if (addedCourseIds.contains(course.getId())) {
+            if (addedCourseIds.contains(course.getId()) || completedCourseIds.contains(course.getId())) {
                 continue;
             }
 
@@ -326,7 +384,81 @@ public class RoadmapService {
             );
         }).toList();
 
-        return new RoadmapResponse(career.getId(), career.getName(), progress, dtos);
+        Long nextCourseId = null;
+        String nextCourseTitle = null;
+        for (RoadmapItemDto dto : dtos) {
+            if (!"COMPLETED".equalsIgnoreCase(dto.status())
+                    && !"LOCKED".equalsIgnoreCase(dto.status())) {
+                nextCourseId = dto.courseId();
+                nextCourseTitle = dto.courseTitle();
+                break;
+            }
+        }
+
+        return new RoadmapResponse(career.getId(), career.getName(), progress, dtos, nextCourseId, nextCourseTitle);
+    }
+
+    /**
+     * One course per remaining skill gap. Prefers a course that closes more
+     * leftover skills so React/Docker never appear twice.
+     */
+    private void pickUniqueCoursesForGaps(
+            List<Course> allCourses,
+            Set<Long> completedCourseIds,
+            Set<Long> remainingGaps,
+            Map<Long, Integer> userSkillLevels,
+            List<Course> candidateCourses,
+            Map<Long, String> courseReasons
+    ) {
+        while (!remainingGaps.isEmpty()) {
+            Course best = null;
+            int bestCover = 0;
+            double bestScore = -1;
+            String bestSkillName = "";
+            Set<Long> bestSkillIds = Set.of();
+
+            for (Course course : allCourses) {
+                if (completedCourseIds.contains(course.getId())
+                        || candidateCourses.stream().anyMatch(c -> c.getId().equals(course.getId()))) {
+                    continue;
+                }
+                Set<Long> covers = new HashSet<>();
+                String skillName = "";
+                for (CourseSkill cs : courseSkillRepository.findByCourseId(course.getId())) {
+                    if (cs.getSkill() == null) {
+                        continue;
+                    }
+                    Long skillId = cs.getSkill().getId();
+                    int current = userSkillLevels.getOrDefault(skillId, 0);
+                    if (remainingGaps.contains(skillId) && cs.getTargetLevel() > current) {
+                        covers.add(skillId);
+                        if (skillName.isBlank()) {
+                            skillName = cs.getSkill().getName();
+                        }
+                    }
+                }
+                if (covers.isEmpty()) {
+                    continue;
+                }
+                double score = covers.size() * 10
+                        + (course.getRating() == null ? 0 : course.getRating())
+                        + Math.log1p(course.getEnrollmentCount() == null ? 0 : course.getEnrollmentCount());
+                if (covers.size() > bestCover || (covers.size() == bestCover && score > bestScore)) {
+                    best = course;
+                    bestCover = covers.size();
+                    bestScore = score;
+                    bestSkillName = skillName;
+                    bestSkillIds = covers;
+                }
+            }
+
+            if (best == null) {
+                break;
+            }
+            candidateCourses.add(best);
+            courseReasons.put(best.getId(), "Recommended to close your gap in " + bestSkillName + ".");
+            remainingGaps.removeAll(bestSkillIds);
+        }
     }
 
     /**

@@ -2,6 +2,7 @@ package com.example.backend.common.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import com.example.backend.roadmap.RoadmapConfirmRequiredException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,6 +60,24 @@ public class GlobalExceptionHandler {
                                 errors
                         )
                 );
+    }
+
+    @ExceptionHandler(RoadmapConfirmRequiredException.class)
+    public ResponseEntity<?> handleRoadmapConfirm(RoadmapConfirmRequiredException exception) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "needsConfirmation", true,
+                        "reason", exception.getReason(),
+                        "message", exception.getMessage(),
+                        "willReplaceCareerId", exception.getWillReplaceCareerId() == null
+                                ? ""
+                                : exception.getWillReplaceCareerId(),
+                        "willReplaceCareerName", exception.getWillReplaceCareerName() == null
+                                ? ""
+                                : exception.getWillReplaceCareerName(),
+                        "existing", exception.getExisting()
+                ));
     }
 
     @ExceptionHandler(ResponseStatusException.class)

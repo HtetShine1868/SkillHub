@@ -1,8 +1,11 @@
 package com.example.backend.roadmap;
 
 import com.example.backend.roadmap.dto.RoadmapResponse;
+import com.example.backend.roadmap.dto.RoadmapSummary;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
+
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,11 +37,20 @@ public class RoadmapController {
     @PostMapping("/generate")
     public ResponseEntity<RoadmapResponse> generateRoadmap(
             @AuthenticationPrincipal UserDetails principal,
-            @RequestParam Long careerId
+            @RequestParam Long careerId,
+            @RequestParam(defaultValue = "false") boolean confirm
     ) {
         User user = resolveUser(principal);
-        RoadmapResponse response = roadmapService.generateRoadmap(user, careerId);
+        RoadmapResponse response = roadmapService.generateRoadmap(user, careerId, confirm);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<RoadmapSummary>> listRoadmaps(
+            @AuthenticationPrincipal UserDetails principal
+    ) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(roadmapService.listRoadmaps(user));
     }
 
     /**

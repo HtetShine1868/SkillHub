@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { getLesson, getLessons } from '../services/courseService'
 import { getMyEnrollments, enrollInCourse } from '../services/enrollmentService'
 import axiosClient from '../api/axiosClient'
+import { getMyRoadmap } from '../services/roadmapService'
+import { useAuth } from '../context/AuthContext'
 import DualFloatingChat from '../components/DualFloatingChat'
 import './LessonPage.css'
 
@@ -226,6 +228,7 @@ class ExecutionEngine {
 const LessonPage = () => {
   const { id: courseId, lessonId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [lesson, setLesson] = useState(null)
   const [lessons, setLessons] = useState([])
   const [course, setCourse] = useState(null)
@@ -246,6 +249,7 @@ const LessonPage = () => {
   const [assignmentSubmitted, setAssignmentSubmitted] = useState(false)
   const [courseProgress, setCourseProgress] = useState(null)
   const [completionError, setCompletionError] = useState('')
+  const [nextRoadmapCourse, setNextRoadmapCourse] = useState(null)
 
   // Certificate state
   const [courseCert, setCourseCert] = useState(null)
@@ -376,6 +380,21 @@ const LessonPage = () => {
       const certs = resp.data || []
       const match = certs.find(c => String(c.course?.id || c.courseId) === String(courseId))
       setCourseCert(match || null)
+      try {
+        const userKeyPrefix = user?.id ? `_${user.id}` : ''
+        const savedCareer = localStorage.getItem(`skillhub_active_career${userKeyPrefix}`)
+        const career = savedCareer ? JSON.parse(savedCareer) : null
+        if (career?.id) {
+          const live = await getMyRoadmap(career.id)
+          if (live?.nextCourseId) {
+            setNextRoadmapCourse({ id: live.nextCourseId, title: live.nextCourseTitle || 'Next course' })
+          } else {
+            setNextRoadmapCourse(null)
+          }
+        }
+      } catch {
+        setNextRoadmapCourse(null)
+      }
     } catch (err) {
       setShowCompletionModal(false)
       setCompletionError(
@@ -841,6 +860,17 @@ const LessonPage = () => {
                 </span>
               )}
             </div>
+
+            {nextRoadmapCourse && (
+              <button
+                type="button"
+                className="lesson__modal-btn-primary"
+                style={{ width: '100%', marginBottom: '10px' }}
+                onClick={() => navigate(`/courses/${nextRoadmapCourse.id}`)}
+              >
+                Next on your roadmap: {nextRoadmapCourse.title} →
+              </button>
+            )}
 
             <div className="lesson__modal-actions">
               {courseCert && (
