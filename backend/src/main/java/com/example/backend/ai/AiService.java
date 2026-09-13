@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
@@ -19,9 +21,9 @@ import java.util.List;
 public class AiService {
 
     private static final List<String> GEMINI_MODELS = List.of(
-            "gemini-3.8-flash",
+            "gemini-3.6-flash",
             "gemini-3.7-flash",
-            "gemini-3.6-flash"
+            "gemini-3.8-flash"
     );
 
     private static final List<String> API_ROOTS = List.of(
@@ -38,57 +40,44 @@ public class AiService {
     public AiService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(20))
                 .build();
     }
 
     @PostConstruct
     public void init() {
-        if (hasUsableKey()) {
-            System.out.println("[AiService] Gemini API key loaded (length=" + apiKey.trim().length() + ")");
+        String key = resolveApiKey();
+        if (isUsableKey(key)) {
+            System.out.println("[AiService] Gemini API key loaded (length=" + key.length()
+                    + ", prefix=" + key.substring(0, Math.min(3, key.length())) + ")");
         } else {
             System.err.println("[AiService] No usable Gemini API key. Set GEMINI_API_KEY on the server.");
         }
     }
 
     public String getTutorExplanation(String prompt, String lessonTitle, String lessonContent) {
-        if (!hasUsableKey()) {
+        String key = resolveApiKey();
+        if (!isUsableKey(key)) {
             return generateFallbackResponse(prompt, lessonTitle, lessonContent);
         }
 
         try {
             String requestBody = buildRequestBody(prompt, lessonTitle, lessonContent);
-            String key = apiKey.trim();
 
             for (String model : GEMINI_MODELS) {
                 for (String root : API_ROOTS) {
-                    String url = root + model + ":generateContent";
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(url))
-                            .header("Content-Type", "application/json")
-                            .header("x-goog-api-key", key)
-                            .timeout(Duration.ofSeconds(30))
-                            .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                            .build();
-
-                    HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                    int status = response.statusCode();
-                    System.out.println("[AiService] " + model + " → HTTP " + status);
-
-                    if (status == 200) {
-                        String text = extractText(response.body());
-                        if (text != null && !text.isBlank()) {
-                            return text;
-                        }
-                    } else if (status == 404) {
-                        break;
-                    } else if (status == 429) {
-                        return "I'm getting too many requests right now. Please try the quiz again in a minute.";
-                    } else if (status == 400 || status == 403) {
-                        System.err.println("[AiService] " + model + " rejected the key or request: " + trimBody(response.body()));
+                    String text = requestGemini(root, model, key, requestBody);
+                    if (text != null && !text.isBlank()) {
+                        return text;
                     }
                 }
             }
+        } catch (IllegalStateException e) {
+            if ("RATE_LIMIT".equals(e.getMessage())) {
+                return "I'm getting too many requests right now. Please try the quiz again in a minute.";
+            }
+            System.err.println("[AiService] Gemini call failed: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("[AiService] Gemini call failed: " + e.getMessage());
         }
@@ -96,16 +85,74 @@ public class AiService {
         return generateFallbackResponse(prompt, lessonTitle, lessonContent);
     }
 
-    private boolean hasUsableKey() {
-        if (apiKey == null || apiKey.isBlank()) {
+    private String resolveApiKey() {
+        String fromEnv = normalizeKey(System.getenv("GEMINI_API_KEY"));
+        if (isUsableKey(fromEnv)) {
+            return fromEnv;
+        }
+        return normalizeKey(apiKey);
+    }
+
+    private String normalizeKey(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String key = raw.replace("\uFEFF", "").trim();
+        if (key.length() >= 2) {
+            char first = key.charAt(0);
+            char last = key.charAt(key.length() - 1);
+            if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+                key = key.substring(1, key.length() - 1).trim();
+            }
+        }
+        return key.replaceAll("\\s+", "");
+    }
+
+    private boolean isUsableKey(String key) {
+        if (key == null || key.isBlank()) {
             return false;
         }
-        String key = apiKey.trim().toLowerCase();
-        return !key.contains("your-key")
-                && !key.contains("placeholder")
-                && !key.contains("dummy")
-                && !key.contains("paste_your")
+        String lower = key.toLowerCase();
+        return !lower.contains("your-key")
+                && !lower.contains("placeholder")
+                && !lower.contains("dummy")
+                && !lower.contains("paste_your")
                 && key.length() >= 20;
+    }
+
+    private String requestGemini(String root, String model, String key, String requestBody) throws Exception {
+        String baseUrl = root + model + ":generateContent";
+        String queryUrl = baseUrl + "?key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
+        String[] urls = { baseUrl, queryUrl };
+        boolean[] sendHeader = { true, false };
+
+        for (int i = 0; i < urls.length; i++) {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(urls[i]))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(30))
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody));
+            if (sendHeader[i]) {
+                builder.header("x-goog-api-key", key);
+            }
+
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            int status = response.statusCode();
+            String auth = sendHeader[i] ? "header" : "query";
+            System.out.println("[AiService] " + model + " auth=" + auth + " → HTTP " + status);
+
+            if (status == 200) {
+                return extractText(response.body());
+            }
+            if (status == 404) {
+                return null;
+            }
+            if (status == 429) {
+                throw new IllegalStateException("RATE_LIMIT");
+            }
+            System.err.println("[AiService] " + model + " auth=" + auth + " body=" + trimBody(response.body()));
+        }
+        return null;
     }
 
     private String buildRequestBody(String prompt, String lessonTitle, String lessonContent) throws Exception {

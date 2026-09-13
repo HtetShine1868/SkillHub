@@ -327,7 +327,7 @@ export default function DualFloatingChat({ courseId, courseTitle, lessonTitle, l
                             <div className="dual-avatar ai-head">🤖</div>
                             <div>
                                 <strong>AI Study Tutor</strong>
-                                <span className="dual-header-sub">Powered by Gemini 2.0 • 24/7 Assistance</span>
+                                <span className="dual-header-sub">Powered by Gemini 3.6 • 24/7 Assistance</span>
                             </div>
                         </div>
                         {!embedded && <button className="dual-panel-close" onClick={() => setAiOpen(false)}>✕</button>}

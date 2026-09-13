@@ -348,17 +348,40 @@
   text-transform: uppercase;
 }
 
+.lesson__code,
+.lesson__code code {
+  background: #090d16 !important;
+  background-color: #090d16 !important;
+  color: #e6edf3 !important;
+  -webkit-text-fill-color: #e6edf3;
+}
+
 .lesson__code {
-  background: #090d16;
   padding: 1.25rem 1.5rem;
   overflow-x: auto;
   font-family: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
   font-size: 0.9rem;
   line-height: 1.7;
   white-space: pre;
-  color: #e6edf3;
   margin: 0;
 }
+
+/* Override global `code { background: cream }` so bash/js snippets stay readable */
+.lesson__code code {
+  display: block;
+  padding: 0 !important;
+  border-radius: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.lesson__code .token-keyword { -webkit-text-fill-color: #ff7b72; }
+.lesson__code .token-string { -webkit-text-fill-color: #a5d6ff; }
+.lesson__code .token-number,
+.lesson__code .token-boolean { -webkit-text-fill-color: #79c0ff; }
+.lesson__code .token-comment { -webkit-text-fill-color: #8b949e; }
+.lesson__code .token-function { -webkit-text-fill-color: #d2a8ff; }
+.lesson__code .token-class { -webkit-text-fill-color: #ffa657; }
 
 /* Syntax Token Highlighting */
 .lesson__code .token-keyword { color: #ff7b72; font-weight: 600; }
@@ -442,6 +465,27 @@
 .lesson__nav-btn--next:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+}
+
+.lesson__gate-error {
+  margin: 1.2rem 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lesson__gate-meta {
+  margin: 0.6rem 0 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.lesson__nav-btn--blocked {
+  opacity: 0.72;
 }
 
 .lesson__nav-btn--complete {

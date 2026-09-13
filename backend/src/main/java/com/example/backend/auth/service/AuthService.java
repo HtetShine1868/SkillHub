@@ -32,10 +32,7 @@ public class AuthService {
             RegisterRequest request
     ) {
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = sanitizeEmail(request.getEmail());
 
         if (!request.getPassword()
                 .equals(request.getConfirmPassword())) {
@@ -79,10 +76,7 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
 
-        String email =
-                request.getEmail()
-                        .trim()
-                        .toLowerCase();
+        String email = sanitizeEmail(request.getEmail());
 
         User user =
                 userRepository
@@ -193,6 +187,29 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    /**
+     * Normalize email and reject characters that never belong in an address.
+     * Lookups still use JPA bind parameters — this is an extra input gate.
+     */
+    public static String sanitizeEmail(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        String email = raw.trim().toLowerCase();
+        if (email.length() > 254) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+        if (email.contains("'") || email.contains("\"") || email.contains(";")
+                || email.contains("--") || email.contains("/*") || email.contains("*/")
+                || email.contains(" ") || email.contains("\n") || email.contains("\r")) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+        if (!email.matches("^[a-z0-9._%+\\-]+@[a-z0-9.\\-]+\\.[a-z]{2,}$")) {
+            throw new IllegalArgumentException("Invalid email or password");
+        }
+        return email;
     }
 
     public AuthResponse toResponse(User user) {

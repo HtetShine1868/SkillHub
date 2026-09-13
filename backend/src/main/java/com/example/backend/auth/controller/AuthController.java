@@ -8,7 +8,10 @@ import com.example.backend.auth.service.AuthService;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
 
+import com.example.backend.auth.security.AuthRateLimitService;
+
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import jakarta.validation.Valid;
@@ -36,6 +39,8 @@ public class AuthController {
 
     private final JwtService jwtService;
 
+    private final AuthRateLimitService authRateLimitService;
+
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
@@ -45,11 +50,20 @@ public class AuthController {
             @RequestBody
             RegisterRequest request,
 
+            HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
+        String ip = clientIp(httpRequest);
+        authRateLimitService.assertAllowed(ip, request.getEmail());
 
-        AuthResponse authResponse =
-                authService.register(request);
+        AuthResponse authResponse;
+        try {
+            authResponse = authService.register(request);
+        } catch (IllegalArgumentException ex) {
+            authRateLimitService.recordFailure(ip, request.getEmail());
+            throw ex;
+        }
+        authRateLimitService.recordSuccess(ip, authResponse.getEmail());
 
         User user =
                 userRepository
@@ -76,22 +90,39 @@ public class AuthController {
             @RequestBody
             LoginRequest request,
 
+            HttpServletRequest httpRequest,
             HttpServletResponse response
     ) {
+        String ip = clientIp(httpRequest);
+        authRateLimitService.assertAllowed(ip, request.getEmail());
 
-        AuthResponse authResponse =
-                authService.login(request);
+        try {
+            AuthResponse authResponse =
+                    authService.login(request);
+            authRateLimitService.recordSuccess(ip, authResponse.getEmail());
 
-        addTokenCookie(
-                response,
-                jwtService.generateToken(
-                        authResponse.getEmail()
-                )
-        );
+            addTokenCookie(
+                    response,
+                    jwtService.generateToken(
+                            authResponse.getEmail()
+                    )
+            );
 
-        return ResponseEntity.ok(
-                authResponse
-        );
+            return ResponseEntity.ok(
+                    authResponse
+            );
+        } catch (IllegalArgumentException ex) {
+            authRateLimitService.recordFailure(ip, request.getEmail());
+            throw ex;
+        }
+    }
+
+    private static String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @GetMapping("/me")

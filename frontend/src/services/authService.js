@@ -1,4 +1,4 @@
-import axiosClient from "../api/axiosClient";
+import axiosClient, { apiBaseUrl } from "../api/axiosClient";
 
 export const registerUser = async ({
     name,
@@ -67,5 +67,5 @@ export const logoutUser = async () => {
 export const loginWithGoogle = () => {
 
     window.location.href =
-        `${import.meta.env.VITE_API_URL}/oauth2/authorization/google`;
+        `${apiBaseUrl}/oauth2/authorization/google`;
 };

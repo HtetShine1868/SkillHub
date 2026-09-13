@@ -13,10 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.example.backend.enrollment.dto.CourseProgressResponse;
 import com.example.backend.roadmap.RoadmapItem;
 import com.example.backend.roadmap.RoadmapItemRepository;
 
@@ -70,80 +72,176 @@ public class EnrollmentService {
                     return courseLessons.isEmpty() ? null : courseLessons.get(0);
                 });
 
-        if (lesson != null && !lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
-            LessonProgress progress = LessonProgress.builder()
-                    .user(user)
-                    .lesson(lesson)
-                    .completed(true)
-                    .build();
-            lessonProgressRepository.save(progress);
+        if (lesson != null) {
+            upsertProgress(user, lesson, true, null, null);
         }
 
-        // Calculate progress percentage
-        int totalLessons = courseLessons.isEmpty() ? 1 : courseLessons.size();
-        int completedLessons = lessonProgressRepository.countByUserIdAndLessonCourseId(user.getId(), courseId);
-
-        int percent = (int) (((double) completedLessons / totalLessons) * 100);
-        if (completedLessons >= totalLessons || percent > 100) {
-            percent = 100;
-        }
-
-        enrollment.setProgressPercentage(percent);
-
-        if (percent >= 100) {
-            enrollment.setCompleted(true);
-            enrollment.setCompletedAt(LocalDateTime.now());
-        }
-
-        Enrollment saved = enrollmentRepository.save(enrollment);
-
-        // Issue certificate when course fully completed via lesson completion
-        if (percent >= 100) {
-            issueCertificateAndBadge(user, enrollment, courseId, 100.0);
-        }
-
-        // Sync active roadmap items and unlock downstream stages
-        syncRoadmapProgress(user, courseId, percent);
-
-        return saved;
+        return refreshEnrollmentProgress(user, enrollment, courseId, false);
     }
 
     /**
-     * Explicitly marks an entire course as completed for a user, regardless of
-     * which individual lessons already have a recorded LessonProgress row.
-     *
-     * This is used by the "Complete Course & Rate" action so that certificate
-     * issuance does not silently depend on the student having clicked "Next"
-     * on every single lesson in order (e.g. if they jumped ahead via the
-     * lesson sidebar).
+     * Completes a course only when every lesson is read, every quiz is
+     * submitted, and every hands-on code test is submitted.
      */
     @Transactional
     public Enrollment completeCourse(User user, Long courseId) {
         Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseGet(() -> enroll(user, courseId));
 
+        CourseProgressResponse gate = getCourseProgress(user, courseId, null);
+        if (!gate.canComplete()) {
+            throw new IllegalArgumentException(
+                    "Finish every lesson, quiz, and code test before completing the course. "
+                            + String.join(" ", gate.missing())
+            );
+        }
+
+        return refreshEnrollmentProgress(user, enrollment, courseId, true);
+    }
+
+    @Transactional
+    public CourseProgressResponse submitLessonQuiz(User user, Long courseId, Long lessonId, boolean passed) {
+        Lesson lesson = requireLesson(courseId, lessonId);
+        upsertProgress(user, lesson, null, passed, null);
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
+                .orElseGet(() -> enroll(user, courseId));
+        refreshEnrollmentProgress(user, enrollment, courseId, false);
+        return getCourseProgress(user, courseId, lesson.getId());
+    }
+
+    @Transactional
+    public CourseProgressResponse submitLessonAssignment(User user, Long courseId, Long lessonId) {
+        Lesson lesson = requireLesson(courseId, lessonId);
+        upsertProgress(user, lesson, null, null, true);
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
+                .orElseGet(() -> enroll(user, courseId));
+        refreshEnrollmentProgress(user, enrollment, courseId, false);
+        return getCourseProgress(user, courseId, lesson.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public CourseProgressResponse getCourseProgress(User user, Long courseId, Long currentLessonId) {
         List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByLessonOrder(courseId);
+        List<LessonProgress> rows = lessonProgressRepository.findByUserIdAndLessonCourseId(user.getId(), courseId);
+
+        int lessonsDone = 0;
+        int quizzesDone = 0;
+        int assignmentsDone = 0;
+        List<String> missing = new ArrayList<>();
+
+        boolean currentRead = false;
+        boolean currentQuiz = false;
+        boolean currentAssign = false;
 
         for (Lesson lesson : courseLessons) {
-            if (!lessonProgressRepository.findByUserIdAndLessonId(user.getId(), lesson.getId()).isPresent()) {
-                LessonProgress progress = LessonProgress.builder()
-                        .user(user)
-                        .lesson(lesson)
-                        .completed(true)
-                        .build();
-                lessonProgressRepository.save(progress);
+            LessonProgress row = rows.stream()
+                    .filter(p -> p.getLesson() != null && p.getLesson().getId().equals(lesson.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            boolean read = row != null && Boolean.TRUE.equals(row.getCompleted());
+            boolean quiz = row != null && Boolean.TRUE.equals(row.getQuizPassed());
+            boolean assign = row != null && Boolean.TRUE.equals(row.getAssignmentCompleted());
+
+            if (read) lessonsDone++;
+            else missing.add("Lesson not finished: " + lesson.getTitle() + ".");
+
+            if (quiz) quizzesDone++;
+            else missing.add("Quiz not finished: " + lesson.getTitle() + ".");
+
+            if (assign) assignmentsDone++;
+            else missing.add("Code test not finished: " + lesson.getTitle() + ".");
+
+            if (currentLessonId != null && lesson.getId().equals(currentLessonId)) {
+                currentRead = read;
+                currentQuiz = quiz;
+                currentAssign = assign;
             }
         }
 
-        enrollment.setProgressPercentage(100);
-        enrollment.setCompleted(true);
-        enrollment.setCompletedAt(LocalDateTime.now());
+        int total = courseLessons.size();
+        int required = Math.max(total, 1) * 3;
+        int done = lessonsDone + quizzesDone + assignmentsDone;
+        int percent = total == 0 ? 0 : Math.min(100, (int) Math.round((done * 100.0) / required));
+        boolean canComplete = total > 0 && lessonsDone == total && quizzesDone == total && assignmentsDone == total;
+
+        return new CourseProgressResponse(
+                canComplete,
+                total,
+                lessonsDone,
+                quizzesDone,
+                assignmentsDone,
+                percent,
+                missing,
+                currentRead,
+                currentQuiz,
+                currentAssign
+        );
+    }
+
+    private Lesson requireLesson(Long courseId, Long lessonId) {
+        List<Lesson> courseLessons = lessonRepository.findByCourseIdOrderByLessonOrder(courseId);
+        return lessonRepository.findById(lessonId)
+                .filter(l -> l.getCourse() != null && l.getCourse().getId().equals(courseId))
+                .orElseGet(() -> {
+                    for (Lesson l : courseLessons) {
+                        if (l.getLessonOrder() != null && l.getLessonOrder().equals(lessonId.intValue())) {
+                            return l;
+                        }
+                    }
+                    throw new IllegalArgumentException("Lesson not found");
+                });
+    }
+
+    private LessonProgress upsertProgress(
+            User user,
+            Lesson lesson,
+            Boolean completed,
+            Boolean quizPassed,
+            Boolean assignmentCompleted
+    ) {
+        LessonProgress progress = lessonProgressRepository
+                .findByUserIdAndLessonId(user.getId(), lesson.getId())
+                .orElseGet(() -> LessonProgress.builder()
+                        .user(user)
+                        .lesson(lesson)
+                        .completed(false)
+                        .quizPassed(false)
+                        .assignmentCompleted(false)
+                        .build());
+
+        if (completed != null && completed) {
+            progress.setCompleted(true);
+        }
+        if (quizPassed != null && quizPassed) {
+            progress.setQuizPassed(true);
+        }
+        if (assignmentCompleted != null && assignmentCompleted) {
+            progress.setAssignmentCompleted(true);
+        }
+        return lessonProgressRepository.save(progress);
+    }
+
+    private Enrollment refreshEnrollmentProgress(
+            User user,
+            Enrollment enrollment,
+            Long courseId,
+            boolean forceCompleteIfEligible
+    ) {
+        CourseProgressResponse gate = getCourseProgress(user, courseId, null);
+        enrollment.setProgressPercentage(gate.progressPercentage());
+
+        if (gate.canComplete() && (forceCompleteIfEligible || Boolean.TRUE.equals(enrollment.getCompleted()))) {
+            enrollment.setCompleted(true);
+            enrollment.setCompletedAt(LocalDateTime.now());
+            issueCertificateAndBadge(user, enrollment, courseId, 100.0);
+        } else if (!gate.canComplete()) {
+            enrollment.setCompleted(false);
+            enrollment.setCompletedAt(null);
+        }
 
         Enrollment saved = enrollmentRepository.save(enrollment);
-
-        issueCertificateAndBadge(user, enrollment, courseId, 100.0);
-        syncRoadmapProgress(user, courseId, 100);
-
+        syncRoadmapProgress(user, courseId, gate.progressPercentage());
         return saved;
     }
 
@@ -204,12 +302,19 @@ public class EnrollmentService {
         Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(user.getId(), courseId)
                 .orElseGet(() -> enroll(user, courseId));
 
+        CourseProgressResponse gate = getCourseProgress(user, courseId, null);
+        if (!gate.canComplete()) {
+            return false;
+        }
+
         if (score >= 70) {
             enrollment.setCompleted(true);
             enrollment.setCompletedAt(LocalDateTime.now());
+            enrollment.setProgressPercentage(100);
             enrollmentRepository.save(enrollment);
 
             issueCertificateAndBadge(user, enrollment, courseId, (double) score);
+            syncRoadmapProgress(user, courseId, 100);
             return true;
         }
         return false;

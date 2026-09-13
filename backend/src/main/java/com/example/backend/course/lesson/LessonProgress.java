@@ -47,6 +47,14 @@ public class LessonProgress {
     @Column(nullable = false)
     private Boolean completed;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean quizPassed = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private Boolean assignmentCompleted = false;
+
     @Column(nullable = false)
     private LocalDateTime completedAt;
 
@@ -54,7 +62,13 @@ public class LessonProgress {
     protected void onCreate() {
         completedAt = LocalDateTime.now();
         if (completed == null) {
-            completed = true;
+            completed = false;
+        }
+        if (quizPassed == null) {
+            quizPassed = false;
+        }
+        if (assignmentCompleted == null) {
+            assignmentCompleted = false;
         }
     }
 }

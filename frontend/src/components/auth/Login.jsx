@@ -70,8 +70,9 @@ export default function Login() {
             } catch (error) {
 
                 setError(
-                    error.response?.data?.message ||
-                    "Invalid email or password"
+                    error.response?.status === 429
+                        ? (error.response?.data?.message || 'Too many login attempts. Please wait and try again.')
+                        : (error.response?.data?.message || 'Invalid email or password')
                 );
 
             } finally {

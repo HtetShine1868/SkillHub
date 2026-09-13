@@ -58,6 +58,38 @@ public class EnrollmentController {
         return ResponseEntity.ok(enrollment);
     }
 
+    @GetMapping("/courses/{courseId}/progress")
+    public ResponseEntity<?> courseProgress(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long courseId,
+            @RequestParam(required = false) Long lessonId
+    ) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(enrollmentService.getCourseProgress(user, courseId, lessonId));
+    }
+
+    @PostMapping("/courses/{courseId}/lessons/{lessonId}/quiz")
+    public ResponseEntity<?> submitQuiz(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long courseId,
+            @PathVariable Long lessonId,
+            @RequestBody(required = false) Map<String, Object> payload
+    ) {
+        User user = resolveUser(principal);
+        boolean passed = payload == null || !Boolean.FALSE.equals(payload.get("passed"));
+        return ResponseEntity.ok(enrollmentService.submitLessonQuiz(user, courseId, lessonId, passed));
+    }
+
+    @PostMapping("/courses/{courseId}/lessons/{lessonId}/assignment")
+    public ResponseEntity<?> submitAssignment(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long courseId,
+            @PathVariable Long lessonId
+    ) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(enrollmentService.submitLessonAssignment(user, courseId, lessonId));
+    }
+
     @PostMapping("/courses/{courseId}/assessment")
     public ResponseEntity<?> submitAssessment(
             @AuthenticationPrincipal UserDetails principal,

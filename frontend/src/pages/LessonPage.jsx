@@ -78,8 +78,8 @@ function highlightCode(code) {
 
   // Strings
   safe = safe.replace(/(["'`])(?:(?=(\\?))\2[\s\S])*?\1/g, '<span class="token-string">$&</span>')
-  // Comments
-  safe = safe.replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/)/g, '<span class="token-comment">$&</span>')
+  // Comments (//, /* */, and bash/python #)
+  safe = safe.replace(/(\/\/[^\n]*|\/\*[\s\S]*?\*\/|^[ \t]*#[^\n]*)/gm, '<span class="token-comment">$&</span>')
   // Keywords
   safe = safe.replace(/\b(const|let|var|function|return|class|extends|new|async|await|import|export|from|default|if|else|switch|case|break|try|catch|finally|throw|typeof|instanceof|void|public|private|protected|static|final|package)\b/g, '<span class="token-keyword">$1</span>')
   // Booleans & Numbers
@@ -244,6 +244,8 @@ const LessonPage = () => {
   // Assignment state
   const [assignmentCode, setAssignmentCode] = useState('// Write your practical solution here\nfunction solveProblem() {\n    // Implementation\n    return true;\n}')
   const [assignmentSubmitted, setAssignmentSubmitted] = useState(false)
+  const [courseProgress, setCourseProgress] = useState(null)
+  const [completionError, setCompletionError] = useState('')
 
   // Certificate state
   const [courseCert, setCourseCert] = useState(null)
@@ -280,6 +282,19 @@ const LessonPage = () => {
         }
       })
       .finally(() => setLoading(false))
+
+    setSelectedAnswers({})
+    setQuizSubmitted(false)
+    setAssignmentSubmitted(false)
+    setCompletionError('')
+    axiosClient.get(`/api/enrollments/courses/${courseId}/progress`, { params: { lessonId } })
+      .then(res => {
+        const p = res.data
+        setCourseProgress(p)
+        if (p?.currentQuizPassed) setQuizSubmitted(true)
+        if (p?.currentAssignmentDone) setAssignmentSubmitted(true)
+      })
+      .catch(() => {})
   }, [courseId, lessonId])
 
   const handleEnroll = async () => {
@@ -331,7 +346,14 @@ const LessonPage = () => {
       .catch(() => {})
   }
 
+  const currentRequirementsMet = quizSubmitted && assignmentSubmitted
+
   const handleNextClick = () => {
+    if (!currentRequirementsMet) {
+      setCompletionError('Finish this lesson’s quiz and code test before moving on.')
+      setActiveTab(!quizSubmitted ? 'quiz' : 'assignment')
+      return
+    }
     handleCompleteLesson()
     if (nextLesson) {
       navigate(`/courses/${courseId}/lessons/${nextLesson.id}`)
@@ -339,23 +361,43 @@ const LessonPage = () => {
   }
 
   const handleFinishClick = async () => {
-    setShowCompletionModal(true)
+    if (!currentRequirementsMet) {
+      setCompletionError('Finish this lesson’s quiz and code test first.')
+      setActiveTab(!quizSubmitted ? 'quiz' : 'assignment')
+      return
+    }
+    setCompletionError('')
     setCertLoading(true)
     try {
-      // Explicitly mark the whole course complete (covers every lesson, even
-      // ones skipped via the sidebar) and await it before checking for the
-      // certificate — avoids the race where the cert isn't created yet.
-      await axiosClient.post(`/api/enrollments/courses/${courseId}/complete`).catch(() => {})
-
+      await axiosClient.post(`/api/enrollments/courses/${courseId}/lessons/${lessonId}/complete`)
+      await axiosClient.post(`/api/enrollments/courses/${courseId}/complete`)
+      setShowCompletionModal(true)
       const resp = await axiosClient.get('/api/certificates/my')
       const certs = resp.data || []
       const match = certs.find(c => String(c.course?.id || c.courseId) === String(courseId))
       setCourseCert(match || null)
-    } catch {
-      setCourseCert(null)
+    } catch (err) {
+      setShowCompletionModal(false)
+      setCompletionError(
+        err.response?.data?.message
+        || 'Finish every lesson, quiz, and code test before completing the course.'
+      )
     } finally {
       setCertLoading(false)
     }
+  }
+
+  const persistQuiz = () => {
+    const allAnswered = quizQuestions.every(q => selectedAnswers[q.id] !== undefined)
+    if (!allAnswered) {
+      setCompletionError('Answer every quiz question before submitting.')
+      return
+    }
+    setQuizSubmitted(true)
+    setCompletionError('')
+    axiosClient.post(`/api/enrollments/courses/${courseId}/lessons/${lessonId}/quiz`, { passed: true })
+      .then(res => setCourseProgress(res.data))
+      .catch(() => {})
   }
 
   const handleQuizOptionSelect = (qId, optIdx) => {
@@ -365,7 +407,15 @@ const LessonPage = () => {
 
   const handleAssignmentSubmit = (e) => {
     e.preventDefault()
+    if (!assignmentCode || assignmentCode.trim().length < 8) {
+      setCompletionError('Write a solution in the code test before submitting.')
+      return
+    }
     setAssignmentSubmitted(true)
+    setCompletionError('')
+    axiosClient.post(`/api/enrollments/courses/${courseId}/lessons/${lessonId}/assignment`)
+      .then(res => setCourseProgress(res.data))
+      .catch(() => {})
   }
 
   const handleSaveReview = () => {
@@ -603,7 +653,7 @@ const LessonPage = () => {
                   fontSize: '0.9rem',
                   cursor: 'pointer'
                 }}
-                onClick={() => setQuizSubmitted(true)}
+                onClick={persistQuiz}
               >
                 Submit Quiz Answers
               </button>
@@ -671,6 +721,15 @@ const LessonPage = () => {
           </div>
         )}
 
+        {completionError && (
+          <p className="lesson__gate-error">{completionError}</p>
+        )}
+        {courseProgress && (
+          <p className="lesson__gate-meta">
+            Progress: {courseProgress.lessonsDone}/{courseProgress.totalLessons} lessons · {courseProgress.quizzesDone}/{courseProgress.totalLessons} quizzes · {courseProgress.assignmentsDone}/{courseProgress.totalLessons} code tests
+          </p>
+        )}
+
         {/* Navigation */}
         <div className="lesson__nav">
           {prevLesson ? (
@@ -679,12 +738,20 @@ const LessonPage = () => {
             </button>
           ) : <div />}
           {nextLesson ? (
-            <button id="btn-next-lesson" className="lesson__nav-btn lesson__nav-btn--next" onClick={handleNextClick}>
-              {nextLesson.title} →
+            <button
+              id="btn-next-lesson"
+              className={`lesson__nav-btn lesson__nav-btn--next ${!currentRequirementsMet ? 'lesson__nav-btn--blocked' : ''}`}
+              onClick={handleNextClick}
+            >
+              {currentRequirementsMet ? `${nextLesson.title} →` : 'Finish quiz & code test to continue'}
             </button>
           ) : (
-            <button id="btn-complete" className="lesson__nav-btn lesson__nav-btn--complete" onClick={handleFinishClick}>
-              ✅ Complete Course &amp; Rate
+            <button
+              id="btn-complete"
+              className={`lesson__nav-btn lesson__nav-btn--complete ${!currentRequirementsMet ? 'lesson__nav-btn--blocked' : ''}`}
+              onClick={handleFinishClick}
+            >
+              {currentRequirementsMet ? '✅ Complete Course & Rate' : 'Finish quiz & code test first'}
             </button>
           )}
         </div>
