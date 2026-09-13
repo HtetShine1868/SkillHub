@@ -122,7 +122,7 @@ export default function InstructorDashboard() {
             <h1 className="inst-dash__title">Welcome, <span className="inst-dash__hl">{user?.name || 'Instructor'}</span></h1>
             <p className="inst-dash__subtitle">Manage courses, answer student inquiries, and mentor your learners in real time.</p>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="inst-dash__header-actions">
             <button
               className={`inst-dash__create-btn ${tab === 'MESSAGES' ? 'inst-dash__create-btn--active' : ''}`}
               style={{ background: tab === 'MESSAGES' ? 'linear-gradient(135deg, #38bdf8, #818cf8)' : undefined }}

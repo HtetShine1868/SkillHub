@@ -43,7 +43,8 @@ export default function ChatPage() {
                 const deepLinked = initialInstructorId
                     ? instList.find(i => String(i.id) === String(initialInstructorId))
                     : null
-                const firstInst = deepLinked || instList[0]
+                const preferListOnMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+                const firstInst = deepLinked || (!preferListOnMobile ? instList[0] : null)
                 if (firstInst) {
                     setSelectedPartner({
                         partnerId: firstInst.id,
@@ -199,9 +200,16 @@ export default function ChatPage() {
 
     const activeCourseName = currentInstructorCourses.find(c => c.id === selectedCourseId)?.title || 'Course'
 
+    const isSupportRole = (role) => {
+        const value = String(role || '').toUpperCase()
+        return value === 'ADMIN' || value === 'ROLE_ADMIN'
+    }
+    const supportContacts = availableInstructors.filter(inst => isSupportRole(inst.role))
+    const courseInstructors = availableInstructors.filter(inst => !isSupportRole(inst.role))
+
     return (
         <div className="chat-page">
-            <div className="chat-container">
+            <div className={`chat-container ${selectedPartner ? 'chat-container--thread' : 'chat-container--list'}`}>
                 {/* Left Sidebar */}
                 <div className="chat-sidebar">
                     <div className="chat-sidebar__header">
@@ -211,6 +219,42 @@ export default function ChatPage() {
                         </span>
                     </div>
 
+                    {supportContacts.length > 0 && (
+                        <>
+                            <div className="chat-sidebar__section-title">SkillHub Support</div>
+                            <div className="chat-sidebar__instructors">
+                                {supportContacts.map(inst => {
+                                    const isSelected = selectedPartner?.partnerId === inst.id
+                                    return (
+                                        <div
+                                            key={inst.id}
+                                            className={`chat-sidebar__instructor-card ${isSelected ? 'active' : ''}`}
+                                            onClick={() => selectConversation({
+                                                partnerId: inst.id,
+                                                partnerName: inst.name,
+                                                partnerAvatar: inst.avatar,
+                                                partnerRole: inst.role,
+                                                courses: inst.courses
+                                            })}
+                                        >
+                                            <div className="chat-sidebar__avatar">
+                                                {inst.avatar ? (
+                                                    <img src={inst.avatar} alt={inst.name} />
+                                                ) : (
+                                                    inst.name?.charAt(0)?.toUpperCase() || 'A'
+                                                )}
+                                            </div>
+                                            <div className="chat-sidebar__info">
+                                                <div className="chat-sidebar__name">{inst.name}</div>
+                                                <div className="chat-sidebar__meta">Admin · Platform support</div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
+
                     {/* Available Enrolled Instructors */}
                     <div className="chat-sidebar__section-title">Instructors (Enrolled Courses)</div>
                     <div className="chat-sidebar__instructors">
@@ -219,13 +263,13 @@ export default function ChatPage() {
                                 <div className="chat-skel" />
                                 <div className="chat-skel" />
                             </div>
-                        ) : availableInstructors.length === 0 ? (
+                        ) : courseInstructors.length === 0 ? (
                             <div className="chat-sidebar__empty">
                                 <p>Enroll in a course to start chatting with instructors!</p>
                                 <Link to="/courses" className="chat-sidebar__explore-link">Explore Courses →</Link>
                             </div>
                         ) : (
-                            availableInstructors.map(inst => {
+                            courseInstructors.map(inst => {
                                 const isSelected = selectedPartner?.partnerId === inst.id
                                 return (
                                     <div
@@ -296,6 +340,13 @@ export default function ChatPage() {
                         <>
                             {/* Chat Header */}
                             <div className="chat-header">
+                                <button
+                                    type="button"
+                                    className="chat-header__back"
+                                    onClick={() => setSelectedPartner(null)}
+                                >
+                                    ← Chats
+                                </button>
                                 <div className="chat-header__partner">
                                     <div className="chat-header__avatar">
                                         {selectedPartner.partnerAvatar ? (

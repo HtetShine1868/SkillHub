@@ -160,4 +160,30 @@ public class SkillExchangeController {
         boolean success = skillExchangeService.toggleCommentLike(user, id, commentId);
         return ResponseEntity.ok(Map.of("success", success));
     }
+
+    @PutMapping("/{id}/goals")
+    public ResponseEntity<List<ProjectGoalResponse>> updateGoals(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long id,
+            @RequestBody GoalsUpdateRequest request
+    ) {
+        User user = userRepository.findByEmail(principal.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(skillExchangeService.updateGoals(user, id, request));
+    }
+
+    @PatchMapping("/{id}/goals/{goalId}")
+    public ResponseEntity<List<ProjectGoalResponse>> toggleGoal(
+            @AuthenticationPrincipal UserDetails principal,
+            @PathVariable Long id,
+            @PathVariable String goalId,
+            @RequestBody(required = false) GoalToggleRequest request
+    ) {
+        User user = userRepository.findByEmail(principal.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        GoalToggleRequest body = request != null ? request : new GoalToggleRequest();
+        return ResponseEntity.ok(skillExchangeService.toggleGoal(user, id, goalId, body));
+    }
 }

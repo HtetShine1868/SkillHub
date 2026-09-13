@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, Clock, Calendar, Zap, Target,
   MessageCircle, Heart, Reply, Send, Users,
-  CheckCircle, Circle, ClipboardList
+  CheckCircle, Circle, ClipboardList, Lock, Plus, Trash2
 } from 'lucide-react'
 import ForumNavbar from '../components/ForumNavbar'
 import MemberAvatar from '../components/MemberAvatar'
@@ -12,7 +12,7 @@ import SkillChip from '../components/SkillChip'
 import StatusBadge from '../components/StatusBadge'
 import ProgressBar from '../components/ProgressBar'
 import JoinModal from '../components/JoinModal'
-import { getProjectById, addComment, toggleCommentLike } from '../services/forumApi'
+import { getProjectById, addComment, toggleCommentLike, toggleProjectGoal, updateProjectGoals } from '../services/forumApi'
 import { useAuth } from '../../context/AuthContext'
 import '../forum.css'
 
@@ -44,16 +44,19 @@ export default function ProjectDetails() {
   const [replyingTo, setReplyingTo] = useState(null)
   const [replyText, setReplyText] = useState('')
   const [likedComments, setLikedComments] = useState(new Set())
+  const [newGoalText, setNewGoalText] = useState('')
+  const [goalBusy, setGoalBusy] = useState(false)
+  const [discussionError, setDiscussionError] = useState('')
 
-  async function loadProject() {
-    setLoading(true)
+  async function loadProject(silent = false) {
+    if (!silent) setLoading(true)
     try {
       const data = await getProjectById(id)
       setProject(data)
     } catch {
-      setNotFound(true)
+      if (!silent) setNotFound(true)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -62,18 +65,66 @@ export default function ProjectDetails() {
   async function handleAddComment(e) {
     e.preventDefault()
     if (!commentText.trim()) return
-    await addComment(project.id, commentText)
-    setCommentText('')
-    loadProject()
+    setDiscussionError('')
+    try {
+      await addComment(project.id, commentText)
+      setCommentText('')
+      await loadProject(true)
+    } catch (err) {
+      setDiscussionError(err.response?.data?.detail || err.response?.data?.message || 'Only project members can join this discussion.')
+    }
   }
 
   async function handleAddReply(e, commentId) {
     e.preventDefault()
     if (!replyText.trim()) return
-    await addComment(project.id, replyText, commentId)
-    setReplyText('')
-    setReplyingTo(null)
-    loadProject()
+    setDiscussionError('')
+    try {
+      await addComment(project.id, replyText, commentId)
+      setReplyText('')
+      setReplyingTo(null)
+      await loadProject(true)
+    } catch (err) {
+      setDiscussionError(err.response?.data?.detail || err.response?.data?.message || 'Only project members can join this discussion.')
+    }
+  }
+
+  async function handleToggleGoal(goal) {
+    if (!project || goalBusy) return
+    setGoalBusy(true)
+    try {
+      const goals = await toggleProjectGoal(project.id, goal.id, !goal.done)
+      setProject((prev) => ({ ...prev, goals }))
+    } finally {
+      setGoalBusy(false)
+    }
+  }
+
+  async function handleAddGoal(e) {
+    e.preventDefault()
+    if (!newGoalText.trim() || goalBusy) return
+    setGoalBusy(true)
+    try {
+      const next = [...(project.goals || []), { text: newGoalText.trim(), done: false }]
+      const goals = await updateProjectGoals(project.id, next)
+      setProject((prev) => ({ ...prev, goals }))
+      setNewGoalText('')
+    } finally {
+      setGoalBusy(false)
+    }
+  }
+
+  async function handleRemoveGoal(goalId) {
+    if (goalBusy) return
+    const remaining = (project.goals || []).filter((g) => g.id !== goalId)
+    if (remaining.length === 0) return
+    setGoalBusy(true)
+    try {
+      const goals = await updateProjectGoals(project.id, remaining)
+      setProject((prev) => ({ ...prev, goals }))
+    } finally {
+      setGoalBusy(false)
+    }
   }
 
   async function handleLike(commentId) {
@@ -117,6 +168,11 @@ export default function ProjectDetails() {
   const isOwner = project.userStatus === 'owner'
   const isMember = project.userStatus === 'member'
   const isPending = project.userStatus === 'pending'
+  const canDiscuss = project.canDiscuss || isOwner || isMember
+  const canManageGoals = isOwner || isMember
+  const completedGoals = (project.goals || []).filter((g) => g.done).length
+  const totalGoals = (project.goals || []).length
+  const threads = project.discussion || []
 
   const openSlots = Array.from({ length: spotsLeft })
 
@@ -218,87 +274,159 @@ export default function ProjectDetails() {
               <h2 className="details-section__title">
                 <ClipboardList size={16} />
                 Project Goals
+                {totalGoals > 0 && (
+                  <span className="goals-progress-label">{completedGoals}/{totalGoals} finished</span>
+                )}
               </h2>
-              <div className="goals-list" role="list">
-                {project.goals.map((goal) => (
-                  <div key={goal.id} className="goal-item" role="listitem">
-                    <div className={`goal-check ${goal.done ? 'goal-check--done' : 'goal-check--todo'}`}>
-                      {goal.done
-                        ? <CheckCircle size={14} />
-                        : <Circle size={12} />
-                      }
+              {totalGoals === 0 ? (
+                <p style={{ color: 'var(--f-text-muted)', fontSize: 14 }}>No goals have been defined yet.</p>
+              ) : (
+                <div className="goals-list" role="list">
+                  {project.goals.map((goal) => (
+                    <div key={goal.id} className={`goal-item ${canManageGoals ? 'goal-item--interactive' : ''}`} role="listitem">
+                      <button
+                        type="button"
+                        className={`goal-check ${goal.done ? 'goal-check--done' : 'goal-check--todo'}`}
+                        onClick={() => canManageGoals && handleToggleGoal(goal)}
+                        disabled={!canManageGoals || goalBusy}
+                        aria-label={goal.done ? `Mark "${goal.text}" as not finished` : `Mark "${goal.text}" as finished`}
+                      >
+                        {goal.done ? <CheckCircle size={14} /> : <Circle size={12} />}
+                      </button>
+                      <span className={`goal-text ${goal.done ? 'done' : ''}`}>
+                        {goal.text}
+                      </span>
+                      {isOwner && (
+                        <button
+                          type="button"
+                          className="goal-remove"
+                          onClick={() => handleRemoveGoal(goal.id)}
+                          disabled={goalBusy || totalGoals <= 1}
+                          aria-label={`Remove goal ${goal.text}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
-                    <span className={`goal-text ${goal.done ? 'done' : ''}`}>
-                      {goal.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+              {isOwner && (
+                <form onSubmit={handleAddGoal} className="goal-add-form">
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Add another goal..."
+                    value={newGoalText}
+                    onChange={(e) => setNewGoalText(e.target.value)}
+                    maxLength={160}
+                  />
+                  <button type="submit" className="btn btn-secondary btn-sm" disabled={!newGoalText.trim() || goalBusy}>
+                    <Plus size={14} />
+                    Add
+                  </button>
+                </form>
+              )}
+              {canManageGoals && (
+                <p className="form-hint" style={{ marginBottom: 0 }}>
+                  {isOwner ? 'Click a goal to mark it finished, or add and remove goals as the project evolves.' : 'Click a goal to mark it finished as the team completes it.'}
+                </p>
+              )}
             </motion.div>
 
-            {/* Discussion */}
+            {/* Team discussion */}
             <motion.div
-              className="details-section"
+              className="details-section discussion-board"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.15 }}
             >
               <h2 className="details-section__title">
                 <MessageCircle size={16} />
-                Discussion
-                {project.discussion.length > 0 && (
+                Team Discussion
+                {canDiscuss && threads.length > 0 && (
                   <span style={{ fontSize: 13, color: 'var(--f-text-muted)', fontWeight: 400, marginLeft: 4 }}>
-                    ({project.discussion.length})
+                    ({threads.length} thread{threads.length !== 1 ? 's' : ''})
                   </span>
                 )}
               </h2>
 
-              {project.discussion.length === 0 ? (
-                <p style={{ color: 'var(--f-text-muted)', fontSize: 14 }}>
-                  No comments yet. Start the conversation!
-                </p>
+              {!canDiscuss ? (
+                <div className="discussion-locked">
+                  <div className="discussion-locked__icon">
+                    <Lock size={22} />
+                  </div>
+                  <h3>Members-only conversation</h3>
+                  <p>
+                    This is a private team discussion. Join the project to read messages and talk with collaborators.
+                  </p>
+                  {isPending ? (
+                    <span className="discussion-locked__status">Your join request is pending review.</span>
+                  ) : isFull ? (
+                    <span className="discussion-locked__status">This project is full.</span>
+                  ) : (
+                    <button type="button" className="btn btn-primary" onClick={() => setShowJoinModal(true)}>
+                      <Users size={15} />
+                      Request to join
+                    </button>
+                  )}
+                </div>
               ) : (
-                <div className="discussion-list">
-                  {project.discussion.map((comment) => (
-                    <div key={comment.id} className="discussion-comment">
-                      <MemberAvatar name={comment.author.name} initials={comment.author.initials} size="sm" />
-                      <div className="discussion-comment__body">
-                        <div className="discussion-comment__header">
-                          <span className="discussion-comment__name">{comment.author.name}</span>
-                          <span className="discussion-comment__time">{timeAgo(comment.timestamp)}</span>
-                        </div>
-                        <p className="discussion-comment__text">"{comment.text}"</p>
-                        <div className="discussion-comment__actions">
-                          <button
-                            className={`discussion-action-btn ${likedComments.has(comment.id) ? 'liked' : ''}`}
-                            onClick={() => handleLike(comment.id)}
-                            aria-label={`Like comment, ${comment.likes} likes`}
-                          >
-                            <Heart size={13} />
-                            {comment.likes + (likedComments.has(comment.id) ? 1 : 0)}
-                          </button>
-                          <button
-                            className="discussion-action-btn"
-                            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                            aria-label="Reply to comment"
-                          >
-                            <Reply size={13} />
-                            Reply
-                          </button>
+                <>
+                  <div className="discussion-thread-list">
+                    {threads.length === 0 ? (
+                      <div className="discussion-empty">
+                        <MessageCircle size={22} />
+                        <p>No team conversation yet. Start a thread about progress, blockers, or next steps.</p>
+                      </div>
+                    ) : threads.map((comment) => (
+                      <article key={comment.id} className="discussion-thread">
+                        <div className="discussion-message">
+                          <MemberAvatar name={comment.author.name} initials={comment.author.initials} size="sm" />
+                          <div className="discussion-message__content">
+                            <div className="discussion-message__meta">
+                              <span className="discussion-message__name">{comment.author.name}</span>
+                              <span className={`discussion-role ${comment.authorRole === 'Owner' ? 'owner' : ''}`}>
+                                {comment.authorRole || 'Member'}
+                              </span>
+                              <span className="discussion-message__time">{timeAgo(comment.timestamp)}</span>
+                            </div>
+                            <p className="discussion-message__text">{comment.text}</p>
+                            <div className="discussion-comment__actions">
+                              <button
+                                className={`discussion-action-btn ${likedComments.has(comment.id) ? 'liked' : ''}`}
+                                onClick={() => handleLike(comment.id)}
+                                aria-label={`Like message, ${comment.likes} likes`}
+                              >
+                                <Heart size={13} />
+                                {comment.likes + (likedComments.has(comment.id) ? 1 : 0)}
+                              </button>
+                              <button
+                                className="discussion-action-btn"
+                                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                aria-label="Reply in thread"
+                              >
+                                <Reply size={13} />
+                                Reply in thread
+                              </button>
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Replies */}
                         {comment.replies?.length > 0 && (
-                          <div className="discussion-replies">
+                          <div className="discussion-thread__replies">
                             {comment.replies.map((reply) => (
-                              <div key={reply.id} className="discussion-comment">
+                              <div key={reply.id} className="discussion-message discussion-message--reply">
                                 <MemberAvatar name={reply.author.name} initials={reply.author.initials} size="sm" />
-                                <div className="discussion-comment__body">
-                                  <div className="discussion-comment__header">
-                                    <span className="discussion-comment__name">{reply.author.name}</span>
-                                    <span className="discussion-comment__time">{timeAgo(reply.timestamp)}</span>
+                                <div className="discussion-message__content">
+                                  <div className="discussion-message__meta">
+                                    <span className="discussion-message__name">{reply.author.name}</span>
+                                    <span className={`discussion-role ${reply.authorRole === 'Owner' ? 'owner' : ''}`}>
+                                      {reply.authorRole || 'Member'}
+                                    </span>
+                                    <span className="discussion-message__time">{timeAgo(reply.timestamp)}</span>
                                   </div>
-                                  <p className="discussion-comment__text">{reply.text}</p>
+                                  <p className="discussion-message__text">{reply.text}</p>
                                   <div className="discussion-comment__actions">
                                     <button
                                       className={`discussion-action-btn ${likedComments.has(reply.id) ? 'liked' : ''}`}
@@ -315,56 +443,49 @@ export default function ProjectDetails() {
                           </div>
                         )}
 
-                        {/* Reply input */}
                         {replyingTo === comment.id && (
-                          <form onSubmit={(e) => handleAddReply(e, comment.id)} style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                          <form onSubmit={(e) => handleAddReply(e, comment.id)} className="discussion-composer discussion-composer--reply">
                             <MemberAvatar name={currentUser?.name} initials={currentUser?.initials} size="sm" />
-                            <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-                              <textarea
-                                className="form-textarea"
-                                placeholder={`Reply to ${comment.author.name}...`}
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                                rows={2}
-                                style={{ minHeight: 60, resize: 'none' }}
-                                aria-label="Write a reply"
-                                autoFocus
-                              />
-                              <button type="submit" className="btn btn-primary btn-sm" disabled={!replyText.trim()} aria-label="Send reply">
-                                <Send size={13} />
-                              </button>
-                            </div>
+                            <textarea
+                              placeholder={`Reply to ${comment.author.name}...`}
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              rows={2}
+                              aria-label="Write a reply"
+                              autoFocus
+                            />
+                            <button type="submit" className="btn btn-primary btn-sm" disabled={!replyText.trim()} aria-label="Send reply">
+                              <Send size={13} />
+                            </button>
                           </form>
                         )}
+                      </article>
+                    ))}
+                  </div>
+
+                  {discussionError && <div className="form-error" role="alert">{discussionError}</div>}
+
+                  <form onSubmit={handleAddComment} className="discussion-composer">
+                    <MemberAvatar name={currentUser?.name} initials={currentUser?.initials} size="sm" />
+                    <div className="discussion-composer__fields">
+                      <textarea
+                        placeholder="Start a team conversation — share progress, ask a question, or plan the next step..."
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        rows={3}
+                        aria-label="Write a team message"
+                      />
+                      <div className="discussion-composer__actions">
+                        <span>Visible to project members only</span>
+                        <button type="submit" className="btn btn-primary btn-sm" disabled={!commentText.trim()}>
+                          <Send size={13} />
+                          Post to team
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </form>
+                </>
               )}
-
-              {/* New comment */}
-              <form onSubmit={handleAddComment} className="discussion-input-area">
-                <MemberAvatar name={currentUser?.name} initials={currentUser?.initials} size="sm" />
-                <div style={{ flex: 1 }}>
-                  <textarea
-                    placeholder="Write a comment..."
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    rows={3}
-                    aria-label="Write a comment"
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                    <button
-                      type="submit"
-                      className="btn btn-primary btn-sm"
-                      disabled={!commentText.trim()}
-                    >
-                      <Send size={13} />
-                      Post Comment
-                    </button>
-                  </div>
-                </div>
-              </form>
             </motion.div>
           </div>
 

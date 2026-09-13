@@ -5,14 +5,20 @@ import { useChatNotifications } from '../../context/ChatNotificationContext'
 import { playNotificationSound } from '../../utils/soundUtils'
 import './InstructorChatInbox.css'
 
-export default function InstructorChatInbox() {
+export default function InstructorChatInbox({
+  contactsUrl = '/api/chat/instructor/students',
+  heading = 'Student Inquiries',
+  searchPlaceholder = 'Search students or courses...',
+  personLabel = 'student',
+  defaultMode = 'COURSE',
+} = {}) {
   const { user } = useAuth()
   const { markThreadSeen, markAllSeen } = useChatNotifications()
   const [students, setStudents] = useState([])
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [messages, setMessages] = useState([])
   const [replyText, setReplyText] = useState('')
-  const [chatMode, setChatMode] = useState('COURSE') // 'COURSE' | 'GENERAL'
+  const [chatMode, setChatMode] = useState(defaultMode) // 'COURSE' | 'GENERAL'
   const [selectedCourseId, setSelectedCourseId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState('ALL') // 'ALL' | 'UNREPLIED' | 'COURSE' | 'GENERAL'
@@ -42,7 +48,7 @@ export default function InstructorChatInbox() {
     if (!isSilent) setLoadingStudents(true)
     try {
       // 1. Fetch instructor student list
-      const res = await axiosClient.get('/api/chat/instructor/students').catch(() => null)
+      const res = await axiosClient.get(contactsUrl).catch(() => null)
       let list = res?.data || []
 
       // 2. Fallback to /api/chat/conversations if list is empty
@@ -69,15 +75,16 @@ export default function InstructorChatInbox() {
           const unreplied = list.find(s => s.lastSenderId && s.lastSenderId === s.id && (!prev.find(p => p.id === s.id && p.lastSentAt === s.lastSentAt)))
           if (unreplied) {
             playNotificationSound()
-            showNotification(`🔔 New student message from ${unreplied.name}: "${unreplied.lastMessage}"`)
+            showNotification(`🔔 New ${personLabel} message from ${unreplied.name}: "${unreplied.lastMessage}"`)
           }
         }
         return list
       })
 
-      // Auto-select first student if none selected
+      // Auto-select first student on desktop so the inbox is not empty
       setSelectedStudent(prev => {
-        if (!prev && list.length > 0) {
+        const preferListOnMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches
+        if (!prev && list.length > 0 && !preferListOnMobile) {
           const first = list[0]
           if (first.courses && first.courses.length > 0) {
             setSelectedCourseId(first.courses[0].id)
@@ -93,11 +100,11 @@ export default function InstructorChatInbox() {
       })
     } catch (err) {
       console.error('Failed to load instructor students:', err)
-      if (!isSilent) setErrorMsg('Failed to load students list.')
+      if (!isSilent) setErrorMsg(`Failed to load ${personLabel} list.`)
     } finally {
       if (!isSilent) setLoadingStudents(false)
     }
-  }, [])
+  }, [contactsUrl, personLabel])
 
   // Load messages for the selected student & mode
   const loadMessages = useCallback(async (isSilent = false) => {
@@ -298,14 +305,14 @@ export default function InstructorChatInbox() {
       )}
 
       {/* Main Container */}
-      <div className="inst-chat__layout">
+      <div className={`inst-chat__layout${selectedStudent ? ' inst-chat__layout--thread' : ''}`}>
 
         {/* ── Left Sidebar: Student Conversations ── */}
         <div className="inst-chat__sidebar">
           {/* Header & Search */}
           <div className="inst-chat__sidebar-header">
             <div className="inst-chat__sidebar-title-row">
-              <h3>💬 Student Inquiries</h3>
+              <h3>💬 {heading}</h3>
               <span className="inst-chat__badge-count">{students.length}</span>
             </div>
 
@@ -315,7 +322,7 @@ export default function InstructorChatInbox() {
               <input
                 type="text"
                 className="inst-chat__search-input"
-                placeholder="Search students or courses..."
+                placeholder={searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -357,12 +364,12 @@ export default function InstructorChatInbox() {
           <div className="inst-chat__student-list">
             {loadingStudents && students.length === 0 ? (
               <div className="inst-chat__empty-list">
-                <span>⏳ Loading student threads...</span>
+                <span>⏳ Loading {personLabel} threads...</span>
               </div>
             ) : filteredStudents.length === 0 ? (
               <div className="inst-chat__empty-list">
-                <p>No student conversations found.</p>
-                <small>Students will appear here once they enroll or ask a course question.</small>
+                <p>No {personLabel} conversations found.</p>
+                <small>People appear here so you can start or continue a conversation.</small>
               </div>
             ) : (
               filteredStudents.map(student => {
@@ -407,7 +414,7 @@ export default function InstructorChatInbox() {
                             {student.lastMessage}
                           </span>
                         ) : (
-                          <span className="inst-chat__no-msg-yet">Enrolled student · No messages yet</span>
+                          <span className="inst-chat__no-msg-yet">No messages yet — click to start</span>
                         )}
                       </div>
                     </div>
@@ -424,6 +431,13 @@ export default function InstructorChatInbox() {
             <>
               {/* Conversation Header */}
               <div className="inst-chat__main-header">
+                <button
+                  type="button"
+                  className="inst-chat__back"
+                  onClick={() => setSelectedStudent(null)}
+                >
+                  ← Inbox
+                </button>
                 <div className="inst-chat__main-user-meta">
                   <div className="inst-chat__main-avatar">
                     {selectedStudent.avatar ? (
@@ -602,8 +616,8 @@ export default function InstructorChatInbox() {
           ) : (
             <div className="inst-chat__empty-selection">
               <div className="inst-chat__empty-icon">👨‍🏫</div>
-              <h3>Select a Student Conversation</h3>
-              <p>Choose a student inquiry from the left sidebar to read their question, provide feedback, and send replies.</p>
+              <h3>Select a conversation</h3>
+              <p>Choose a {personLabel} from the left sidebar to read their message and send a reply.</p>
             </div>
           )}
         </div>

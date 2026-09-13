@@ -1,13 +1,16 @@
 package com.example.backend.skillexchange.service;
 
+import com.example.backend.notification.service.NotificationService;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
 import com.example.backend.skillexchange.dto.*;
 import com.example.backend.skillexchange.entity.*;
 import com.example.backend.skillexchange.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,6 +27,7 @@ public class SkillExchangeService {
     private final JoinRequestRepository joinRequestRepository;
     private final ProjectCommentRepository projectCommentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -95,11 +99,20 @@ public class SkillExchangeService {
 
         ProjectResponse resp = toProjectResponse(project, currentUser);
 
-        // Load comments tree
         List<ProjectComment> topComments = projectCommentRepository.findByProjectIdAndParentIsNullOrderByCreatedAtAsc(id);
-        resp.setDiscussion(topComments.stream()
-                .map(this::toCommentResponse)
-                .collect(Collectors.toList()));
+        int discussionCount = topComments.size();
+        for (ProjectComment comment : topComments) {
+            discussionCount += comment.getReplies() != null ? comment.getReplies().size() : 0;
+        }
+        resp.setDiscussionCount(discussionCount);
+
+        if (Boolean.TRUE.equals(resp.isCanDiscuss())) {
+            resp.setDiscussion(topComments.stream()
+                    .map(c -> toCommentResponse(c, project))
+                    .collect(Collectors.toList()));
+        } else {
+            resp.setDiscussion(Collections.emptyList());
+        }
 
         return resp;
     }
@@ -130,15 +143,11 @@ public class SkillExchangeService {
                 .tags(req.getTags() != null ? req.getTags() : new ArrayList<>())
                 .build();
 
-        // Default goals
-        project.setGoals(Arrays.asList(
-                new ProjectGoal("g1", "Define project requirements", true),
-                new ProjectGoal("g2", "Design UI/UX mockups", true),
-                new ProjectGoal("g3", "Implement backend API", false),
-                new ProjectGoal("g4", "Integrate frontend with backend", false),
-                new ProjectGoal("g5", "Testing & QA", false),
-                new ProjectGoal("g6", "Deployment", false)
-        ));
+        List<ProjectGoal> goals = buildGoalsFromInput(req.getGoals(), true);
+        if (goals.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Add at least one project goal.");
+        }
+        project.setGoals(goals);
 
         Project saved = projectRepository.save(project);
 
@@ -200,6 +209,15 @@ public class SkillExchangeService {
                 .build();
 
         JoinRequest saved = joinRequestRepository.save(request);
+
+        notificationService.notify(
+                project.getOwner(),
+                NotificationService.JOIN_REQUEST,
+                "New join request",
+                applicant.getName() + " wants to join " + project.getTitle(),
+                "/skill-exchange/project/" + project.getId() + "/requests",
+                project.getId()
+        );
 
         return toJoinRequestResponse(saved, false);
     }
@@ -271,6 +289,28 @@ public class SkillExchangeService {
         }
         projectRepository.save(project);
 
+        notificationService.notify(
+                request.getApplicant(),
+                NotificationService.JOIN_APPROVED,
+                "You joined a project",
+                "You are now a member of " + project.getTitle(),
+                "/skill-exchange/project/" + project.getId(),
+                project.getId()
+        );
+
+        List<ProjectMember> team = projectMemberRepository.findByProjectIdWithUser(project.getId());
+        for (ProjectMember teammate : team) {
+            if (teammate.getUser().getId().equals(request.getApplicant().getId())) continue;
+            notificationService.notify(
+                    teammate.getUser(),
+                    NotificationService.PROJECT_JOIN,
+                    "New collaborator joined",
+                    request.getApplicant().getName() + " joined " + project.getTitle(),
+                    "/skill-exchange/project/" + project.getId(),
+                    project.getId()
+            );
+        }
+
         return true;
     }
 
@@ -301,10 +341,18 @@ public class SkillExchangeService {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
+        if (!isProjectParticipant(project, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only project members can join the discussion.");
+        }
+
+        if (text == null || text.isBlank()) {
+            throw new RuntimeException("Message cannot be empty.");
+        }
+
         ProjectComment comment = ProjectComment.builder()
                 .project(project)
                 .author(currentUser)
-                .text(text)
+                .text(text.trim())
                 .likes(0)
                 .build();
 
@@ -315,16 +363,74 @@ public class SkillExchangeService {
         }
 
         ProjectComment saved = projectCommentRepository.save(comment);
-        return toCommentResponse(saved);
+
+        String preview = saved.getText().length() > 80
+                ? saved.getText().substring(0, 80) + "…"
+                : saved.getText();
+        for (ProjectMember member : projectMemberRepository.findByProjectIdWithUser(projectId)) {
+            if (member.getUser().getId().equals(currentUser.getId())) continue;
+            notificationService.notify(
+                    member.getUser(),
+                    NotificationService.PROJECT_MESSAGE,
+                    "New discussion message",
+                    currentUser.getName() + " in " + project.getTitle() + ": " + preview,
+                    "/skill-exchange/project/" + project.getId(),
+                    project.getId()
+            );
+        }
+
+        return toCommentResponse(saved, project);
     }
 
     @Transactional
     public boolean toggleCommentLike(User currentUser, Long projectId, Long commentId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!isProjectParticipant(project, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only project members can join the discussion.");
+        }
         ProjectComment comment = projectCommentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
         comment.setLikes(comment.getLikes() + 1);
         projectCommentRepository.save(comment);
         return true;
+    }
+
+    @Transactional
+    public List<ProjectGoalResponse> updateGoals(User currentUser, Long projectId, GoalsUpdateRequest req) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!project.getOwner().getId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the project owner can manage goals.");
+        }
+        List<ProjectGoal> goals = buildGoalsFromInput(req.getGoals(), false);
+        if (goals.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A project needs at least one goal.");
+        }
+        if (project.getGoals() == null) {
+            project.setGoals(new ArrayList<>());
+        }
+        project.getGoals().clear();
+        project.getGoals().addAll(goals);
+        projectRepository.save(project);
+        return toGoalResponses(project.getGoals());
+    }
+
+    @Transactional
+    public List<ProjectGoalResponse> toggleGoal(User currentUser, Long projectId, String goalId, GoalToggleRequest req) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (!isProjectParticipant(project, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only project members can update goals.");
+        }
+        ProjectGoal match = project.getGoals().stream()
+                .filter(g -> goalId.equals(g.getId()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Goal not found"));
+        boolean next = req.getDone() != null ? req.getDone() : !match.isDone();
+        match.setDone(next);
+        projectRepository.save(project);
+        return toGoalResponses(project.getGoals());
     }
 
     // ── Admin operations
@@ -397,13 +503,7 @@ public class SkillExchangeService {
                 .map(this::toProjectMemberResponse)
                 .collect(Collectors.toList());
 
-        List<ProjectGoalResponse> goalsList = project.getGoals().stream()
-                .map(g -> ProjectGoalResponse.builder()
-                        .id(g.getId())
-                        .text(g.getText())
-                        .done(g.isDone())
-                        .build())
-                .collect(Collectors.toList());
+        List<ProjectGoalResponse> goalsList = toGoalResponses(project.getGoals());
 
         long pendingReqsCount = joinRequestRepository.countByProjectIdAndStatus(project.getId(), "pending");
 
@@ -425,6 +525,8 @@ public class SkillExchangeService {
             }
         }
 
+        boolean canDiscuss = "owner".equals(userStatus) || "member".equals(userStatus);
+
         return ProjectResponse.builder()
                 .id(project.getId())
                 .title(project.getTitle())
@@ -444,6 +546,8 @@ public class SkillExchangeService {
                 .goals(goalsList)
                 .pendingRequests((int) pendingReqsCount)
                 .userStatus(userStatus)
+                .canDiscuss(canDiscuss)
+                .discussionCount(0)
                 .createdAt(project.getCreatedAt().format(ISO_FORMATTER))
                 .build();
     }
@@ -511,18 +615,65 @@ public class SkillExchangeService {
         return resp;
     }
 
-    private CommentResponse toCommentResponse(ProjectComment c) {
+    private CommentResponse toCommentResponse(ProjectComment c, Project project) {
         List<CommentResponse> replyDtos = c.getReplies().stream()
-                .map(this::toCommentResponse)
+                .map(reply -> toCommentResponse(reply, project))
                 .collect(Collectors.toList());
 
         return CommentResponse.builder()
                 .id(c.getId())
                 .author(toUserDto(c.getAuthor()))
+                .authorRole(resolveAuthorRole(project, c.getAuthor()))
                 .text(c.getText())
                 .timestamp(c.getCreatedAt().format(ISO_FORMATTER))
                 .likes(c.getLikes())
                 .replies(replyDtos)
                 .build();
+    }
+
+    private String resolveAuthorRole(Project project, User author) {
+        if (author == null) return "Member";
+        if (project.getOwner() != null && project.getOwner().getId().equals(author.getId())) {
+            return "Owner";
+        }
+        return project.getMembers().stream()
+                .filter(m -> m.getUser() != null && m.getUser().getId().equals(author.getId()))
+                .map(ProjectMember::getRole)
+                .findFirst()
+                .orElse("Member");
+    }
+
+    private boolean isProjectParticipant(Project project, User user) {
+        if (project.getOwner().getId().equals(user.getId())) return true;
+        return projectMemberRepository.existsByProjectIdAndUserEmail(project.getId(), user.getEmail());
+    }
+
+    private List<ProjectGoal> buildGoalsFromInput(List<ProjectGoalInput> inputs, boolean requireText) {
+        List<ProjectGoal> goals = new ArrayList<>();
+        if (inputs == null) return goals;
+        int index = 1;
+        for (ProjectGoalInput input : inputs) {
+            if (input == null || input.getText() == null || input.getText().isBlank()) {
+                if (requireText) continue;
+                continue;
+            }
+            String id = (input.getId() != null && !input.getId().isBlank())
+                    ? input.getId()
+                    : "g" + index + "-" + UUID.randomUUID().toString().substring(0, 8);
+            goals.add(new ProjectGoal(id, input.getText().trim(), input.isDone()));
+            index++;
+        }
+        return goals;
+    }
+
+    private List<ProjectGoalResponse> toGoalResponses(List<ProjectGoal> goals) {
+        if (goals == null) return new ArrayList<>();
+        return goals.stream()
+                .map(g -> ProjectGoalResponse.builder()
+                        .id(g.getId())
+                        .text(g.getText())
+                        .done(g.isDone())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

@@ -15,8 +15,9 @@ const navItems = [
     { section: 'Learning & Review' },
     { to: '/admin/courses', label: 'Courses & Approvals', icon: '📚' },
     { to: '/admin/reviews', label: 'Course Reviews', icon: '⭐' },
+    { section: 'Support' },
     { to: '/admin/certificates', label: 'Certificates', icon: '🏆' },
-    { section: 'Community' },
+    { to: '/admin/messages', label: 'Messages', icon: '💬' },
     { to: '/admin/skill-exchange', label: 'Skill Exchange', icon: '🤝' },
 ]
 

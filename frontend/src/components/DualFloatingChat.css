@@ -161,7 +161,7 @@
     bottom: 120px;
     right: 24px;
     width: 420px;
-    max-width: calc(100vw - 32px);
+    max-width: calc(100% - 32px);
     height: 560px;
     max-height: calc(100vh - 140px);
     z-index: 9998;
@@ -689,13 +689,14 @@
 @media (max-width: 600px) {
     .dual-chat-panel {
         right: 12px;
-        bottom: 110px;
-        width: calc(100vw - 24px);
-        height: 480px;
+        bottom: calc(110px + env(safe-area-inset-bottom));
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
+        height: min(480px, calc(100svh - 180px));
     }
     .dual-floating-wrapper {
         right: 16px;
-        bottom: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom));
     }
     .dual-fab-btn {
         padding: 8px 16px;

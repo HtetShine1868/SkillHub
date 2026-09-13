@@ -309,9 +309,9 @@
   .careerdetail__hero {
     flex-direction: column;
     align-items: flex-start;
-    padding: 1.5rem;
+    padding: 1.15rem 1rem;
   }
   .careerdetail__card {
-    padding: 1.5rem;
+    padding: 1.15rem 1rem;
   }
 }

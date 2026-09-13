@@ -12,6 +12,7 @@ import java.util.List;
 public class CommentResponse {
     private Long id;
     private UserDto author;
+    private String authorRole;
     private String text;
     private String timestamp;
     private Integer likes;

@@ -20,4 +20,5 @@ public class ProjectCreateRequest {
     private String deadline;
     private List<String> skills;
     private List<String> tags;
+    private List<ProjectGoalInput> goals;
 }

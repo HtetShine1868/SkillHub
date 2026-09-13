@@ -72,7 +72,7 @@
     bottom: 90px;
     right: 26px;
     width: 440px;
-    max-width: calc(100vw - 32px);
+    max-width: calc(100% - 32px);
     height: 600px;
     max-height: calc(100vh - 120px);
     z-index: 9998;
@@ -665,7 +665,8 @@
     .floating-assistant-panel {
         right: 12px;
         bottom: 80px;
-        width: calc(100vw - 24px);
+        width: calc(100% - 24px);
+        max-width: calc(100% - 24px);
         height: 520px;
     }
     .floating-assistant-fab {

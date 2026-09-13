@@ -64,6 +64,8 @@ export function ChatNotificationProvider({ children }) {
     const role = user?.role
     const isStudent = role === 'ROLE_USER'
     const isInstructor = role === 'ROLE_INSTRUCTOR'
+    const isAdmin = role === 'ROLE_ADMIN'
+    const isStaff = isInstructor || isAdmin
 
     // Reset local tracking whenever the logged-in user changes (login/logout/switch)
     useEffect(() => {
@@ -88,11 +90,14 @@ export function ChatNotificationProvider({ children }) {
         if (isInstructor) {
             return path.startsWith('/instructor/dashboard')
         }
+        if (isAdmin) {
+            return path.startsWith('/admin/messages')
+        }
         return false
-    }, [isStudent, isInstructor])
+    }, [isStudent, isInstructor, isAdmin])
 
     const poll = useCallback(async () => {
-        if (!isAuthenticated || !user?.id || (!isStudent && !isInstructor)) return
+        if (!isAuthenticated || !user?.id || (!isStudent && !isStaff)) return
 
         try {
             let partners = []
@@ -107,8 +112,9 @@ export function ChatNotificationProvider({ children }) {
                     lastSentAt: c.lastSentAt,
                     lastSenderId: c.lastSenderId
                 }))
-            } else if (isInstructor) {
-                const res = await axiosClient.get('/api/chat/instructor/students').catch(() => null)
+            } else if (isStaff) {
+                const staffUrl = isAdmin ? '/api/chat/admin/contacts' : '/api/chat/instructor/students'
+                const res = await axiosClient.get(staffUrl).catch(() => null)
                 let data = res?.data || []
                 if (!data || data.length === 0) {
                     const convRes = await axiosClient.get('/api/chat/conversations').catch(() => null)
@@ -175,7 +181,7 @@ export function ChatNotificationProvider({ children }) {
                 showToast(
                     isStudent
                         ? `💬 New message from ${newestIncoming.name || 'your instructor'}: "${newestIncoming.lastMessage || ''}"`
-                        : `🔔 New message from ${newestIncoming.name || 'a student'}: "${newestIncoming.lastMessage || ''}"`
+                        : `🔔 New message from ${newestIncoming.name || 'a user'}: "${newestIncoming.lastMessage || ''}"`
                 )
             }
 
@@ -183,14 +189,14 @@ export function ChatNotificationProvider({ children }) {
         } catch {
             // Silently ignore polling errors (network hiccups, auth race, etc.)
         }
-    }, [isAuthenticated, user?.id, isStudent, isInstructor, isSuppressedRoute, showToast])
+    }, [isAuthenticated, user?.id, isStudent, isStaff, isAdmin, isSuppressedRoute, showToast])
 
     useEffect(() => {
-        if (!isAuthenticated || (!isStudent && !isInstructor)) return
+        if (!isAuthenticated || (!isStudent && !isStaff)) return
         poll()
         const interval = setInterval(poll, POLL_INTERVAL_MS)
         return () => clearInterval(interval)
-    }, [isAuthenticated, isStudent, isInstructor, poll])
+    }, [isAuthenticated, isStudent, isStaff, poll])
 
     const markThreadSeen = useCallback((partnerId, timestamp) => {
         if (!user?.id || !partnerId) return

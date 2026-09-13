@@ -25,9 +25,9 @@
 
   font: 16px/150% var(--sans);
   letter-spacing: 0.1px;
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--text);
-  background: var(--bg);
+  background: #080b14;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -87,9 +87,36 @@
 
 /* Dark mode intentionally excluded for Forum — warm light design only */
 
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #080b14;
+}
+
 body {
   margin: 0;
-  background: var(--f-bg);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #080b14;
+  position: relative;
+}
+
+body.navbar-lock {
+  overflow: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+table {
+  max-width: 100%;
 }
 
 /* Reset #root for forum pages */
@@ -103,6 +130,8 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
+  background: #080b14;
 }
 
 /* Typography resets */

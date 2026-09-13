@@ -138,3 +138,27 @@ export async function toggleCommentLike(projectId, commentId) {
   const { data } = await axiosClient.post(`${BASE}/${projectId}/comments/${commentId}/like`)
   return data
 }
+
+/**
+ * Replace the project's goal list (owner only).
+ * @param {string|number} projectId
+ * @param {{ id?: string, text: string, done: boolean }[]} goals
+ */
+export async function updateProjectGoals(projectId, goals) {
+  const { data } = await axiosClient.put(`${BASE}/${projectId}/goals`, { goals })
+  return data
+}
+
+/**
+ * Toggle a goal as done / not done (members and owner).
+ * @param {string|number} projectId
+ * @param {string} goalId
+ * @param {boolean} [done]
+ */
+export async function toggleProjectGoal(projectId, goalId, done) {
+  const { data } = await axiosClient.patch(
+    `${BASE}/${projectId}/goals/${encodeURIComponent(goalId)}`,
+    done === undefined ? {} : { done }
+  )
+  return data
+}

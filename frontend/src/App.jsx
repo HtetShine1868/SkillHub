@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { ChatNotificationProvider } from './context/ChatNotificationContext'
+import { NotificationProvider } from './context/NotificationContext'
 
 // Navigation
 import NavBar from './components/NavBar'
@@ -55,6 +56,7 @@ import AdminCertificatesPage from './pages/admin/AdminCertificatesPage'
 import AdminSkillExchangePage from './pages/admin/AdminSkillExchangePage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminReviewsPage from './pages/admin/AdminReviewsPage'
+import AdminMessagesPage from './pages/admin/AdminMessagesPage'
 
 /** Root redirect: guests → landing, users → dashboard, instructors → /instructor/dashboard, admins → /admin */
 function RootRedirect() {
@@ -69,6 +71,7 @@ function RootRedirect() {
 function App() {
   return (
     <ChatNotificationProvider>
+      <NotificationProvider>
       <NavBar />
       <Routes>
 
@@ -138,6 +141,7 @@ function App() {
           <Route path="courses" element={<AdminCoursesPage />} />
           <Route path="reviews" element={<AdminReviewsPage />} />
           <Route path="certificates" element={<AdminCertificatesPage />} />
+          <Route path="messages" element={<AdminMessagesPage />} />
           <Route path="skill-exchange" element={<AdminSkillExchangePage />} />
         </Route>
 
@@ -145,6 +149,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
+      </NotificationProvider>
     </ChatNotificationProvider>
   )
 }

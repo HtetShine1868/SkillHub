@@ -4,6 +4,7 @@ import com.example.backend.course.Course;
 import com.example.backend.course.CourseRepository;
 import com.example.backend.enrollment.Enrollment;
 import com.example.backend.enrollment.EnrollmentRepository;
+import com.example.backend.notification.service.NotificationService;
 import com.example.backend.user.entity.Role;
 import com.example.backend.user.entity.User;
 import com.example.backend.user.repository.UserRepository;
@@ -25,6 +26,7 @@ public class ChatController {
     private final UserRepository userRepo;
     private final EnrollmentRepository enrollmentRepo;
     private final CourseRepository courseRepo;
+    private final NotificationService notificationService;
 
     /** List all conversation summaries (last message per partner) */
     @GetMapping("/conversations")
@@ -176,6 +178,62 @@ public class ChatController {
         return ResponseEntity.ok(new ArrayList<>(studentMap.values()));
     }
 
+    /** All learners and instructors the admin can message, plus last-thread info. */
+    @GetMapping("/admin/contacts")
+    public ResponseEntity<?> getAdminContacts(@AuthenticationPrincipal UserDetails principal) {
+        User me = getUser(principal);
+        if (me == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+        if (me.getRole() != Role.ADMIN) {
+            return ResponseEntity.status(403).body(Map.of("error", "Admin only"));
+        }
+
+        List<ChatMessage> allMessages = chatRepo.findAllByUserId(me.getId());
+        List<Map<String, Object>> contacts = new ArrayList<>();
+
+        for (User person : userRepo.findAll()) {
+            if (person == null || person.getId().equals(me.getId())) continue;
+            if (person.getRole() == Role.ADMIN) continue;
+
+            Map<String, Object> row = new HashMap<>();
+            row.put("id", person.getId());
+            row.put("name", person.getName());
+            row.put("email", person.getEmail());
+            row.put("avatar", person.getProfileImage());
+            row.put("role", person.getRole() != null ? person.getRole().name() : "USER");
+            row.put("courses", new ArrayList<Map<String, Object>>());
+
+            allMessages.stream()
+                    .filter(m -> m.getSender() != null && m.getReceiver() != null)
+                    .filter(m -> m.getSender().getId().equals(person.getId())
+                            || m.getReceiver().getId().equals(person.getId()))
+                    .max(Comparator.comparing(ChatMessage::getSentAt))
+                    .ifPresent(m -> {
+                        row.put("lastMessage", m.getContent());
+                        row.put("lastSentAt", m.getSentAt());
+                        row.put("lastSenderId", m.getSender() != null ? m.getSender().getId() : null);
+                        row.put("mode", m.getMode());
+                        row.put("courseId", m.getCourseId());
+                    });
+
+            contacts.add(row);
+        }
+
+        contacts.sort((a, b) -> {
+            Object aTime = a.get("lastSentAt");
+            Object bTime = b.get("lastSentAt");
+            if (aTime == null && bTime == null) {
+                return String.valueOf(a.get("name")).compareToIgnoreCase(String.valueOf(b.get("name")));
+            }
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return String.valueOf(bTime).compareTo(String.valueOf(aTime));
+        });
+
+        return ResponseEntity.ok(contacts);
+    }
+
     /** Load thread messages between current user and a specific partner */
     @GetMapping("/messages")
     public ResponseEntity<List<ChatMessageDto>> getMessages(
@@ -242,6 +300,30 @@ public class ChatController {
                 .build();
 
         ChatMessage saved = chatRepo.save(msg);
+
+        boolean instructorReply = me.getRole() == Role.INSTRUCTOR || me.getRole() == Role.ADMIN;
+        String preview = saved.getContent() != null && saved.getContent().length() > 80
+                ? saved.getContent().substring(0, 80) + "…"
+                : saved.getContent();
+        String link;
+        if (instructorReply) {
+            link = "/chat";
+        } else if (receiver.getRole() == Role.ADMIN) {
+            link = "/admin/messages";
+        } else {
+            link = "/instructor/dashboard?tab=messages";
+        }
+        notificationService.notify(
+                receiver,
+                instructorReply ? NotificationService.INSTRUCTOR_REPLY : NotificationService.CHAT_MESSAGE,
+                instructorReply
+                        ? (me.getRole() == Role.ADMIN ? "Support replied" : "Instructor replied")
+                        : "New message",
+                me.getName() + ": " + (preview != null ? preview : ""),
+                link,
+                null
+        );
+
         return ResponseEntity.ok(ChatMessageDto.from(saved));
     }
 
@@ -343,6 +425,25 @@ public class ChatController {
                 cmap.put("title", c.getTitle());
                 return cmap;
             }).collect(Collectors.toList()));
+            result.add(m);
+        }
+
+        // Always offer platform admins as support contacts
+        List<User> admins = userRepo.findByRoleIn(List.of(Role.ADMIN)).stream()
+                .filter(u -> !u.getId().equals(me.getId()))
+                .collect(Collectors.toList());
+        Set<Long> alreadyListed = result.stream()
+                .map(m -> (Long) m.get("id"))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        for (User admin : admins) {
+            if (alreadyListed.contains(admin.getId())) continue;
+            Map<String, Object> m = new HashMap<>();
+            m.put("id", admin.getId());
+            m.put("name", admin.getName());
+            m.put("avatar", admin.getProfileImage());
+            m.put("role", "ADMIN");
+            m.put("courses", Collections.emptyList());
             result.add(m);
         }
 

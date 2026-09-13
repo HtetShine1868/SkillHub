@@ -114,8 +114,8 @@
 .course-editor__select,
 .course-editor__textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #121826;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 10px;
   padding: 12px 16px;
   color: #f8fafc;
@@ -124,12 +124,31 @@
   transition: all 0.2s;
 }
 
+.course-editor__select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  color-scheme: dark;
+  cursor: pointer;
+  padding-right: 42px;
+  background-color: #121826;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b9bb4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.course-editor__select option,
+.course-editor__select optgroup {
+  background-color: #121826;
+  color: #f8fafc;
+}
+
 .course-editor__input:focus,
 .course-editor__select:focus,
 .course-editor__textarea:focus {
   outline: none;
   border-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.05);
+  background-color: #152033;
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
 }
 
@@ -251,4 +270,34 @@
 .course-editor__btn-submit:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+}
+
+@media (max-width: 768px) {
+  .course-editor {
+    padding: 16px 12px 140px;
+  }
+
+  .course-editor__top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .course-editor__title {
+    font-size: 1.35rem;
+  }
+
+  .course-editor__floating-bar {
+    padding: 12px;
+  }
+
+  .course-editor__floating-inner {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .course-editor__btn-draft,
+  .course-editor__btn-submit {
+    width: 100%;
+  }
 }

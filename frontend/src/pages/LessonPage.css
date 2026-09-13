@@ -744,3 +744,9 @@
   .lesson__sidebar { position: static; height: auto; }
   .lesson__main { padding: 1.5rem; }
 }
+
+@media (max-width: 600px) {
+  .lesson__main { padding: 1rem 0.85rem 2rem; }
+  .lesson__sidebar { padding: 1rem; }
+  .lesson__help { height: 420px; padding: 0.85rem; }
+}

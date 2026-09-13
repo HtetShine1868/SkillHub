@@ -11,6 +11,9 @@
   display: flex;
   flex-direction: column;
   color-scheme: dark;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .forum-container {
@@ -18,6 +21,12 @@
   margin: 0 auto;
   padding: 0 24px;
   width: 100%;
+}
+
+@media (max-width: 640px) {
+  .forum-container {
+    padding: 0 12px;
+  }
 }
 
 /* -------------------------
@@ -1379,6 +1388,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .details-section__title svg {
@@ -1515,6 +1525,8 @@
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  padding: 0;
+  font: inherit;
 }
 
 .goal-check--done {
@@ -1537,6 +1549,111 @@
   color: var(--f-text-dark);
   text-decoration: line-through;
   text-decoration-color: var(--f-green);
+}
+
+.goal-item--interactive .goal-check {
+  cursor: pointer;
+}
+
+.goal-item--interactive .goal-check:disabled {
+  cursor: default;
+}
+
+.goal-remove {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--f-text-light);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.goal-remove:hover:not(:disabled) {
+  color: var(--f-red, #ef4444);
+  background: var(--f-surface-alt);
+}
+
+.goal-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.goal-add-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.goals-progress-label {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--f-text-muted);
+}
+
+.create-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.create-goal-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.create-goal-row__index {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--f-surface-alt);
+  color: var(--f-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.create-goal-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--f-text-muted);
+  white-space: nowrap;
+}
+
+.create-goal-remove {
+  background: none;
+  border: none;
+  color: var(--f-text-light);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.create-goal-remove:hover:not(:disabled) {
+  color: var(--f-red, #ef4444);
+  background: var(--f-surface-alt);
+}
+
+.create-goal-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .create-goal-row {
+    grid-template-columns: 28px 1fr auto;
+  }
+
+  .create-goal-done {
+    grid-column: 2;
+  }
 }
 
 /* Discussion */
@@ -1648,6 +1765,186 @@
   outline: none;
   border-color: var(--f-border-focus);
   box-shadow: 0 0 0 3px var(--f-primary-glow);
+}
+
+.discussion-board {
+  background: linear-gradient(180deg, rgba(246, 211, 101, 0.06) 0%, var(--f-surface) 80px);
+}
+
+.discussion-locked {
+  text-align: center;
+  padding: 36px 20px;
+  border: 1px dashed var(--f-border);
+  border-radius: var(--f-radius-md);
+  background: var(--f-bg);
+}
+
+.discussion-locked__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--f-surface-alt);
+  color: var(--f-text-muted);
+}
+
+.discussion-locked h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.discussion-locked p {
+  margin: 0 0 16px;
+  color: var(--f-text-muted);
+  font-size: 14px;
+}
+
+.discussion-locked__status {
+  color: var(--f-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.discussion-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  color: var(--f-text-muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+.discussion-thread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.discussion-thread {
+  padding: 14px;
+  border: 1px solid var(--f-border);
+  border-radius: 14px;
+  background: var(--f-bg);
+}
+
+.discussion-message {
+  display: flex;
+  gap: 12px;
+}
+
+.discussion-message--reply {
+  margin-top: 12px;
+}
+
+.discussion-message__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.discussion-message__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.discussion-message__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--f-text-dark);
+}
+
+.discussion-message__time {
+  font-size: 12px;
+  color: var(--f-text-light);
+}
+
+.discussion-message__text {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--f-text-dark);
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.discussion-role {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--f-blue-bg, #dbeafe);
+  color: var(--f-blue, #2563eb);
+}
+
+.discussion-role.owner {
+  background: var(--f-primary-light, #fef3c7);
+  color: var(--f-primary-deep, #92400e);
+}
+
+.discussion-thread__replies {
+  margin: 12px 0 0 28px;
+  padding-left: 14px;
+  border-left: 2px solid var(--f-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.discussion-composer {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--f-border);
+  border-radius: 14px;
+  background: var(--f-surface);
+}
+
+.discussion-composer--reply {
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 10px;
+}
+
+.discussion-composer__fields {
+  flex: 1;
+  min-width: 0;
+}
+
+.discussion-composer textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: 1px solid var(--f-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--f-bg);
+  color: var(--f-text-dark);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.discussion-composer textarea:focus {
+  outline: none;
+  border-color: var(--f-border-focus);
+  box-shadow: 0 0 0 3px var(--f-primary-glow);
+}
+
+.discussion-composer__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--f-text-light);
 }
 
 /* Capacity bar */

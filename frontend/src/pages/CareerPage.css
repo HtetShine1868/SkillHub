@@ -5,12 +5,15 @@
 .careerpage {
   min-height: 100vh;
   background: #07080f;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ── Tab bar ── */
 .careerpage__tabbar {
   position: sticky;
-  top: 64px; /* offset navbar */
+  top: calc(64px + env(safe-area-inset-top));
   z-index: 50;
   background: rgba(10, 12, 20, 0.96);
   backdrop-filter: blur(16px);

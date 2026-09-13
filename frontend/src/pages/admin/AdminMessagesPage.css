@@ -1,0 +1,11 @@
+.admin-messages .inst-chat {
+  height: calc(100vh - 220px);
+  min-height: 480px;
+}
+
+@media (max-width: 900px) {
+  .admin-messages .inst-chat {
+    height: calc(100svh - 200px);
+    min-height: 420px;
+  }
+}

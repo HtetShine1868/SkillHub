@@ -160,5 +160,6 @@
 .assess__results-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
 
 @media (max-width: 540px) {
-  .assess__card { padding: 2rem 1.5rem; }
+  .assess__card { padding: 1.25rem 1rem; }
+  .assess__skill-row-name { min-width: 0; text-align: left; }
 }

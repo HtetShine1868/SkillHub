@@ -8,6 +8,8 @@
   color: var(--f-text-dark, #f0f2ff);
   font-family: var(--sans, 'Inter', sans-serif);
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ---- Hero ---- */
@@ -111,6 +113,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .landing__orb {
@@ -203,7 +207,7 @@
 
 .landing__feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 1.5rem;
 }
 
@@ -275,4 +279,36 @@
   .landing__hero-visual { min-height: 280px; }
   .landing__floating-cards { align-items: center; }
   .landing__fcard:nth-child(n) { transform: translateX(0) !important; }
+}
+
+@media (max-width: 540px) {
+  .landing__hero,
+  .landing__features,
+  .landing__bottom-cta {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .landing__cta-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .landing__btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .landing__feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing__hero-visual {
+    min-height: 220px;
+    width: 100%;
+  }
+
+  .landing__fcard {
+    width: 100%;
+  }
 }

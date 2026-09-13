@@ -374,6 +374,9 @@
     grid-template-columns: 1fr;
   }
   .discovery__card {
-    padding: 2rem 1.5rem;
+    padding: 1.25rem 1rem;
+  }
+  .discovery__results-actions {
+    flex-direction: column;
   }
 }

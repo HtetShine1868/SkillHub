@@ -200,6 +200,9 @@
 }
 
 @media (max-width: 640px) {
+  .onboarding {
+    padding: 1.5rem 1rem;
+  }
   .onboarding__cards {
     grid-template-columns: 1fr;
   }

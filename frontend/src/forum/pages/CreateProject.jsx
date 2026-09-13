@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft, Layers, FileText, Tag, Users,
-  CheckCircle
+  CheckCircle, ClipboardList, Plus, Trash2
 } from 'lucide-react'
 import ForumNavbar from '../components/ForumNavbar'
 import SkillChip from '../components/SkillChip'
@@ -42,6 +42,7 @@ export default function CreateProject() {
   const navigate = useNavigate()
   const [form, setForm] = useState(INITIAL_FORM)
   const [skills, setSkills] = useState([])
+  const [goals, setGoals] = useState([{ id: 'new-1', text: '', done: false }])
   const [catalogSkills, setCatalogSkills] = useState(FALLBACK_SKILLS)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -96,7 +97,22 @@ export default function CreateProject() {
     if (!form.level) errs.level = 'Please select an experience level'
     if (!form.duration) errs.duration = 'Please select a duration'
     if (!form.commitment) errs.commitment = 'Please select a commitment level'
+    if (goals.filter((g) => g.text.trim()).length === 0) errs.goals = 'Add at least one project goal'
     return errs
+  }
+
+  function addGoal() {
+    setGoals((prev) => [...prev, { id: `new-${Date.now()}`, text: '', done: false }])
+    if (errors.goals) setErrors((prev) => { const e = { ...prev }; delete e.goals; return e })
+  }
+
+  function updateGoal(id, field, value) {
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, [field]: value } : g)))
+    if (errors.goals) setErrors((prev) => { const e = { ...prev }; delete e.goals; return e })
+  }
+
+  function removeGoal(id) {
+    setGoals((prev) => (prev.length <= 1 ? prev : prev.filter((g) => g.id !== id)))
   }
 
   async function handlePublish(e) {
@@ -113,11 +129,16 @@ export default function CreateProject() {
     setLoading(true)
     try {
       const tags = form.tags.split(',').map((t) => t.trim()).filter(Boolean)
-      const project = await createProject({ ...form, skills, tags })
+      const cleanedGoals = goals
+        .map((g) => ({ text: g.text.trim(), done: Boolean(g.done) }))
+        .filter((g) => g.text)
+      const project = await createProject({ ...form, skills, tags, goals: cleanedGoals })
       setSuccess(true)
       setTimeout(() => navigate(`/skill-exchange/project/${project.id}`), 1200)
-    } catch {
-      setErrors({ submit: 'Failed to create project. Please try again.' })
+    } catch (err) {
+      setErrors({
+        submit: err.response?.data?.detail || err.response?.data?.message || 'Failed to create project. Please try again.',
+      })
     } finally {
       setLoading(false)
     }
@@ -372,6 +393,60 @@ export default function CreateProject() {
             />
             <p className="form-hint">Separate tags with commas</p>
           </div>
+        </motion.div>
+
+        {/* Goals */}
+        <motion.div
+          className="create-form-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.18 }}
+        >
+          <div className="create-form-card__title">
+            <ClipboardList size={16} />
+            Project Goals
+          </div>
+          <p className="form-hint" style={{ marginTop: 0, marginBottom: 14 }}>
+            Define what the team will work toward. You can mark a goal as already finished while creating the project.
+          </p>
+          <div className={`create-goals ${errors.goals ? 'error' : ''}`}>
+            {goals.map((goal, index) => (
+              <div key={goal.id} className="create-goal-row">
+                <span className="create-goal-row__index">{index + 1}</span>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Design the landing page"
+                  value={goal.text}
+                  onChange={(e) => updateGoal(goal.id, 'text', e.target.value)}
+                  maxLength={160}
+                  aria-label={`Goal ${index + 1}`}
+                />
+                <label className="create-goal-done">
+                  <input
+                    type="checkbox"
+                    checked={goal.done}
+                    onChange={(e) => updateGoal(goal.id, 'done', e.target.checked)}
+                  />
+                  Finished
+                </label>
+                <button
+                  type="button"
+                  className="create-goal-remove"
+                  onClick={() => removeGoal(goal.id)}
+                  disabled={goals.length <= 1}
+                  aria-label={`Remove goal ${index + 1}`}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+          {errors.goals && <div className="form-error" role="alert">{errors.goals}</div>}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={addGoal} style={{ marginTop: 12 }}>
+            <Plus size={14} />
+            Add goal
+          </button>
         </motion.div>
 
         {/* Team Size */}

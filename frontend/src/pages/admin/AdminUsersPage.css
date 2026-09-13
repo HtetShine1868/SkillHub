@@ -67,7 +67,8 @@
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
@@ -186,4 +187,20 @@
   font-weight: 600;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   z-index: 1000;
+}
+
+@media (max-width: 640px) {
+  .admin-users {
+    padding: 12px 0;
+  }
+
+  .admin-search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .admin-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
 }

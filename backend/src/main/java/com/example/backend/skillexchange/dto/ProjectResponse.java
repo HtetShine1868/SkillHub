@@ -29,5 +29,7 @@ public class ProjectResponse {
     private List<CommentResponse> discussion;
     private Integer pendingRequests;
     private String userStatus;
+    private boolean canDiscuss;
+    private Integer discussionCount;
     private String createdAt;
 }
