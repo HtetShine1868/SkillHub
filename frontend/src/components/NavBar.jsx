@@ -1,13 +1,21 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useChatNotifications } from '../context/ChatNotificationContext'
 import NotificationBell from './NotificationBell'
 import './NavBar.css'
 
+function isDesktopNav() {
+    return typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches
+}
+
 function NavDropdown({ title, items }) {
     const [open, setOpen] = useState(false)
+    const [menuPos, setMenuPos] = useState(null)
+    const [flyout, setFlyout] = useState(() => isDesktopNav())
     const dropdownRef = useRef(null)
+    const menuRef = useRef(null)
     const location = useLocation()
 
     const isActive = items.some(item => {
@@ -21,9 +29,9 @@ function NavDropdown({ title, items }) {
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setOpen(false)
-            }
+            const inTrigger = dropdownRef.current?.contains(e.target)
+            const inMenu = menuRef.current?.contains(e.target)
+            if (!inTrigger && !inMenu) setOpen(false)
         }
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -32,6 +40,59 @@ function NavDropdown({ title, items }) {
     useEffect(() => {
         setOpen(false)
     }, [location.pathname])
+
+    useEffect(() => {
+        if (!open) return
+        const onKey = (e) => {
+            if (e.key === 'Escape') setOpen(false)
+        }
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+    }, [open])
+
+    useEffect(() => {
+        if (!open || !dropdownRef.current) {
+            setMenuPos(null)
+            return
+        }
+
+        const place = () => {
+            const desktop = isDesktopNav()
+            setFlyout(desktop)
+            if (!desktop) {
+                setMenuPos(null)
+                return
+            }
+            const btn = dropdownRef.current.querySelector('.navbar__dropdown-btn')
+            const rect = (btn || dropdownRef.current).getBoundingClientRect()
+            setMenuPos({ top: rect.bottom + 8, left: rect.left })
+        }
+
+        place()
+        window.addEventListener('resize', place)
+        window.addEventListener('scroll', place, true)
+        return () => {
+            window.removeEventListener('resize', place)
+            window.removeEventListener('scroll', place, true)
+        }
+    }, [open])
+
+    const menu = open && (
+        <ul
+            ref={menuRef}
+            className={`navbar__dropdown-menu${flyout ? ' navbar__dropdown-menu--flyout' : ''}`}
+            style={menuPos ? { top: menuPos.top, left: menuPos.left } : undefined}
+        >
+            {items.map(item => (
+                <li key={item.to}>
+                    <NavLink to={item.to} end={item.end}>
+                        {item.icon && <span className="navbar__dropdown-icon">{item.icon}</span>}
+                        <span>{item.label}</span>
+                    </NavLink>
+                </li>
+            ))}
+        </ul>
+    )
 
     return (
         <li className="navbar__dropdown" ref={dropdownRef}>
@@ -44,23 +105,14 @@ function NavDropdown({ title, items }) {
                 <span>{title}</span>
                 <span className={`navbar__arrow ${open ? 'open' : ''}`}>▾</span>
             </button>
-            {open && (
-                <ul className="navbar__dropdown-menu">
-                    {items.map(item => (
-                        <li key={item.to}>
-                            <NavLink to={item.to} end={item.end}>
-                                {item.icon && <span className="navbar__dropdown-icon">{item.icon}</span>}
-                                <span>{item.label}</span>
-                            </NavLink>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {flyout && menu && typeof document !== 'undefined'
+                ? createPortal(menu, document.body)
+                : menu}
         </li>
     )
 }
 
-function NavShell({ logo, links, userSection, compact = false }) {
+function NavShell({ logo, links, mobileLinks, userSection, toolbar, compact = false }) {
     const [menuOpen, setMenuOpen] = useState(false)
     const location = useLocation()
 
@@ -73,20 +125,17 @@ function NavShell({ logo, links, userSection, compact = false }) {
         return () => document.body.classList.remove('navbar-lock')
     }, [menuOpen])
 
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === 'Escape') setMenuOpen(false)
+        }
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+    }, [])
+
     return (
-        <nav className={`navbar${menuOpen ? ' navbar--menu-open' : ''}${compact ? ' navbar--compact' : ''}`}>
+        <nav className={`navbar${menuOpen ? ' navbar--menu-open' : ''}${compact ? ' navbar--compact' : ''}${mobileLinks ? ' navbar--split-links' : ''}`}>
             {logo}
-            <button
-                type="button"
-                className="navbar__toggle"
-                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={menuOpen}
-                onClick={() => setMenuOpen(open => !open)}
-            >
-                <span />
-                <span />
-                <span />
-            </button>
             {menuOpen && (
                 <button
                     type="button"
@@ -96,9 +145,32 @@ function NavShell({ logo, links, userSection, compact = false }) {
                 />
             )}
             <div className="navbar__drawer">
-                {links}
+                {mobileLinks ? (
+                    <>
+                        <div className="navbar__links-wrap navbar__links-wrap--desktop">{links}</div>
+                        <div className="navbar__links-wrap navbar__links-wrap--mobile">{mobileLinks}</div>
+                    </>
+                ) : (
+                    <div className="navbar__links-wrap">{links}</div>
+                )}
                 {userSection}
             </div>
+            {!compact && (
+                <div className="navbar__end">
+                    {toolbar}
+                    <button
+                        type="button"
+                        className="navbar__toggle"
+                        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={menuOpen}
+                        onClick={() => setMenuOpen(open => !open)}
+                    >
+                        <span />
+                        <span />
+                        <span />
+                    </button>
+                </div>
+            )}
         </nav>
     )
 }
@@ -132,47 +204,61 @@ export default function NavBar() {
     }
 
     if (isAdmin) {
+        const adminMobileLinks = (
+            <ul className="navbar__links">
+                <li><NavLink to="/admin" end>Dashboard</NavLink></li>
+                <li><NavLink to="/admin/users">Users & Instructors</NavLink></li>
+                <NavDropdown
+                    title="Career & Skill"
+                    items={[
+                        { to: '/admin/careers', label: 'Careers', icon: '🎯' },
+                        { to: '/admin/skills', label: 'Skills', icon: '⚡' },
+                        { to: '/admin/career-skills', label: 'Career Skills', icon: '🔗' },
+                    ]}
+                />
+                <NavDropdown
+                    title="Questions"
+                    items={[
+                        { to: '/admin/discovery', label: 'Discovery Qs', icon: '🔍' },
+                        { to: '/admin/assessment', label: 'Assessment Qs', icon: '📝' },
+                    ]}
+                />
+                <NavDropdown
+                    title="Courses"
+                    items={[
+                        { to: '/admin/courses', label: 'Courses & Lessons', icon: '📚' },
+                        { to: '/admin/reviews', label: 'Course Reviews', icon: '⭐' },
+                    ]}
+                />
+                <li><NavLink to="/admin/certificates">Certificates</NavLink></li>
+                <li className="navbar__msg-link">
+                    <NavLink to="/admin/messages">
+                        Messages
+                        {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
+                    </NavLink>
+                </li>
+                <li><NavLink to="/admin/skill-exchange">Skill Exchange</NavLink></li>
+            </ul>
+        )
+
         return (
             <NavShell
                 logo={<Link to="/admin" className="navbar__logo">SkillHub <span className="navbar__role-badge">Admin</span></Link>}
                 links={
                     <ul className="navbar__links">
                         <li><NavLink to="/admin" end>Dashboard</NavLink></li>
-                        <NavDropdown
-                            title="Career & Skill"
-                            items={[
-                                { to: '/admin/careers', label: 'Careers', icon: '🎯' },
-                                { to: '/admin/skills', label: 'Skills', icon: '⚡' },
-                                { to: '/admin/career-skills', label: 'Career Skills', icon: '🔗' },
-                            ]}
-                        />
-                        <NavDropdown
-                            title="Career & Assessment Qs"
-                            items={[
-                                { to: '/admin/discovery', label: 'Discovery Qs', icon: '🔍' },
-                                { to: '/admin/assessment', label: 'Assessment Qs', icon: '📝' },
-                            ]}
-                        />
-                        <NavDropdown
-                            title="Courses"
-                            items={[
-                                { to: '/admin/courses', label: 'Courses & Lessons', icon: '📚' },
-                                { to: '/admin/reviews', label: 'Course Reviews', icon: '⭐' },
-                            ]}
-                        />
-                        <li><NavLink to="/admin/certificates">Certificates</NavLink></li>
                         <li className="navbar__msg-link">
                             <NavLink to="/admin/messages">
                                 Messages
                                 {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
                             </NavLink>
                         </li>
-                        <li><NavLink to="/admin/skill-exchange">Skill Exchange</NavLink></li>
                     </ul>
                 }
+                mobileLinks={adminMobileLinks}
+                toolbar={<NotificationBell />}
                 userSection={
                     <div className="navbar__user">
-                        <NotificationBell />
                         <div className="navbar__avatar">{user?.name?.charAt(0)?.toUpperCase()}</div>
                         <span className="navbar__username">{user?.name}</span>
                         <button className="navbar__logout" onClick={handleLogout}>Sign Out</button>
@@ -200,9 +286,9 @@ export default function NavBar() {
                         </li>
                     </ul>
                 }
+                toolbar={<NotificationBell />}
                 userSection={
                     <div className="navbar__user">
-                        <NotificationBell />
                         <Link to="/profile" className="navbar__profile-link" title="View Profile">
                             <div className="navbar__avatar navbar__avatar--instructor">{user?.name?.charAt(0)?.toUpperCase()}</div>
                             <span className="navbar__username">{user?.name}</span>
@@ -240,9 +326,9 @@ export default function NavBar() {
                     </li>
                 </ul>
             }
+            toolbar={<NotificationBell />}
             userSection={
                 <div className="navbar__user">
-                    <NotificationBell />
                     <Link to="/profile" className="navbar__profile-link" title="View Profile">
                         <div className="navbar__avatar">{user?.name?.charAt(0)?.toUpperCase()}</div>
                         <span className="navbar__username">{user?.name}</span>

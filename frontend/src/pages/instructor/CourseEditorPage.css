@@ -273,6 +273,10 @@
 }
 
 @media (max-width: 768px) {
+  .course-editor__form-grid {
+    grid-template-columns: 1fr;
+  }
+
   .course-editor {
     padding: 16px 12px 140px;
   }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../context/NotificationContext'
 import './NotificationBell.css'
@@ -29,18 +30,52 @@ function typeIcon(type) {
 export default function NotificationBell() {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications()
   const [open, setOpen] = useState(false)
+  const [panelPos, setPanelPos] = useState({ top: 72, right: 16 })
   const wrapRef = useRef(null)
+  const panelRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
     function onClick(e) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setOpen(false)
-      }
+      const inBell = wrapRef.current?.contains(e.target)
+      const inPanel = panelRef.current?.contains(e.target)
+      if (!inBell && !inPanel) setOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setOpen(false)
     }
     document.addEventListener('mousedown', onClick)
-    return () => document.removeEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!open || !wrapRef.current) return
+
+    const place = () => {
+      const rect = wrapRef.current.getBoundingClientRect()
+      const width = Math.min(380, window.innerWidth - 24)
+      let right = window.innerWidth - rect.right
+      if (right + width > window.innerWidth - 12) {
+        right = 12
+      }
+      setPanelPos({
+        top: Math.min(rect.bottom + 10, window.innerHeight - 120),
+        right: Math.max(12, right),
+      })
+    }
+
+    place()
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => {
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
+  }, [open])
 
   async function handleItemClick(item) {
     if (!item.read) await markRead(item.id)
@@ -66,8 +101,14 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && (
-        <div className="notif-bell__panel" role="dialog" aria-label="Notifications">
+      {open && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={panelRef}
+          className="notif-bell__panel"
+          role="dialog"
+          aria-label="Notifications"
+          style={{ top: panelPos.top, right: panelPos.right }}
+        >
           <div className="notif-bell__header">
             <strong>Notifications</strong>
             {unreadCount > 0 && (
@@ -98,7 +139,8 @@ export default function NotificationBell() {
               ))}
             </ul>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
