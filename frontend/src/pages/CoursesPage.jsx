@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getAllCourses } from '../services/courseService'
 import './CoursesPage.css'
@@ -8,6 +8,22 @@ const DIFF_COLOR = {
   INTERMEDIATE: { bg: 'rgba(245,158,11,0.12)', color: '#fcd34d' },
   ADVANCED:     { bg: 'rgba(239,68,68,0.12)',  color: '#fca5a5' },
 }
+
+const LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']
+
+const canonicalLevel = (value) => {
+  const text = String(value ?? '').trim().toLowerCase()
+  if (!text) return ''
+  if (/(beginner|novice|easy|foundational|entry)/.test(text) || text === '1') return 'BEGINNER'
+  if (/(intermediate|medium)/.test(text) || text === '2' || text === '3') return 'INTERMEDIATE'
+  if (/(advanced|expert|hard)/.test(text) || text === '4' || text === '5') return 'ADVANCED'
+  return text.replace(/[^a-z0-9]/g, '').toUpperCase()
+}
+
+const normalizeCourses = (list) => (Array.isArray(list) ? list : []).map((course) => ({
+  ...course,
+  difficulty: canonicalLevel(course?.difficulty ?? course?.level ?? course?.difficultyLevel) || course?.difficulty || '',
+}))
 
 const MOCK_COURSES = [
   { id:1,  title:'Java & Spring Boot Core',            category:'Engineering', difficulty:'INTERMEDIATE', durationHours:12, rating:4.8, enrollmentCount:342,  description:'Master enterprise Java 17, Spring Boot 3 microservices, REST APIs, and JPA.' },
@@ -26,15 +42,12 @@ const ICON_MAP = {
   Backend:'🔧', Engineering:'🔧', Frontend:'🎨', Database:'🗄️', DevOps:'⚙️', Data:'📊', AI:'🤖', Cloud:'☁️', Architecture:'🏗️'
 }
 
-const difficultyKey = (value) => (value || '').toUpperCase().trim()
-
 const CoursesPage = () => {
   const navigate  = useNavigate()
   const [searchParams] = useSearchParams()
   const skillFilter = (searchParams.get('skill') || '').trim()
   const learnerLevel = searchParams.get('learnerLevel')
-  const [courses, setCourses]   = useState(skillFilter ? [] : MOCK_COURSES)
-  const [filtered, setFiltered] = useState(skillFilter ? [] : MOCK_COURSES)
+  const [courses, setCourses]   = useState(skillFilter ? [] : normalizeCourses(MOCK_COURSES))
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('All')
   const [diff, setDiff]         = useState('All')
@@ -48,11 +61,9 @@ const CoursesPage = () => {
     getAllCourses(params)
       .then(data => {
         if (data?.length) {
-          setCourses(data)
-          setFiltered(data)
+          setCourses(normalizeCourses(data))
         } else if (skillFilter) {
           setCourses([])
-          setFiltered([])
         }
       })
       .catch(() => {
@@ -61,25 +72,32 @@ const CoursesPage = () => {
             c.title.toLowerCase().includes(skillFilter.toLowerCase())
             || c.description?.toLowerCase().includes(skillFilter.toLowerCase())
           )
-          setCourses(fallback)
-          setFiltered(fallback)
+          setCourses(normalizeCourses(fallback))
         }
       })
       .finally(() => setLoading(false))
   }, [skillFilter, learnerLevel])
 
-  useEffect(() => {
-    let list = [...courses]
-    if (category !== 'All') list = list.filter(c => c.category === category)
-    if (diff !== 'All')     list = list.filter(c => difficultyKey(c.difficulty) === diff)
-    if (search.trim())      list = list.filter(c => c.title.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()))
-    const recommended = list.filter(c => c.recommended)
-    const rest = list.filter(c => !c.recommended)
-    setFiltered([...recommended, ...rest])
+  const filtered = useMemo(() => {
+    let list = courses
+    if (category !== 'All') {
+      list = list.filter(c => String(c.category || '').toLowerCase() === String(category).toLowerCase())
+    }
+    if (diff !== 'All') {
+      list = list.filter(c => canonicalLevel(c.difficulty ?? c.level ?? c.difficultyLevel) === diff)
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(c =>
+        String(c.title || '').toLowerCase().includes(q)
+        || String(c.description || '').toLowerCase().includes(q)
+      )
+    }
+    return [...list.filter(c => c.recommended), ...list.filter(c => !c.recommended)]
   }, [category, diff, search, courses])
 
   const categories = ['All', ...Array.from(new Set(courses.map(c => c.category).filter(Boolean)))]
-  const diffs = ['All', 'BEGINNER', 'INTERMEDIATE', 'ADVANCED']
+  const diffs = ['All', ...LEVELS]
   const recommendedCourse = filtered.find(c => c.recommended)
 
   return (
@@ -143,7 +161,8 @@ const CoursesPage = () => {
         ) : (
           <div className="courses__grid">
             {filtered.map(course => {
-              const dc = DIFF_COLOR[difficultyKey(course.difficulty)] || DIFF_COLOR.INTERMEDIATE
+              const level = canonicalLevel(course.difficulty) || 'INTERMEDIATE'
+              const dc = DIFF_COLOR[level] || DIFF_COLOR.INTERMEDIATE
               const isRecommended = Boolean(course.recommended)
               return (
                 <button
@@ -159,7 +178,7 @@ const CoursesPage = () => {
                         <span className="courses__card-recommended">Recommended for you</span>
                       )}
                       <span className="courses__card-diff" style={{ background: dc.bg, color: dc.color }}>
-                        {course.difficulty?.charAt(0) + course.difficulty?.slice(1).toLowerCase()}
+                        {level.charAt(0) + level.slice(1).toLowerCase()}
                       </span>
                     </div>
                   </div>
