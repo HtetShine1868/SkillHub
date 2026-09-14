@@ -17,4 +17,6 @@ public interface RoadmapItemRepository extends JpaRepository<RoadmapItem, Long> 
     List<RoadmapItem> findByUserIdAndCareerIdOrderByOrderIndexAsc(Long userId, Long careerId);
 
     void deleteByUserIdAndCareerId(Long userId, Long careerId);
+
+    void deleteByCourseId(Long courseId);
 }

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1080" viewBox="0 0 1680 1080">
+  <rect width="1680" height="1080" fill="#ffffff"/>
+  <text x="840" y="42" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="26" font-weight="bold" fill="#1a202c">SkillHub Use Case Diagram</text>
+
+  <!-- System boundary -->
+  <rect x="250" y="70" width="1180" height="960" fill="#ffffff" stroke="#1a365d" stroke-width="2.2" rx="2"/>
+  <text x="840" y="98" text-anchor="middle" font-family="Georgia, Times New Roman, serif" font-size="18" font-weight="bold" fill="#1a365d">SkillHub</text>
+
+  <!-- Packages -->
+  <rect x="280" y="118" width="540" height="118" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="300" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Authentication</text>
+
+  <rect x="280" y="252" width="540" height="268" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="300" y="272" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Career Guidance</text>
+
+  <rect x="280" y="536" width="540" height="348" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="300" y="556" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Learning</text>
+
+  <rect x="280" y="900" width="540" height="110" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="300" y="920" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Community</text>
+
+  <rect x="860" y="118" width="540" height="348" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="880" y="138" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Course Authoring</text>
+
+  <rect x="860" y="482" width="540" height="528" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" stroke-dasharray="5 4" rx="6"/>
+  <text x="880" y="502" font-family="Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" fill="#475569">Platform Administration</text>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Use cases: left -->
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="12.5" fill="#1a202c" text-anchor="middle">
+    <!-- Authentication -->
+    <ellipse cx="420" cy="186" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="190">Register / Login</text>
+
+    <ellipse cx="680" cy="186" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="190">Manage Profile</text>
+
+    <!-- Career -->
+    <ellipse cx="420" cy="320" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="316">Discover / Select</text>
+    <text x="420" y="332">Career</text>
+
+    <ellipse cx="680" cy="320" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="316">Take Skill</text>
+    <text x="680" y="332">Assessment</text>
+
+    <ellipse cx="550" cy="430" rx="138" ry="36" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="550" y="426">View Personalized</text>
+    <text x="550" y="442">Roadmap</text>
+
+    <!-- Learning -->
+    <ellipse cx="420" cy="610" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="614">Enroll in Course</text>
+
+    <ellipse cx="680" cy="610" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="614">Study Lessons</text>
+
+    <ellipse cx="420" cy="700" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="696">Use AI Learning</text>
+    <text x="420" y="712">Assistant</text>
+
+    <ellipse cx="680" cy="700" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="696">Track Learning</text>
+    <text x="680" y="712">Progress</text>
+
+    <ellipse cx="420" cy="800" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="796">Rate and Review</text>
+    <text x="420" y="812">Course</text>
+
+    <ellipse cx="680" cy="800" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="796">View Certificates</text>
+    <text x="680" y="812">and Badges</text>
+
+    <!-- Community -->
+    <ellipse cx="420" cy="960" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="420" y="964">Chat with Instructor</text>
+
+    <ellipse cx="680" cy="960" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="680" y="964">Join Skill Exchange</text>
+
+    <!-- Instructor -->
+    <ellipse cx="1000" cy="186" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1000" y="182">Create / Edit</text>
+    <text x="1000" y="198">Courses</text>
+
+    <ellipse cx="1260" cy="186" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1260" y="182">Manage Lessons</text>
+    <text x="1260" y="198">and Content</text>
+
+    <ellipse cx="1000" cy="290" rx="128" ry="36" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1000" y="286">Submit Course</text>
+    <text x="1000" y="302">for Approval</text>
+
+    <ellipse cx="1260" cy="290" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1260" y="286">View Course</text>
+    <text x="1260" y="302">Analytics</text>
+
+    <ellipse cx="1130" cy="400" rx="128" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1130" y="396">Message Students</text>
+    <text x="1130" y="412">(Course Q&amp;A)</text>
+
+    <!-- Admin -->
+    <ellipse cx="1000" cy="560" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1000" y="564">Manage Users</text>
+
+    <ellipse cx="1260" cy="560" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1260" y="556">Manage Skills</text>
+    <text x="1260" y="572">and Careers</text>
+
+    <ellipse cx="1000" cy="660" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1000" y="656">Manage Assessment</text>
+    <text x="1000" y="672">Questions</text>
+
+    <ellipse cx="1260" cy="660" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1260" y="656">Approve / Reject</text>
+    <text x="1260" y="672">Courses</text>
+
+    <ellipse cx="1000" cy="770" rx="118" ry="32" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1000" y="774">Moderate Content</text>
+
+    <ellipse cx="1260" cy="770" rx="118" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1260" y="766">View Platform</text>
+    <text x="1260" y="782">Analytics</text>
+
+    <ellipse cx="1130" cy="880" rx="128" ry="34" fill="#fefce8" stroke="#1a365d" stroke-width="1.6"/>
+    <text x="1130" y="876">Moderate Skill</text>
+    <text x="1130" y="892">Exchange</text>
+  </g>
+
+  <!-- include / extend (dashed arrows between use cases) -->
+  <g stroke="#64748b" stroke-width="1.2" fill="none" stroke-dasharray="5 3" marker-end="url(#arrow)">
+    <!-- View Roadmap include Discover Career -->
+    <path d="M 480,410 C 460,390 440,360 430,354"/>
+    <!-- View Roadmap include Skill Assessment -->
+    <path d="M 620,410 C 640,390 660,360 670,354"/>
+    <!-- Submit include Create/Edit -->
+    <path d="M 1000,254 L 1000,222"/>
+    <!-- Create/Edit include Manage Lessons -->
+    <path d="M 1118,186 L 1142,186"/>
+    <!-- Use AI extend Study Lessons -->
+    <path d="M 500,688 C 560,670 620,650 640,642"/>
+    <!-- View Certificates extend Enroll (after complete) -->
+    <path d="M 620,780 C 560,760 500,740 490,642"/>
+    <!-- Rate/Review extend Enroll -->
+    <path d="M 420,766 L 420,642"/>
+    <!-- Approve associated conceptually with Submit: include from Approve to published course pipeline -->
+    <path d="M 1260,626 C 1260,500 1140,360 1128,326"/>
+  </g>
+  <g font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#64748b" font-style="italic">
+    <text x="430" y="378">&lt;&lt;include&gt;&gt;</text>
+    <text x="690" y="378">&lt;&lt;include&gt;&gt;</text>
+    <text x="1010" y="244">&lt;&lt;include&gt;&gt;</text>
+    <text x="1165" y="176">&lt;&lt;include&gt;&gt;</text>
+    <text x="560" y="658">&lt;&lt;extend&gt;&gt;</text>
+    <text x="560" y="748">&lt;&lt;extend&gt;&gt;</text>
+    <text x="428" y="720">&lt;&lt;extend&gt;&gt;</text>
+    <text x="1210" y="470">&lt;&lt;include&gt;&gt;</text>
+  </g>
+
+  <!-- Actors -->
+  <g id="student" fill="none" stroke="#1a202c" stroke-width="2">
+    <circle cx="90" cy="430" r="16"/>
+    <line x1="90" y1="446" x2="90" y2="500"/>
+    <line x1="60" y1="466" x2="120" y2="466"/>
+    <line x1="90" y1="500" x2="68" y2="540"/>
+    <line x1="90" y1="500" x2="112" y2="540"/>
+  </g>
+  <text x="90" y="562" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#1a202c">Student</text>
+
+  <g id="instructor" fill="none" stroke="#1a202c" stroke-width="2">
+    <circle cx="1590" cy="230" r="16"/>
+    <line x1="1590" y1="246" x2="1590" y2="300"/>
+    <line x1="1560" y1="266" x2="1620" y2="266"/>
+    <line x1="1590" y1="300" x2="1568" y2="340"/>
+    <line x1="1590" y1="300" x2="1612" y2="340"/>
+  </g>
+  <text x="1590" y="362" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#1a202c">Instructor</text>
+
+  <g id="admin" fill="none" stroke="#1a202c" stroke-width="2">
+    <circle cx="1590" cy="700" r="16"/>
+    <line x1="1590" y1="716" x2="1590" y2="770"/>
+    <line x1="1560" y1="736" x2="1620" y2="736"/>
+    <line x1="1590" y1="770" x2="1568" y2="810"/>
+    <line x1="1590" y1="770" x2="1612" y2="810"/>
+  </g>
+  <text x="1590" y="832" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#1a202c">Admin</text>
+
+  <g id="ai" fill="none" stroke="#1a202c" stroke-width="2">
+    <circle cx="90" cy="700" r="16"/>
+    <line x1="90" y1="716" x2="90" y2="770"/>
+    <line x1="60" y1="736" x2="120" y2="736"/>
+    <line x1="90" y1="770" x2="68" y2="810"/>
+    <line x1="90" y1="770" x2="112" y2="810"/>
+  </g>
+  <text x="90" y="832" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="600" fill="#1a202c">AI Tutor</text>
+  <text x="90" y="850" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#64748b">(Gemini)</text>
+
+  <!-- Associations: Student -->
+  <g stroke="#1a202c" stroke-width="1.15" fill="none">
+    <line x1="122" y1="450" x2="250" y2="186"/>
+    <line x1="122" y1="455" x2="250" y2="186"/>
+    <!-- to Register -->
+    <path d="M 122,448 C 180,400 220,220 302,186"/>
+    <!-- to Manage Profile -->
+    <path d="M 122,448 C 190,360 250,220 250,186"/>
+    <line x1="250" y1="186" x2="562" y2="186"/>
+    <!-- to Discover -->
+    <path d="M 122,455 C 180,430 230,340 302,320"/>
+    <!-- to Assessment -->
+    <path d="M 122,458 C 190,440 250,360 250,320"/>
+    <line x1="250" y1="320" x2="562" y2="320"/>
+    <!-- to Roadmap -->
+    <path d="M 122,460 C 180,450 230,435 412,430"/>
+    <!-- to Enroll -->
+    <path d="M 122,470 C 180,520 250,590 302,610"/>
+    <!-- to Study -->
+    <path d="M 122,472 C 190,540 250,590 250,610"/>
+    <line x1="250" y1="610" x2="562" y2="610"/>
+    <!-- to AI use case -->
+    <path d="M 122,710 C 180,705 250,700 302,700"/>
+    <!-- to Track -->
+    <path d="M 122,478 C 190,560 250,680 250,700"/>
+    <line x1="250" y1="700" x2="562" y2="700"/>
+    <!-- to Rate -->
+    <path d="M 122,490 C 180,620 230,760 302,800"/>
+    <!-- to Certificates -->
+    <path d="M 122,492 C 190,640 250,760 250,800"/>
+    <line x1="250" y1="800" x2="562" y2="800"/>
+    <!-- to Chat -->
+    <path d="M 122,500 C 180,700 230,920 302,960"/>
+    <!-- to Skill Exchange -->
+    <path d="M 122,502 C 190,720 250,920 250,960"/>
+    <line x1="250" y1="960" x2="562" y2="960"/>
+  </g>
+
+  <!-- AI Tutor to Use AI -->
+  <line x1="122" y1="710" x2="302" y2="700" stroke="#1a202c" stroke-width="1.15"/>
+
+  <!-- Instructor associations -->
+  <g stroke="#1a202c" stroke-width="1.15" fill="none">
+    <path d="M 1568,250 C 1480,230 1420,200 1378,186"/>
+    <path d="M 1568,255 C 1490,250 1420,220 1378,198"/>
+    <path d="M 1568,260 C 1490,270 1420,280 1128,290"/>
+    <path d="M 1568,262 C 1490,280 1420,290 1378,290"/>
+    <path d="M 1568,270 C 1490,330 1420,380 1258,400"/>
+    <!-- login -->
+    <path d="M 1568,240 C 1480,160 900,150 798,186"/>
+    <!-- manage profile -->
+    <path d="M 1568,242 C 1480,170 900,170 798,186"/>
+  </g>
+
+  <!-- Admin associations -->
+  <g stroke="#1a202c" stroke-width="1.15" fill="none">
+    <path d="M 1568,720 C 1480,640 1420,580 1378,560"/>
+    <path d="M 1568,722 C 1490,680 1420,600 1378,572"/>
+    <path d="M 1568,730 C 1490,710 1420,680 1118,660"/>
+    <path d="M 1568,732 C 1490,720 1420,690 1378,672"/>
+    <path d="M 1568,740 C 1490,750 1420,760 1118,770"/>
+    <path d="M 1568,742 C 1490,760 1420,770 1378,782"/>
+    <path d="M 1568,748 C 1490,800 1420,860 1258,880"/>
+    <!-- login -->
+    <path d="M 1568,690 C 1480,400 900,220 798,186"/>
+  </g>
+</svg>

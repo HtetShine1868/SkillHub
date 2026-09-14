@@ -6,4 +6,6 @@ import java.util.List;
 public interface BadgeRepository extends JpaRepository<Badge, Long> {
     List<Badge> findByUserId(Long userId);
     List<Badge> findByUserIdAndCourseId(Long userId, Long courseId);
+
+    void deleteByCourseId(Long courseId);
 }

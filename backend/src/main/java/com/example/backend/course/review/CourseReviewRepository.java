@@ -12,4 +12,6 @@ public interface CourseReviewRepository extends JpaRepository<CourseReview, Long
     Optional<CourseReview> findByCourseIdAndUserId(Long courseId, Long userId);
 
     long countByCourseId(Long courseId);
+
+    void deleteByCourseId(Long courseId);
 }

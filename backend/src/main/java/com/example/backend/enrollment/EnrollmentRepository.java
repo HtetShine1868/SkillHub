@@ -34,4 +34,6 @@ public interface EnrollmentRepository
     List<Enrollment> findByCourseIdIn(List<Long> courseIds);
 
     List<Enrollment> findByCourseId(Long courseId);
+
+    void deleteByCourseId(Long courseId);
 }

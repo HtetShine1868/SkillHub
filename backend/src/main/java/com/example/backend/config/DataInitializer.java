@@ -715,6 +715,41 @@ public class DataInitializer implements CommandLineRunner {
              "{\"optionKey\":\"D\",\"text\":\"A deleted table\"}]",
             "A", 2, 64);
 
+        seedAssessmentQuestionIfMissing(sDocker, "What is the difference between a Docker image and a container?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"An image is a running process; a container is the Dockerfile\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"An image is a read-only template; a container is a running instance of that image\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"They are two names for the same Kubernetes pod\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A container stores source code; an image stores CSS\"}]",
+            "B", 2, 65);
+
+        seedAssessmentQuestionIfMissing(sAWS, "What does IAM primarily control in AWS?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Who can access which cloud resources and what they can do\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"How CSS is cached at the edge\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Which Java version a Lambda must use\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"How React components re-render\"}]",
+            "A", 2, 66);
+
+        seedAssessmentQuestionIfMissing(sTS, "What does a TypeScript union type like string | number mean?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"The value must be both a string and a number at the same time\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"The value can be either a string or a number\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"The value is converted to JSON automatically\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"The variable can never be null\"}]",
+            "B", 2, 67);
+
+        seedAssessmentQuestionIfMissing(sRest, "What does HTTP status 404 mean?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"The request succeeded and created a new resource\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"The client is not allowed to authenticate\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"The requested resource could not be found\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"The server is restarting the database\"}]",
+            "C", 1, 68);
+
+        seedAssessmentQuestionIfMissing(sML, "What is a training/test split used for in machine learning?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"To hide bad data from stakeholders\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"To evaluate how well the model generalizes to unseen data\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"To make the dataset smaller for storage only\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"To convert Python code into SQL\"}]",
+            "B", 2, 69);
+
         // ===================== COURSES & LESSONS =====================
         Course c1 = seedCourse("Java & Spring Boot Core", "Engineering",
                 "Master enterprise Java 17, Spring Boot 3 microservice fundamentals, REST APIs, and Spring Data JPA from scratch to production.", "Intermediate", 12, 4.8, 342);
@@ -1282,6 +1317,56 @@ public class DataInitializer implements CommandLineRunner {
                 opt("Decisions made on gut feel with no numbers", "You want proof", an, 5, ds, 4, mlId, 3),
                 opt("Accounts left open or passwords shared", "Careless risk is unacceptable", sec, 5, cl, 3),
                 opt("Work that only lives on one person's laptop", "You want reliable, shared systems", dv, 5, cl, 4, fs, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "What would you rather spend most of a workday producing?", 13,
+            opts(
+                opt("APIs, data models, and server-side rules", "You like the engine that other features depend on", be, 5, fs, 3, qaId, 2),
+                opt("Screens, layouts, and interactions people can see", "Visible product work is more satisfying", fe, 5, mo, 4, uxId, 4, fs, 2),
+                opt("Charts, reports, or model results that change a decision", "You want evidence that people can act on", an, 5, ds, 5, mlId, 4),
+                opt("Pipelines, cloud setups, or access controls", "You like the platform the product runs on", dv, 5, cl, 5, sec, 4),
+                opt("Test cases, bug reports, and release checklists", "You want proof that the product is safe to ship", qaId, 5, be, 2, dv, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which part of a product feels most like your work?", 14,
+            opts(
+                opt("The logic behind a button: auth, database, and APIs", "You care about correctness under the surface", be, 5, fs, 3, qaId, 2),
+                opt("The button itself: layout, motion, and accessibility", "You care how it looks and feels to use", fe, 5, uxId, 5, mo, 3),
+                opt("A native app that lives on someone's phone", "You want software people carry with them", mo, 5, fe, 3, uxId, 2),
+                opt("The cloud it runs on: regions, cost, and uptime", "You think in systems, capacity, and reliability", cl, 5, dv, 4, sec, 3),
+                opt("The numbers that explain what users or the business are doing", "You want the truth in the data", an, 5, ds, 4, mlId, 3)
+            )
+        );
+        seedDiscoveryQuestion(
+            "How do you want to work with other people most of the time?", 15,
+            opts(
+                opt("Pair with engineers on APIs, data, and edge cases", "You like technical collaboration and contracts", be, 5, fs, 4, qaId, 3),
+                opt("Sit with designers and make the interface match the vision", "You translate visual intent into a working UI", fe, 5, uxId, 4, mo, 3),
+                opt("Interview users, then turn what you heard into screens", "You start from people, not from code", uxId, 5, fe, 3, mo, 2),
+                opt("Be the person teammates call when production is unhealthy", "You like operational ownership", dv, 5, cl, 4, sec, 4),
+                opt("Present findings to someone who does not write code", "You enjoy turning evidence into a clear recommendation", an, 5, ds, 4, mlId, 3)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which tradeoff would you rather be responsible for?", 16,
+            opts(
+                opt("Ship a feature faster vs keep the server strictly correct", "You live in backend quality and API contracts", be, 5, fs, 3, qaId, 3),
+                opt("Make it look great vs keep the interface fast and simple", "You own visual polish and usability", fe, 5, mo, 4, uxId, 4),
+                opt("Make a model more accurate vs keep it explainable", "You care about prediction quality and trust", mlId, 5, ds, 4, an, 2),
+                opt("Deploy many times a day vs never break production", "You own delivery, uptime, and process", dv, 5, cl, 4, qaId, 3),
+                opt("Make access convenient vs lock down who can get in", "You think in risk, permissions, and trust", sec, 5, cl, 3, dv, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "If a new product team formed tomorrow, which seat would you claim?", 17,
+            opts(
+                opt("I'll own the APIs, database, and server logic", "Backend building blocks are your home", be, 5, fs, 3),
+                opt("I'll own the web interface users see in a browser", "Frontend product work is the seat you want", fe, 5, fs, 3, uxId, 2),
+                opt("I'll own the iOS or Android app", "Mobile is where you want to ship", mo, 5, fe, 2, uxId, 2),
+                opt("I'll own experiments, models, or the data story", "You want insight work, not only feature tickets", ds, 5, mlId, 5, an, 4),
+                opt("I'll own quality, deploys, cloud, or security", "You want the system to stay safe and reliable", qaId, 4, dv, 5, cl, 5, sec, 5)
             )
         );
     }

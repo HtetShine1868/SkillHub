@@ -1,8 +1,15 @@
 package com.example.backend.course;
 
+import com.example.backend.certificate.BadgeRepository;
+import com.example.backend.certificate.CertificateRepository;
+import com.example.backend.chat.ChatMessageRepository;
 import com.example.backend.course.dto.CourseResponse;
 import com.example.backend.course.dto.CourseRequest;
+import com.example.backend.course.lesson.LessonProgressRepository;
 import com.example.backend.course.lesson.LessonRepository;
+import com.example.backend.course.review.CourseReviewRepository;
+import com.example.backend.enrollment.EnrollmentRepository;
+import com.example.backend.roadmap.RoadmapItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +28,15 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final LessonRepository lessonRepository;
+    private final LessonProgressRepository lessonProgressRepository;
     private final CourseSkillRepository courseSkillRepository;
     private final CoursePrerequisiteRepository coursePrerequisiteRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CourseReviewRepository courseReviewRepository;
+    private final CertificateRepository certificateRepository;
+    private final BadgeRepository badgeRepository;
+    private final RoadmapItemRepository roadmapItemRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     public List<CourseResponse> getAllCourses() {
         return courseRepository
@@ -222,10 +236,17 @@ public class CourseService {
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Course not found"));
+        lessonProgressRepository.deleteByLessonCourseId(id);
+        lessonRepository.deleteByCourseId(id);
+        courseReviewRepository.deleteByCourseId(id);
+        enrollmentRepository.deleteByCourseId(id);
+        certificateRepository.deleteByCourseId(id);
+        badgeRepository.deleteByCourseId(id);
+        roadmapItemRepository.deleteByCourseId(id);
+        chatMessageRepository.deleteByCourseId(id);
         coursePrerequisiteRepository.deleteByCourseId(id);
         coursePrerequisiteRepository.deleteByRequiredCourseId(id);
         courseSkillRepository.deleteByCourseId(id);
-        lessonRepository.deleteByCourseId(id);
         courseRepository.delete(course);
     }
 
