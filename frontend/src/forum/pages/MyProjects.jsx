@@ -148,6 +148,18 @@ export default function MyProjects() {
                           <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             {project.skills.slice(0, 4).map((s) => <SkillChip key={s} skill={s} />)}
                           </div>
+                          {Array.isArray(project.roles) && project.roles.length > 0 && (
+                            <div className="project-card__roles" style={{ marginTop: 8 }}>
+                              {project.roles.map((role) => (
+                                <span
+                                  key={role.name}
+                                  className={`role-chip ${role.open === 0 ? 'role-chip--full' : ''}`}
+                                >
+                                  {role.name} {role.filled}/{role.slots}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <div style={{ marginTop: 10, maxWidth: 300 }}>
                             <ProgressBar value={project.currentMembers} max={project.maxMembers} />
                           </div>
@@ -248,6 +260,9 @@ export default function MyProjects() {
                             <span className="pending-badge">
                               ⏳ Pending
                             </span>
+                            {req.requestedRole && (
+                              <span className="role-chip">{req.requestedRole}</span>
+                            )}
                             <span style={{ fontSize: 12, color: 'var(--f-text-light)' }}>
                               Sent {timeAgo(req.date)}
                             </span>

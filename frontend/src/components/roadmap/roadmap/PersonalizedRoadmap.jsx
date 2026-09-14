@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import RoadmapNode from './RoadmapNode'
 
 function uniqueLanguageOptions(stages) {
@@ -44,6 +45,7 @@ export default function PersonalizedRoadmap({
   }) || requiredStages[0]
 
   const careerTitle = career?.title || career?.name || 'Selected Career'
+  const navigate = useNavigate()
 
   return (
     <section className="roadmap-screen">
@@ -61,7 +63,7 @@ export default function PersonalizedRoadmap({
             <button
               className="secondary-button"
               style={{ marginTop: '12px', fontSize: '0.82rem', padding: '6px 14px', borderRadius: '999px' }}
-              onClick={() => { window.location.href = '/careers' }}
+              onClick={() => navigate('/careers')}
             >
               Switch / Explore Careers
             </button>

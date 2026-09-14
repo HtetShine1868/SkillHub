@@ -12,4 +12,5 @@ import java.util.List;
 public class JoinRequestApplyRequest {
     private String message;
     private List<String> skills;
+    private String requestedRole;
 }

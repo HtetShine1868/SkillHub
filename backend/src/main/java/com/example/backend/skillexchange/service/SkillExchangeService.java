@@ -128,6 +128,11 @@ public class SkillExchangeService {
             }
         }
 
+        List<ProjectRoleSlot> roles = buildRolesFromInput(req.getRoles());
+        if (roles.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Add at least one role opening for collaborators.");
+        }
+
         Project project = Project.builder()
                 .title(req.getTitle())
                 .description(req.getDescription())
@@ -136,11 +141,12 @@ public class SkillExchangeService {
                 .duration(req.getDuration())
                 .commitment(req.getCommitment())
                 .deadline(deadlineDate)
-                .maxMembers(req.getMaxMembers())
+                .maxMembers(1 + totalRoleSlots(roles))
                 .status("Recruiting")
                 .owner(owner)
                 .skills(req.getSkills() != null ? req.getSkills() : new ArrayList<>())
                 .tags(req.getTags() != null ? req.getTags() : new ArrayList<>())
+                .roles(roles)
                 .build();
 
         List<ProjectGoal> goals = buildGoalsFromInput(req.getGoals(), true);
@@ -196,6 +202,12 @@ public class SkillExchangeService {
             throw new RuntimeException("You are already a member of this project.");
         }
 
+        if (project.getMembers().size() >= project.getMaxMembers()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This project is already full.");
+        }
+
+        String requestedRole = resolveRequestedRole(project, req.getRequestedRole());
+
         // Get applicant level (e.g. from overall score logic in AuthService or default to Intermediate)
         List<String> userSkills = req.getSkills() != null ? req.getSkills() : new ArrayList<>();
 
@@ -204,6 +216,7 @@ public class SkillExchangeService {
                 .applicant(applicant)
                 .message(req.getMessage())
                 .skills(userSkills)
+                .requestedRole(requestedRole)
                 .level("Intermediate") // Default
                 .status("pending")
                 .build();
@@ -265,6 +278,18 @@ public class SkillExchangeService {
             throw new RuntimeException("Project is already full.");
         }
 
+        String memberRole = request.getRequestedRole();
+        if (hasRoleSlots(project)) {
+            if (memberRole == null || memberRole.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This applicant did not pick a role.");
+            }
+            if (openSlotsForRole(project, memberRole) <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, memberRole + " is already filled.");
+            }
+        } else if (memberRole == null || memberRole.isBlank()) {
+            memberRole = "Member";
+        }
+
         request.setStatus("approved");
         joinRequestRepository.save(request);
 
@@ -272,7 +297,7 @@ public class SkillExchangeService {
         ProjectMember member = ProjectMember.builder()
                 .project(project)
                 .user(request.getApplicant())
-                .role("Member")
+                .role(memberRole)
                 .build();
         projectMemberRepository.save(member);
 
@@ -544,6 +569,7 @@ public class SkillExchangeService {
                 .owner(ownerDto)
                 .members(membersList)
                 .goals(goalsList)
+                .roles(toRoleResponses(project))
                 .pendingRequests((int) pendingReqsCount)
                 .userStatus(userStatus)
                 .canDiscuss(canDiscuss)
@@ -604,6 +630,7 @@ public class SkillExchangeService {
                 .skills(r.getSkills())
                 .level(r.getLevel())
                 .message(r.getMessage())
+                .requestedRole(r.getRequestedRole())
                 .date(r.getCreatedAt().format(ISO_FORMATTER))
                 .status(r.getStatus())
                 .build();
@@ -675,5 +702,93 @@ public class SkillExchangeService {
                         .done(g.isDone())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private List<ProjectRoleSlot> buildRolesFromInput(List<ProjectRoleInput> inputs) {
+        List<ProjectRoleSlot> roles = new ArrayList<>();
+        if (inputs == null) return roles;
+        Set<String> seen = new HashSet<>();
+        for (ProjectRoleInput input : inputs) {
+            if (input == null || input.getName() == null || input.getName().isBlank()) continue;
+            String name = input.getName().trim();
+            if ("Owner".equalsIgnoreCase(name) || "Member".equalsIgnoreCase(name)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose a specific role such as Frontend or Designer.");
+            }
+            if (name.length() > 50) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role names must be 50 characters or less.");
+            }
+            if (!seen.add(name.toLowerCase())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Each role can only be listed once.");
+            }
+            int slots = input.getSlots() != null ? input.getSlots() : 1;
+            if (slots < 1 || slots > 8) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Each role needs between 1 and 8 openings.");
+            }
+            roles.add(new ProjectRoleSlot(name, slots));
+        }
+        int total = totalRoleSlots(roles);
+        if (total > 11) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Teams can have at most 12 people including you.");
+        }
+        return roles;
+    }
+
+    private List<ProjectRoleResponse> toRoleResponses(Project project) {
+        if (!hasRoleSlots(project)) return new ArrayList<>();
+        return project.getRoles().stream()
+                .map(slot -> {
+                    int filled = filledCountForRole(project, slot.getName());
+                    int open = Math.max(0, slot.getSlots() - filled);
+                    return ProjectRoleResponse.builder()
+                            .name(slot.getName())
+                            .slots(slot.getSlots())
+                            .filled(Math.min(filled, slot.getSlots()))
+                            .open(open)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String resolveRequestedRole(Project project, String requestedRole) {
+        if (!hasRoleSlots(project)) {
+            return (requestedRole != null && !requestedRole.isBlank()) ? requestedRole.trim() : "Member";
+        }
+        if (requestedRole == null || requestedRole.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Pick a role to apply for.");
+        }
+        String chosen = requestedRole.trim();
+        ProjectRoleSlot match = project.getRoles().stream()
+                .filter(slot -> slot.getName().equalsIgnoreCase(chosen))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "That role is not listed on this project."));
+        if (openSlotsForRole(project, match.getName()) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, match.getName() + " is already filled.");
+        }
+        return match.getName();
+    }
+
+    private boolean hasRoleSlots(Project project) {
+        return project.getRoles() != null && !project.getRoles().isEmpty();
+    }
+
+    private int totalRoleSlots(List<ProjectRoleSlot> roles) {
+        if (roles == null) return 0;
+        return roles.stream().mapToInt(ProjectRoleSlot::getSlots).sum();
+    }
+
+    private int filledCountForRole(Project project, String roleName) {
+        if (project.getMembers() == null || roleName == null) return 0;
+        return (int) project.getMembers().stream()
+                .filter(m -> m.getRole() != null && m.getRole().equalsIgnoreCase(roleName))
+                .count();
+    }
+
+    private int openSlotsForRole(Project project, String roleName) {
+        if (!hasRoleSlots(project) || roleName == null) return 0;
+        return project.getRoles().stream()
+                .filter(slot -> slot.getName().equalsIgnoreCase(roleName))
+                .findFirst()
+                .map(slot -> Math.max(0, slot.getSlots() - filledCountForRole(project, slot.getName())))
+                .orElse(0);
     }
 }

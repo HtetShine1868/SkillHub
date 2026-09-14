@@ -21,4 +21,5 @@ public class ProjectCreateRequest {
     private List<String> skills;
     private List<String> tags;
     private List<ProjectGoalInput> goals;
+    private List<ProjectRoleInput> roles;
 }

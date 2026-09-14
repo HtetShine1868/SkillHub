@@ -11,9 +11,14 @@ export default function JoinModal({ project, onClose, onSuccess }) {
   const [message, setMessage] = useState('')
   const [skills, setSkills] = useState(currentUser?.skills ? [...currentUser.skills] : [])
   const [skillInput, setSkillInput] = useState('')
+  const [requestedRole, setRequestedRole] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  const roleSlots = Array.isArray(project.roles) ? project.roles : []
+  const hasRoles = roleSlots.length > 0
+  const openRoles = roleSlots.filter((r) => (r.open ?? Math.max(0, r.slots - r.filled)) > 0)
 
   function addSkill() {
     const trimmed = skillInput.trim()
@@ -36,6 +41,10 @@ export default function JoinModal({ project, onClose, onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (hasRoles && !requestedRole) {
+      setError('Pick a role to apply for.')
+      return
+    }
     if (!message.trim()) {
       setError('Please write a message to the project owner.')
       return
@@ -43,11 +52,11 @@ export default function JoinModal({ project, onClose, onSuccess }) {
     setError('')
     setLoading(true)
     try {
-      await sendJoinRequest(project.id, { message, skills })
+      await sendJoinRequest(project.id, { message, skills, requestedRole: requestedRole || undefined })
       setSuccess(true)
       if (onSuccess) onSuccess()
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      setError(err.response?.data?.detail || err.response?.data?.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -99,7 +108,8 @@ export default function JoinModal({ project, onClose, onSuccess }) {
                 </div>
                 <h3>You're all set!</h3>
                 <p>
-                  Your request has been sent to <strong>{project.owner.name}</strong>.
+                  Your request has been sent to <strong>{project.owner.name}</strong>
+                  {requestedRole ? <> for the <strong>{requestedRole}</strong> role</> : null}.
                   You'll be notified once they respond.
                 </p>
                 <button
@@ -134,6 +144,42 @@ export default function JoinModal({ project, onClose, onSuccess }) {
                     ))}
                   </div>
                 </div>
+
+                {hasRoles && (
+                  <div className="form-group">
+                    <label className="form-label">
+                      Apply as <span>*</span>
+                    </label>
+                    <div className="join-role-options" role="radiogroup" aria-label="Role to apply for">
+                      {roleSlots.map((role) => {
+                        const open = role.open ?? Math.max(0, (role.slots || 0) - (role.filled || 0))
+                        const full = open <= 0
+                        return (
+                          <label
+                            key={role.name}
+                            className={`join-role-option ${full ? 'is-full' : ''} ${requestedRole === role.name ? 'is-selected' : ''}`}
+                          >
+                            <input
+                              type="radio"
+                              name="requestedRole"
+                              value={role.name}
+                              disabled={full}
+                              checked={requestedRole === role.name}
+                              onChange={() => { setRequestedRole(role.name); setError('') }}
+                            />
+                            <span className="join-role-option__name">{role.name}</span>
+                            <span className="join-role-option__meta">
+                              {full ? 'Filled' : `${open} open`} · {role.filled}/{role.slots}
+                            </span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                    {openRoles.length === 0 && (
+                      <p className="form-hint">Every listed role is already filled.</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Message */}
                 <div className="form-group">
@@ -184,7 +230,7 @@ export default function JoinModal({ project, onClose, onSuccess }) {
                 <button
                   type="submit"
                   className="btn btn-primary btn-full"
-                  disabled={loading}
+                  disabled={loading || (hasRoles && openRoles.length === 0)}
                   style={{ marginTop: 4 }}
                 >
                   <Send size={15} />

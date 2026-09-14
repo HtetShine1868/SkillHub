@@ -26,6 +26,7 @@ public class ProjectResponse {
     private UserDto owner;
     private List<ProjectMemberResponse> members;
     private List<ProjectGoalResponse> goals;
+    private List<ProjectRoleResponse> roles;
     private List<CommentResponse> discussion;
     private Integer pendingRequests;
     private String userStatus;

@@ -73,6 +73,12 @@ public class Project {
     @Builder.Default
     private List<ProjectGoal> goals = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "project_roles", joinColumns = @JoinColumn(name = "project_id"))
+    @OrderColumn(name = "role_idx")
+    @Builder.Default
+    private List<ProjectRoleSlot> roles = new ArrayList<>();
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

@@ -31,6 +31,7 @@ export default function ProjectRequests() {
   const [actionLoading, setActionLoading] = useState({})
   const [resolved, setResolved] = useState({})  // requestId -> 'approved' | 'rejected'
   const [projectFull, setProjectFull] = useState(false)
+  const [actionError, setActionError] = useState('')
 
   async function load() {
     setLoading(true)
@@ -51,6 +52,7 @@ export default function ProjectRequests() {
 
   async function handleApprove(requestId) {
     setActionLoading((prev) => ({ ...prev, [requestId]: 'approving' }))
+    setActionError('')
     try {
       await approveJoinRequest(id, requestId)
       setResolved((prev) => ({ ...prev, [requestId]: 'approved' }))
@@ -60,6 +62,8 @@ export default function ProjectRequests() {
       if (updated.currentMembers >= updated.maxMembers) {
         setProjectFull(true)
       }
+    } catch (err) {
+      setActionError(err.response?.data?.detail || err.response?.data?.message || 'Could not accept this request.')
     } finally {
       setActionLoading((prev) => { const n = { ...prev }; delete n[requestId]; return n })
     }
@@ -140,6 +144,16 @@ export default function ProjectRequests() {
               <span style={{ fontSize: 13, color: 'var(--f-text-muted)', whiteSpace: 'nowrap' }}>
                 {project.maxMembers - project.currentMembers} spot{project.maxMembers - project.currentMembers !== 1 ? 's' : ''} remaining
               </span>
+              {Array.isArray(project.roles) && project.roles.length > 0 && (
+                <div className="role-slot-list" style={{ flexBasis: '100%' }}>
+                  {project.roles.map((role) => (
+                    <div key={role.name} className={`role-slot ${role.open === 0 ? 'is-full' : ''}`}>
+                      <span className="role-slot__name">{role.name}</span>
+                      <span className="role-slot__count">{role.filled}/{role.slots}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -172,6 +186,12 @@ export default function ProjectRequests() {
           </AnimatePresence>
         </motion.div>
 
+        {actionError && (
+          <div className="form-error" role="alert" style={{ marginBottom: 16 }}>
+            {actionError}
+          </div>
+        )}
+
         {/* Requests list */}
         {requests.length === 0 ? (
           <div className="forum-empty">
@@ -188,6 +208,10 @@ export default function ProjectRequests() {
               {requests.map((req, i) => {
                 const status = resolved[req.id]
                 const isActing = actionLoading[req.id]
+                const roleSlot = req.requestedRole && Array.isArray(project?.roles)
+                  ? project.roles.find((r) => r.name === req.requestedRole)
+                  : null
+                const roleFull = Boolean(roleSlot && roleSlot.open === 0)
 
                 return (
                   <motion.div
@@ -214,7 +238,12 @@ export default function ProjectRequests() {
                           </div>
                         </div>
                       </div>
-                      <span className="request-card__level">{req.level}</span>
+                      <div className="request-card__badges">
+                        {req.requestedRole && (
+                          <span className="request-card__role">{req.requestedRole}</span>
+                        )}
+                        <span className="request-card__level">{req.level}</span>
+                      </div>
                     </div>
 
                     {/* Skills */}
@@ -245,7 +274,7 @@ export default function ProjectRequests() {
                         <button
                           className="btn btn-success"
                           onClick={() => handleApprove(req.id)}
-                          disabled={isActing || projectFull}
+                          disabled={isActing || projectFull || roleFull}
                           aria-label={`Accept ${req.applicant.name}'s request`}
                         >
                           <CheckCircle size={15} />
@@ -263,6 +292,11 @@ export default function ProjectRequests() {
                         {projectFull && !status && (
                           <span style={{ fontSize: 12, color: 'var(--f-orange)' }}>
                             Project is full — cannot accept
+                          </span>
+                        )}
+                        {!projectFull && roleFull && !status && (
+                          <span style={{ fontSize: 12, color: 'var(--f-orange)' }}>
+                            {req.requestedRole} is already filled
                           </span>
                         )}
                       </div>

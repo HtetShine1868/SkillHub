@@ -1,10 +1,10 @@
-import PersonalizedRoadmapPage from './PersonalizedRoadmapPage'
+import CareerListPage from './CareerListPage'
 import './CareerPage.css'
 
 const CareerPage = () => {
   return (
     <div className="careerpage">
-      <PersonalizedRoadmapPage />
+      <CareerListPage />
     </div>
   )
 }

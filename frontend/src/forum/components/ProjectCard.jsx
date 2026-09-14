@@ -67,6 +67,19 @@ export default function ProjectCard({ project }) {
         )}
       </div>
 
+      {Array.isArray(project.roles) && project.roles.length > 0 && (
+        <div className="project-card__roles">
+          {project.roles.map((role) => (
+            <span
+              key={role.name}
+              className={`role-chip ${role.open === 0 ? 'role-chip--full' : ''}`}
+            >
+              {role.name} {role.filled}/{role.slots}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Footer */}
       <div className="project-card__footer">
         {/* Member count & progress */}

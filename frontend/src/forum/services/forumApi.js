@@ -69,7 +69,7 @@ export async function getMyProjects() {
 /**
  * Send a join request for a project.
  * @param {string|number} projectId
- * @param {{ message: string, skills: string[] }} requestData
+ * @param {{ message: string, skills: string[], requestedRole?: string }} requestData
  */
 export async function sendJoinRequest(projectId, requestData) {
   const { data } = await axiosClient.post(`${BASE}/${projectId}/apply`, requestData)

@@ -38,6 +38,9 @@ public class JoinRequest {
     @Column(nullable = false, length = 50)
     private String level;
 
+    @Column(length = 50)
+    private String requestedRole;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 

@@ -174,7 +174,17 @@ export default function ProjectDetails() {
   const totalGoals = (project.goals || []).length
   const threads = project.discussion || []
 
-  const openSlots = Array.from({ length: spotsLeft })
+  const openSlots = Array.from({ length: Math.max(0, spotsLeft) })
+  const roleSlots = Array.isArray(project.roles) ? project.roles : []
+  const hasRoles = roleSlots.length > 0
+  const openRoleCards = hasRoles
+    ? roleSlots.flatMap((role) =>
+        Array.from({ length: role.open || 0 }, (_, i) => ({
+          key: `${role.name}-${i}`,
+          name: role.name,
+        }))
+      )
+    : []
 
   return (
     <div className="forum-layout">
@@ -513,6 +523,16 @@ export default function ProjectDetails() {
                       ? 'This project is full'
                       : `${spotsLeft} open position${spotsLeft !== 1 ? 's' : ''}`}
                   </p>
+                  {hasRoles && (
+                    <div className="role-slot-list">
+                      {roleSlots.map((role) => (
+                        <div key={role.name} className={`role-slot ${role.open === 0 ? 'is-full' : ''}`}>
+                          <span className="role-slot__name">{role.name}</span>
+                          <span className="role-slot__count">{role.filled}/{role.slots}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Join button */}
@@ -621,12 +641,19 @@ export default function ProjectDetails() {
                       <div className="member-card__role">{member.role}</div>
                     </div>
                   ))}
-                  {openSlots.map((_, i) => (
-                    <div key={`open-${i}`} className="member-card open-slot">
-                      <div className="open-slot-icon">+</div>
-                      <div className="member-card__role">Open position</div>
-                    </div>
-                  ))}
+                  {hasRoles
+                    ? openRoleCards.map((slot) => (
+                        <div key={slot.key} className="member-card open-slot">
+                          <div className="open-slot-icon">+</div>
+                          <div className="member-card__role">{slot.name}</div>
+                        </div>
+                      ))
+                    : openSlots.map((_, i) => (
+                        <div key={`open-${i}`} className="member-card open-slot">
+                          <div className="open-slot-icon">+</div>
+                          <div className="member-card__role">Open position</div>
+                        </div>
+                      ))}
                 </div>
               </div>
             </motion.div>

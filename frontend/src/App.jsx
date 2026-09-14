@@ -21,7 +21,7 @@ import Dashboard from './components/Dashboard'
 import PersonalizedRoadmapPage from './pages/PersonalizedRoadmapPage'
 import CareerOnboardingPage from './pages/CareerOnboardingPage'
 import CareerDiscoveryPage from './pages/CareerDiscoveryPage'
-import CareerPage from './pages/CareerPage'
+import CareerListPage from './pages/CareerListPage'
 import CareerDetailPage from './pages/CareerDetailPage'
 import SkillAssessmentPage from './pages/SkillAssessmentPage'
 import CoursesPage from './pages/CoursesPage'
@@ -88,7 +88,7 @@ function App() {
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
         {/* Career pages */}
-        <Route path="/careers" element={<ProtectedRoute><CareerPage /></ProtectedRoute>} />
+        <Route path="/careers" element={<ProtectedRoute><CareerListPage /></ProtectedRoute>} />
         <Route path="/careers/:id" element={<ProtectedRoute><CareerDetailPage /></ProtectedRoute>} />
 
         {/* Keep legacy routes accessible but not in navbar */}

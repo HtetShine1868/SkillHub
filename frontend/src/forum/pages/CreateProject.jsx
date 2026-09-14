@@ -17,6 +17,10 @@ const CATEGORIES = [
 const LEVELS = ['Beginner', 'Intermediate', 'Advanced']
 const DURATIONS = ['1–2 weeks', '3–4 weeks', '1–2 months', '2–3 months', '3+ months']
 const COMMITMENTS = ['2–4 hrs/week', '5–8 hrs/week', '10–15 hrs/week', '15+ hrs/week']
+const ROLE_PRESETS = [
+  'Frontend', 'Backend', 'Full Stack', 'Designer', 'UI/UX',
+  'Mobile', 'Data', 'ML Engineer', 'DevOps', 'QA', 'Product',
+]
 
 const FALLBACK_SKILLS = [
   'Java', 'Spring Boot', 'React.js', 'TypeScript', 'JavaScript', 'CSS & Tailwind',
@@ -31,7 +35,6 @@ const INITIAL_FORM = {
   description: '',
   category: '',
   level: '',
-  maxMembers: 4,
   duration: '',
   commitment: '',
   deadline: '',
@@ -43,6 +46,10 @@ export default function CreateProject() {
   const [form, setForm] = useState(INITIAL_FORM)
   const [skills, setSkills] = useState([])
   const [goals, setGoals] = useState([{ id: 'new-1', text: '', done: false }])
+  const [roles, setRoles] = useState([
+    { id: 'r1', name: 'Frontend', slots: 1 },
+    { id: 'r2', name: 'Backend', slots: 1 },
+  ])
   const [catalogSkills, setCatalogSkills] = useState(FALLBACK_SKILLS)
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -98,6 +105,15 @@ export default function CreateProject() {
     if (!form.duration) errs.duration = 'Please select a duration'
     if (!form.commitment) errs.commitment = 'Please select a commitment level'
     if (goals.filter((g) => g.text.trim()).length === 0) errs.goals = 'Add at least one project goal'
+    const namedRoles = roles.map((r) => r.name.trim()).filter(Boolean)
+    if (namedRoles.length === 0) errs.roles = 'Add at least one role opening'
+    const lowered = namedRoles.map((n) => n.toLowerCase())
+    if (new Set(lowered).size !== lowered.length) errs.roles = 'Each role can only be listed once'
+    if (namedRoles.some((n) => n.toLowerCase() === 'owner' || n.toLowerCase() === 'member')) {
+      errs.roles = 'Choose a specific role such as Frontend or Designer'
+    }
+    const totalSlots = roles.filter((r) => r.name.trim()).reduce((sum, r) => sum + r.slots, 0)
+    if (totalSlots > 11) errs.roles = 'Teams can have at most 12 people including you'
     return errs
   }
 
@@ -115,13 +131,27 @@ export default function CreateProject() {
     setGoals((prev) => (prev.length <= 1 ? prev : prev.filter((g) => g.id !== id)))
   }
 
+  function addRole() {
+    setRoles((prev) => [...prev, { id: `r-${Date.now()}`, name: '', slots: 1 }])
+    if (errors.roles) setErrors((prev) => { const e = { ...prev }; delete e.roles; return e })
+  }
+
+  function updateRole(id, field, value) {
+    setRoles((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)))
+    if (errors.roles) setErrors((prev) => { const e = { ...prev }; delete e.roles; return e })
+  }
+
+  function removeRole(id) {
+    setRoles((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.id !== id)))
+  }
+
   async function handlePublish(e) {
     e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       // Scroll to first error
-      const firstErrEl = document.querySelector('.form-input.error, .form-select.error, .form-textarea.error, .skill-input-area.error')
+      const firstErrEl = document.querySelector('.form-input.error, .form-select.error, .form-textarea.error, .skill-input-area.error, .create-roles.error, .create-goals.error')
       if (firstErrEl) firstErrEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
@@ -132,7 +162,18 @@ export default function CreateProject() {
       const cleanedGoals = goals
         .map((g) => ({ text: g.text.trim(), done: Boolean(g.done) }))
         .filter((g) => g.text)
-      const project = await createProject({ ...form, skills, tags, goals: cleanedGoals })
+      const roleSlots = roles
+        .map((r) => ({ name: r.name.trim(), slots: r.slots }))
+        .filter((r) => r.name && r.slots > 0)
+      const maxMembers = 1 + roleSlots.reduce((sum, r) => sum + r.slots, 0)
+      const project = await createProject({
+        ...form,
+        maxMembers,
+        skills,
+        tags,
+        goals: cleanedGoals,
+        roles: roleSlots,
+      })
       setSuccess(true)
       setTimeout(() => navigate(`/skill-exchange/project/${project.id}`), 1200)
     } catch (err) {
@@ -144,8 +185,11 @@ export default function CreateProject() {
     }
   }
 
-  const spotsLeft = form.maxMembers - 1  // 1 = current user (owner)
-  const dots = Array.from({ length: Math.min(form.maxMembers, 8) })
+  const namedRoles = roles.filter((r) => r.name.trim())
+  const collaboratorSlots = namedRoles.reduce((sum, r) => sum + r.slots, 0)
+  const maxMembers = 1 + collaboratorSlots
+  const spotsLeft = collaboratorSlots
+  const dots = Array.from({ length: Math.min(maxMembers, 8) })
 
   if (success) {
     return (
@@ -449,7 +493,7 @@ export default function CreateProject() {
           </button>
         </motion.div>
 
-        {/* Team Size */}
+        {/* Roles needed */}
         <motion.div
           className="create-form-card"
           initial={{ opacity: 0, y: 20 }}
@@ -458,37 +502,72 @@ export default function CreateProject() {
         >
           <div className="create-form-card__title">
             <Users size={16} />
-            Team Capacity
+            Roles Needed
           </div>
+          <p className="form-hint" style={{ marginTop: 0, marginBottom: 14 }}>
+            List the openings teammates will apply for. You are the owner and do not take one of these slots.
+          </p>
 
-          <div className="form-group" style={{ marginBottom: 20 }}>
-            <label className="form-label">Maximum Members</label>
-            <div className="number-stepper">
-              <button
-                type="button"
-                className="number-stepper__btn"
-                onClick={() => setField('maxMembers', Math.max(2, form.maxMembers - 1))}
-                disabled={form.maxMembers <= 2}
-                aria-label="Decrease maximum members"
-              >
-                −
-              </button>
-              <span className="number-stepper__value" aria-live="polite">{form.maxMembers}</span>
-              <button
-                type="button"
-                className="number-stepper__btn"
-                onClick={() => setField('maxMembers', Math.min(12, form.maxMembers + 1))}
-                disabled={form.maxMembers >= 12}
-                aria-label="Increase maximum members"
-              >
-                +
-              </button>
-            </div>
+          <div className={`create-roles ${errors.roles ? 'error' : ''}`}>
+            {roles.map((role, index) => (
+              <div key={role.id} className="create-role-row">
+                <span className="create-goal-row__index">{index + 1}</span>
+                <input
+                  type="text"
+                  className="form-input"
+                  list="role-presets"
+                  placeholder="e.g. Frontend"
+                  value={role.name}
+                  onChange={(e) => updateRole(role.id, 'name', e.target.value)}
+                  maxLength={50}
+                  aria-label={`Role ${index + 1} name`}
+                />
+                <div className="number-stepper number-stepper--sm">
+                  <button
+                    type="button"
+                    className="number-stepper__btn"
+                    onClick={() => updateRole(role.id, 'slots', Math.max(1, role.slots - 1))}
+                    disabled={role.slots <= 1}
+                    aria-label={`Decrease openings for role ${index + 1}`}
+                  >
+                    −
+                  </button>
+                  <span className="number-stepper__value" aria-live="polite">{role.slots}</span>
+                  <button
+                    type="button"
+                    className="number-stepper__btn"
+                    onClick={() => updateRole(role.id, 'slots', Math.min(8, role.slots + 1))}
+                    disabled={role.slots >= 8}
+                    aria-label={`Increase openings for role ${index + 1}`}
+                  >
+                    +
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="create-goal-remove"
+                  onClick={() => removeRole(role.id)}
+                  disabled={roles.length <= 1}
+                  aria-label={`Remove role ${index + 1}`}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
           </div>
+          <datalist id="role-presets">
+            {ROLE_PRESETS.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+          {errors.roles && <div className="form-error" role="alert">{errors.roles}</div>}
+          <button type="button" className="btn btn-secondary btn-sm" onClick={addRole} style={{ marginTop: 12 }}>
+            <Plus size={14} />
+            Add role
+          </button>
 
-          {/* Capacity preview */}
-          <div className="capacity-preview" aria-label="Capacity preview">
-            <div className="capacity-preview__label">Project Capacity Preview</div>
+          <div className="capacity-preview" aria-label="Capacity preview" style={{ marginTop: 20 }}>
+            <div className="capacity-preview__label">Team Preview</div>
             <div className="capacity-preview__dots" aria-hidden="true">
               {dots.map((_, i) => (
                 <div
@@ -496,18 +575,20 @@ export default function CreateProject() {
                   className={`capacity-dot ${i === 0 ? 'capacity-dot--filled' : 'capacity-dot--empty'}`}
                 />
               ))}
-              {form.maxMembers > 8 && (
+              {maxMembers > 8 && (
                 <span style={{ fontSize: 12, color: 'var(--f-text-muted)', alignSelf: 'center' }}>
-                  +{form.maxMembers - 8} more
+                  +{maxMembers - 8} more
                 </span>
               )}
             </div>
             <div className="capacity-preview__text">
-              <strong>Current members: 1</strong> (you) ·{' '}
-              <strong>Maximum: {form.maxMembers}</strong>
+              <strong>You (owner)</strong>
+              {namedRoles.length > 0 && namedRoles.map((r) => (
+                <span key={r.id}> · {r.slots} {r.name.trim()}</span>
+              ))}
               <br />
               <span style={{ color: 'var(--f-primary-deep)', fontWeight: 600 }}>
-                {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining
+                {spotsLeft} opening{spotsLeft !== 1 ? 's' : ''} · team of {maxMembers}
               </span>
             </div>
           </div>

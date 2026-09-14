@@ -16,6 +16,7 @@ public class JoinRequestResponse {
     private List<String> skills;
     private String level;
     private String message;
+    private String requestedRole;
     private String date;
     private String status;
     private ProjectResponse project;
