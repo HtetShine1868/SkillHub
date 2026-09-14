@@ -1210,57 +1210,7 @@ public class DataInitializer implements CommandLineRunner {
             )
         );
         seedDiscoveryQuestion(
-            "Which compliment would make you happiest?", 2,
-            opts(
-                opt("That was rock-solid — I never have to worry about it", "Reliability and correctness matter most", be, 5, cl, 4, qaId, 4),
-                opt("This is so easy and nice to use", "People's experience is your measure of success", fe, 5, mo, 4, uxId, 5),
-                opt("You helped us see something we would have missed", "Insight and evidence drive you", ds, 5, mlId, 3, an, 5),
-                opt("You can do the whole thing yourself", "You like end-to-end ownership", fs, 5, mo, 3, be, 2),
-                opt("You kept everything running when it got chaotic", "You like coordinating moving parts", dv, 5, cl, 4, sec, 3)
-            )
-        );
-        seedDiscoveryQuestion(
-            "How do you like to spend focused time?", 3,
-            opts(
-                opt("Quiet deep work on a hidden problem", "Logic, structure, and figuring things out", be, 5, ds, 3, mlId, 3),
-                opt("Visual work you can see immediately", "You want fast, visible feedback", fe, 5, mo, 4, uxId, 5),
-                opt("Talking to people, then turning their need into something real", "You enjoy translating ideas into a product", fs, 5, uxId, 3, mo, 2),
-                opt("Keeping many moving parts coordinated", "You like process, timing, and reliability", dv, 5, cl, 4, qaId, 3),
-                opt("Running small experiments and comparing results", "You like testing hunches with evidence", ds, 4, mlId, 5, an, 4)
-            )
-        );
-        seedDiscoveryQuestion(
-            "What kind of impact would make you proud?", 4,
-            opts(
-                opt("People never notice the work because nothing breaks", "Invisible reliability is the win", be, 4, cl, 5, dv, 4, qaId, 3),
-                opt("People smile when they use something you shaped", "Human reaction matters more than hidden machinery", fe, 5, mo, 4, uxId, 5),
-                opt("A decision was made because of what you uncovered", "You want work that changes minds with evidence", ds, 5, mlId, 3, an, 5),
-                opt("A friend can open what you shipped and try it today", "Finished products excite you", fs, 5, mo, 3),
-                opt("Something gets smarter over time without extra babysitting", "You like systems that learn and improve", mlId, 5, ds, 3, dv, 2)
-            )
-        );
-        seedDiscoveryQuestion(
-            "When a group project goes wrong, what do you jump to first?", 5,
-            opts(
-                opt("The logic or information underneath", "You look for root causes and structure", be, 5, ds, 3, qaId, 3),
-                opt("How confusing or unpleasant it felt to use", "You start from the person's experience", fe, 5, mo, 3, uxId, 5),
-                opt("Who needs what to get unblocked", "You coordinate people and pieces", fs, 4, cl, 3, dv, 2),
-                opt("The process, tools, or environment", "You fix how the work gets done", dv, 5, cl, 4, sec, 3),
-                opt("Whether we measured the right thing", "You check the evidence before guessing", mlId, 4, ds, 4, an, 5)
-            )
-        );
-        seedDiscoveryQuestion(
-            "Which class or hobby would you pick if grades did not matter?", 6,
-            opts(
-                opt("Logic games, chess, or taking machines apart", "You like how things work under the surface", be, 4, mlId, 3, cl, 2),
-                opt("Art, photography, fashion, or interior design", "Taste and presentation pull you in", fe, 4, mo, 3, uxId, 5),
-                opt("Psychology, economics, or sports analytics", "People and patterns fascinate you", ds, 5, mlId, 3, an, 5),
-                opt("Organizing events or running a club smoothly", "You enjoy making groups and systems click", dv, 4, cl, 3, fs, 3),
-                opt("Building robots, apps, or inventions", "Making something new from parts excites you", mlId, 4, mo, 4, fs, 4, be, 2)
-            )
-        );
-        seedDiscoveryQuestion(
-            "Which problem sounds most interesting to solve?", 7,
+            "Which problem sounds most interesting to solve?", 2,
             opts(
                 opt("An app crashes only for some users", "You enjoy reproducing bugs and proving what broke", qaId, 5, be, 3, fs, 2),
                 opt("A login page feels confusing and crowded", "You care about clarity and first impressions", uxId, 5, fe, 4, mo, 2),
@@ -1270,37 +1220,7 @@ public class DataInitializer implements CommandLineRunner {
             )
         );
         seedDiscoveryQuestion(
-            "What would you rather be known for at work?", 8,
-            opts(
-                opt("Catching issues before customers ever see them", "Quality and prevention matter most", qaId, 5, be, 2, dv, 2),
-                opt("Making products feel obvious to use", "You want people to succeed without help", uxId, 5, fe, 4),
-                opt("Turning messy spreadsheets into a clear story", "You like making data useful", an, 5, ds, 4),
-                opt("Keeping accounts and systems safe", "Trust and protection are your standard", sec, 5, cl, 3),
-                opt("Shipping a feature from idea to live demo", "You like owning the full build", fs, 5, mo, 3, be, 2)
-            )
-        );
-        seedDiscoveryQuestion(
-            "How do you prefer to check your work?", 9,
-            opts(
-                opt("Write steps and try to break it on purpose", "You like systematic testing", qaId, 5, be, 2),
-                opt("Watch someone else try to use it", "You learn from real people using the thing", uxId, 5, fe, 3, mo, 2),
-                opt("Recalculate the numbers from a second source", "You trust evidence over first impressions", an, 5, ds, 4),
-                opt("Ask who can access it and what they can do", "You think in permissions and risk", sec, 5, cl, 3, dv, 2),
-                opt("Run it live and watch logs or metrics", "You like operational proof", dv, 4, cl, 4, mlId, 3)
-            )
-        );
-        seedDiscoveryQuestion(
-            "Which weekly task would you not mind repeating?", 10,
-            opts(
-                opt("Writing and running test cases", "Careful checking feels satisfying", qaId, 5, be, 2),
-                opt("Tweaking layouts, colors, and spacing", "Visual polish is worth the time", uxId, 5, fe, 4),
-                opt("Cleaning a dataset and building a chart", "You like tidy numbers and clear visuals", an, 5, ds, 3),
-                opt("Reviewing access lists and security alerts", "Vigilance feels useful, not boring", sec, 5, cl, 3, dv, 2),
-                opt("Improving a pipeline or deployment", "You like making delivery smoother", dv, 5, cl, 4, mlId, 2)
-            )
-        );
-        seedDiscoveryQuestion(
-            "When you learn something new, what do you want to do with it first?", 11,
+            "When you learn something new, what do you want to do with it first?", 3,
             opts(
                 opt("Build an API or service someone else can call", "You like useful building blocks", be, 5, fs, 3),
                 opt("Put it on a phone or in a polished screen", "You want people to touch it", mo, 5, fe, 4, uxId, 3),
@@ -1310,17 +1230,7 @@ public class DataInitializer implements CommandLineRunner {
             )
         );
         seedDiscoveryQuestion(
-            "What frustrates you the most?", 12,
-            opts(
-                opt("Software that looks fine but fails in edge cases", "Hidden defects bother you", qaId, 5, be, 3),
-                opt("Beautiful ideas that are painful to use", "Bad experience is a deal-breaker", uxId, 5, fe, 4, mo, 2),
-                opt("Decisions made on gut feel with no numbers", "You want proof", an, 5, ds, 4, mlId, 3),
-                opt("Accounts left open or passwords shared", "Careless risk is unacceptable", sec, 5, cl, 3),
-                opt("Work that only lives on one person's laptop", "You want reliable, shared systems", dv, 5, cl, 4, fs, 2)
-            )
-        );
-        seedDiscoveryQuestion(
-            "What would you rather spend most of a workday producing?", 13,
+            "What would you rather spend most of a workday producing?", 4,
             opts(
                 opt("APIs, data models, and server-side rules", "You like the engine that other features depend on", be, 5, fs, 3, qaId, 2),
                 opt("Screens, layouts, and interactions people can see", "Visible product work is more satisfying", fe, 5, mo, 4, uxId, 4, fs, 2),
@@ -1330,27 +1240,7 @@ public class DataInitializer implements CommandLineRunner {
             )
         );
         seedDiscoveryQuestion(
-            "Which part of a product feels most like your work?", 14,
-            opts(
-                opt("The logic behind a button: auth, database, and APIs", "You care about correctness under the surface", be, 5, fs, 3, qaId, 2),
-                opt("The button itself: layout, motion, and accessibility", "You care how it looks and feels to use", fe, 5, uxId, 5, mo, 3),
-                opt("A native app that lives on someone's phone", "You want software people carry with them", mo, 5, fe, 3, uxId, 2),
-                opt("The cloud it runs on: regions, cost, and uptime", "You think in systems, capacity, and reliability", cl, 5, dv, 4, sec, 3),
-                opt("The numbers that explain what users or the business are doing", "You want the truth in the data", an, 5, ds, 4, mlId, 3)
-            )
-        );
-        seedDiscoveryQuestion(
-            "How do you want to work with other people most of the time?", 15,
-            opts(
-                opt("Pair with engineers on APIs, data, and edge cases", "You like technical collaboration and contracts", be, 5, fs, 4, qaId, 3),
-                opt("Sit with designers and make the interface match the vision", "You translate visual intent into a working UI", fe, 5, uxId, 4, mo, 3),
-                opt("Interview users, then turn what you heard into screens", "You start from people, not from code", uxId, 5, fe, 3, mo, 2),
-                opt("Be the person teammates call when production is unhealthy", "You like operational ownership", dv, 5, cl, 4, sec, 4),
-                opt("Present findings to someone who does not write code", "You enjoy turning evidence into a clear recommendation", an, 5, ds, 4, mlId, 3)
-            )
-        );
-        seedDiscoveryQuestion(
-            "Which tradeoff would you rather be responsible for?", 16,
+            "Which tradeoff would you rather be responsible for?", 5,
             opts(
                 opt("Ship a feature faster vs keep the server strictly correct", "You live in backend quality and API contracts", be, 5, fs, 3, qaId, 3),
                 opt("Make it look great vs keep the interface fast and simple", "You own visual polish and usability", fe, 5, mo, 4, uxId, 4),
@@ -1360,7 +1250,7 @@ public class DataInitializer implements CommandLineRunner {
             )
         );
         seedDiscoveryQuestion(
-            "If a new product team formed tomorrow, which seat would you claim?", 17,
+            "If a new product team formed tomorrow, which seat would you claim?", 6,
             opts(
                 opt("I'll own the APIs, database, and server logic", "Backend building blocks are your home", be, 5, fs, 3),
                 opt("I'll own the web interface users see in a browser", "Frontend product work is the seat you want", fe, 5, fs, 3, uxId, 2),
