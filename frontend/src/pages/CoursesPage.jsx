@@ -26,6 +26,8 @@ const ICON_MAP = {
   Backend:'🔧', Engineering:'🔧', Frontend:'🎨', Database:'🗄️', DevOps:'⚙️', Data:'📊', AI:'🤖', Cloud:'☁️', Architecture:'🏗️'
 }
 
+const difficultyKey = (value) => (value || '').toUpperCase().trim()
+
 const CoursesPage = () => {
   const navigate  = useNavigate()
   const [searchParams] = useSearchParams()
@@ -69,7 +71,7 @@ const CoursesPage = () => {
   useEffect(() => {
     let list = [...courses]
     if (category !== 'All') list = list.filter(c => c.category === category)
-    if (diff !== 'All')     list = list.filter(c => c.difficulty === diff)
+    if (diff !== 'All')     list = list.filter(c => difficultyKey(c.difficulty) === diff)
     if (search.trim())      list = list.filter(c => c.title.toLowerCase().includes(search.toLowerCase()) || c.description?.toLowerCase().includes(search.toLowerCase()))
     const recommended = list.filter(c => c.recommended)
     const rest = list.filter(c => !c.recommended)
@@ -141,7 +143,7 @@ const CoursesPage = () => {
         ) : (
           <div className="courses__grid">
             {filtered.map(course => {
-              const dc = DIFF_COLOR[course.difficulty] || DIFF_COLOR.INTERMEDIATE
+              const dc = DIFF_COLOR[difficultyKey(course.difficulty)] || DIFF_COLOR.INTERMEDIATE
               const isRecommended = Boolean(course.recommended)
               return (
                 <button

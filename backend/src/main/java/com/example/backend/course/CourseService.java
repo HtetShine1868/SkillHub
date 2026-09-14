@@ -151,7 +151,7 @@ public class CourseService {
                 course.getTitle(),
                 course.getDescription(),
                 course.getCategory(),
-                course.getDifficulty(),
+                normalizeDifficulty(course.getDifficulty()),
                 course.getDurationHours(),
                 course.getThumbnailUrl(),
                 course.getRating() != null ? course.getRating() : 0.0,
@@ -174,7 +174,7 @@ public class CourseService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(request.getCategory())
-                .difficulty(request.getDifficulty())
+                .difficulty(normalizeDifficulty(request.getDifficulty()))
                 .durationHours(request.getDurationHours())
                 .thumbnailUrl(request.getThumbnailUrl())
                 .published(isPub)
@@ -195,7 +195,7 @@ public class CourseService {
         course.setTitle(request.getTitle());
         course.setDescription(request.getDescription());
         course.setCategory(request.getCategory());
-        course.setDifficulty(request.getDifficulty());
+        course.setDifficulty(normalizeDifficulty(request.getDifficulty()));
         course.setDurationHours(request.getDurationHours());
         course.setThumbnailUrl(request.getThumbnailUrl());
 
@@ -227,6 +227,20 @@ public class CourseService {
         courseSkillRepository.deleteByCourseId(id);
         lessonRepository.deleteByCourseId(id);
         courseRepository.delete(course);
+    }
+
+    public static String normalizeDifficulty(String difficulty) {
+        if (difficulty == null || difficulty.isBlank()) {
+            return "BEGINNER";
+        }
+        String key = difficulty.trim().toUpperCase(Locale.ROOT);
+        return switch (key) {
+            case "BEGINNER", "EASY" -> "BEGINNER";
+            case "INTERMEDIATE", "MEDIUM" -> "INTERMEDIATE";
+            case "ADVANCED", "HARD" -> "ADVANCED";
+            case "EXPERT" -> "EXPERT";
+            default -> key;
+        };
     }
 
     private boolean isPublicCourse(Course course) {

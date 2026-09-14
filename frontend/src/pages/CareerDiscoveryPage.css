@@ -349,6 +349,13 @@
   color: rgba(200,210,240,0.5);
 }
 
+.discovery__match-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
 .discovery__match-select {
   border: none;
   border-radius: 8px;
@@ -362,6 +369,12 @@
   white-space: nowrap;
 }
 .discovery__match-select:hover { opacity: 1; }
+
+.discovery__match-select--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
 
 .discovery__results-actions {
   display: flex;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import axiosClient from '../api/axiosClient'
+import { downloadCertificatePdf } from '../utils/downloadCertificatePdf'
 import './ProfilePage.css'
 
 const LEVEL_LABELS = ['None', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert']
@@ -189,6 +190,14 @@ export default function ProfilePage() {
                                                 <div className="profile-cert-date">
                                                     Issued on {cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    className="profile-cert-download-btn"
+                                                    onClick={() => downloadCertificatePdf(cert, user?.name)}
+                                                    title="Download Certificate as PDF"
+                                                >
+                                                    ⬇ Download PDF
+                                                </button>
                                             </div>
                                         </div>
                                     ))}

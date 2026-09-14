@@ -77,7 +77,7 @@ const CoursePage = () => {
   const DIFF_COLOR = {
     BEGINNER:     '#6ee7b7', INTERMEDIATE: '#fcd34d', ADVANCED: '#fca5a5'
   }
-  const diffColor = DIFF_COLOR[displayCourse.difficulty] || '#fcd34d'
+  const diffColor = DIFF_COLOR[(displayCourse.difficulty || '').toUpperCase().trim()] || '#fcd34d'
 
   return (
     <div className="cpage">

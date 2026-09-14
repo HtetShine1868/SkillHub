@@ -484,6 +484,26 @@
     color: #64748b;
 }
 
+.profile-cert-download-btn {
+    margin-top: 0.85rem;
+    width: 100%;
+    padding: 0.55rem 0;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.profile-cert-download-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
     .profile-page {
         padding: 1.25rem 1rem 2.5rem;

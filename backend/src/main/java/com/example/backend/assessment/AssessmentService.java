@@ -27,7 +27,9 @@ public class AssessmentService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Gets all questions relevant to the skills required for the specified career.
+     * Builds a career-specific skill test: self-rating plus knowledge questions
+     * for the most important required skills, so recommendations and roadmaps
+     * reflect measured ability instead of only self-report.
      */
     public List<AssessmentQuestionResponse> getQuestionsForCareer(Long careerId) {
         List<CareerSkill> requiredSkills = new ArrayList<>(careerSkillRepository.findByCareerId(careerId));
@@ -36,16 +38,41 @@ public class AssessmentService {
         ).reversed());
 
         List<AssessmentQuestionResponse> questions = new ArrayList<>();
+        Set<Long> usedIds = new HashSet<>();
+        int skillsCovered = 0;
+
         for (CareerSkill cs : requiredSkills) {
-            if (cs.getSkill() == null || questions.size() >= 5) {
+            if (cs.getSkill() == null || skillsCovered >= 6 || questions.size() >= 12) {
                 break;
             }
-            AssessmentQuestion picked = questionRepository.findBySkillId(cs.getSkill().getId()).stream()
+
+            List<AssessmentQuestion> skillQs = questionRepository.findBySkillId(cs.getSkill().getId());
+            AssessmentQuestion self = skillQs.stream()
                     .filter(q -> isExperienceQuestion(q.getType()))
                     .min(Comparator.comparing(AssessmentQuestion::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
                     .orElse(null);
-            if (picked != null) {
-                questions.add(toResponse(picked));
+
+            int knowledgeLimit = skillsCovered < 4 ? 2 : 1;
+            List<AssessmentQuestion> knowledge = skillQs.stream()
+                    .filter(q -> !isExperienceQuestion(q.getType()))
+                    .sorted(Comparator.comparing(AssessmentQuestion::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
+                    .limit(knowledgeLimit)
+                    .toList();
+
+            boolean added = false;
+            if (self != null && usedIds.add(self.getId())) {
+                questions.add(toResponse(self));
+                added = true;
+            }
+            for (AssessmentQuestion kq : knowledge) {
+                if (questions.size() >= 12) break;
+                if (usedIds.add(kq.getId())) {
+                    questions.add(toResponse(kq));
+                    added = true;
+                }
+            }
+            if (added) {
+                skillsCovered++;
             }
         }
 

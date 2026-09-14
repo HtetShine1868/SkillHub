@@ -199,7 +199,10 @@ const SkillAssessmentPage = () => {
                 onClick={() => handleSelect(val)}
               >
                 <span className="assess__option-letter">{letter}</span>
-                <span className="assess__option-label">{label}</span>
+                <span className="assess__option-label">
+                  {label}
+                  {opt.description && <small className="assess__option-desc">{opt.description}</small>}
+                </span>
                 <div className={`assess__option-check ${isSelected ? 'assess__option-check--active' : ''}`}>
                   {isSelected && '✓'}
                 </div>

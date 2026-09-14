@@ -99,7 +99,8 @@
   transition: all 0.2s;
 }
 .assess__option--selected .assess__option-letter { background: #7c3aed; border-color: #7c3aed; color: #ffffff; }
-.assess__option-label { flex: 1; line-height: 1.4; font-weight: 500; }
+.assess__option-label { flex: 1; line-height: 1.4; font-weight: 500; display: flex; flex-direction: column; gap: 0.2rem; }
+.assess__option-desc { font-size: 0.78rem; font-weight: 400; color: rgba(200, 210, 240, 0.62); }
 .assess__option-check {
   width: 22px; height: 22px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;

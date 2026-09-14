@@ -68,6 +68,7 @@ public class DataInitializer implements CommandLineRunner {
             jdbcTemplate.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructor_id BIGINT");
             jdbcTemplate.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructor_name VARCHAR(100)");
             jdbcTemplate.execute("ALTER TABLE courses ADD COLUMN IF NOT EXISTS review_count INT DEFAULT 0");
+            jdbcTemplate.update("UPDATE courses SET difficulty = UPPER(TRIM(difficulty)) WHERE difficulty IS NOT NULL AND difficulty <> UPPER(TRIM(difficulty))");
         } catch (Exception e) {
             log.warn("Could not alter courses table columns: {}", e.getMessage());
         }
@@ -117,6 +118,7 @@ public class DataInitializer implements CommandLineRunner {
         Skill sFastApi    = seedSkill("FastAPI",               "Backend",     "Python APIs, Pydantic models, and async endpoints");
         Skill sAnsible    = seedSkill("Ansible",               "DevOps",      "Configuration management and server automation");
         Skill sSec        = seedSkill("Cloud Security",        "Cloud",       "IAM, least privilege, secrets, and network isolation");
+        Skill sUx         = seedSkill("UI/UX Design",          "Design",      "User research, wireframes, usability, and visual hierarchy");
 
         // ===================== CAREERS =====================
         Career cBackend = seedCareer("Backend Developer", "Engineering", "🔧",
@@ -150,6 +152,22 @@ public class DataInitializer implements CommandLineRunner {
         Career cMobile = seedCareer("Mobile Developer", "Engineering", "📱",
                 "Mobile Developers build native or cross-platform iOS and Android applications with great user experiences.",
                 "Build cross-platform apps with React Native or Flutter;Implement offline-first data sync;Integrate device APIs (camera, GPS, notifications);Publish to App Store & Google Play;Optimize app performance and battery usage");
+
+        Career cQa = seedCareer("QA Engineer", "Engineering", "✅",
+                "QA Engineers design test plans, automate checks, and catch defects before they reach users.",
+                "Write test plans and test cases;Automate API and UI tests;Report reproducible bugs;Measure coverage and quality risk;Partner with developers on release readiness");
+
+        Career cSecurity = seedCareer("Cybersecurity Analyst", "Security", "🛡️",
+                "Cybersecurity Analysts protect systems by finding weaknesses, enforcing access control, and responding to incidents.",
+                "Review IAM and network controls;Hunt for misconfigurations and vulnerabilities;Monitor logs and alerts;Harden cloud and Linux environments;Document incidents and remediations");
+
+        Career cAnalyst = seedCareer("Data Analyst", "Data", "📈",
+                "Data Analysts turn raw data into clear reports, dashboards, and recommendations that teams can act on.",
+                "Query and clean datasets;Build dashboards and charts;Explain trends to stakeholders;Validate numbers before they are shared;Recommend the next decision from evidence");
+
+        Career cUx = seedCareer("UI/UX Designer", "Design", "✏️",
+                "UI/UX Designers research user needs and craft interfaces that are clear, accessible, and pleasant to use.",
+                "Interview users and map journeys;Wireframe and prototype flows;Design visual hierarchy and spacing;Test usability and iterate;Hand off specs to frontend teams");
 
         // ===================== CAREER SKILLS =====================
         seedCareerSkill(cBackend, sJava, 4, 0.9);
@@ -222,7 +240,33 @@ public class DataInitializer implements CommandLineRunner {
         seedCareerSkill(cMobile, sFlutter, 3, 0.75);
         seedCareerSkill(cMobile, sJS, 3, 0.7);
 
-        replaceInterestDiscoveryQuestions(cBackend, cFrontend, cFullStack, cData, cDevOps, cCloud, cMLEng, cMobile);
+        seedCareerSkill(cQa, sTest, 5, 0.95);
+        seedCareerSkill(cQa, sGit, 3, 0.7);
+        seedCareerSkill(cQa, sRest, 4, 0.8);
+        seedCareerSkill(cQa, sJava, 3, 0.65);
+        seedCareerSkill(cQa, sSql, 2, 0.5);
+        seedCareerSkill(cQa, sJS, 2, 0.4);
+
+        seedCareerSkill(cSecurity, sSec, 5, 0.95);
+        seedCareerSkill(cSecurity, sLinux, 4, 0.85);
+        seedCareerSkill(cSecurity, sAWS, 4, 0.8);
+        seedCareerSkill(cSecurity, sDocker, 3, 0.65);
+        seedCareerSkill(cSecurity, sGit, 2, 0.45);
+
+        seedCareerSkill(cAnalyst, sSql, 5, 0.95);
+        seedCareerSkill(cAnalyst, sPython, 4, 0.85);
+        seedCareerSkill(cAnalyst, sViz, 5, 0.9);
+        seedCareerSkill(cAnalyst, sGit, 2, 0.4);
+
+        seedCareerSkill(cUx, sUx, 5, 0.95);
+        seedCareerSkill(cUx, sCSS, 4, 0.85);
+        seedCareerSkill(cUx, sJS, 3, 0.6);
+        seedCareerSkill(cUx, sReact, 2, 0.45);
+
+        replaceInterestDiscoveryQuestions(
+                cBackend, cFrontend, cFullStack, cData, cDevOps, cCloud, cMLEng, cMobile,
+                cQa, cSecurity, cAnalyst, cUx
+        );
 
         // ===================== ASSESSMENT QUESTIONS =====================
         // NOTE: seeding is idempotent per-skill+question-text (seedAssessmentQuestionIfMissing)
@@ -456,6 +500,220 @@ public class DataInitializer implements CommandLineRunner {
              "{\"optionKey\":\"C\",\"text\":\"TTL\"}," +
              "{\"optionKey\":\"D\",\"text\":\"DEL\"}]",
             "B", 2, 31);
+
+        seedAssessmentQuestionIfMissing(sAWS, "Which AWS service is primarily object storage for files and backups?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"EC2\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"S3\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"RDS\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"CloudFront\"}]",
+            "B", 2, 32);
+
+        seedAssessmentQuestionIfMissing(sJS, "Rate your JavaScript programming experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know variables, functions, and basic DOM changes\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can work with arrays, objects, and events\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I use async/await, modules, and browser APIs\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I write reusable modules and debug complex client bugs\",\"value\":4}]",
+            null, 1, 33);
+        seedAssessmentQuestionIfMissing(sJS, "What does 'const' prevent in JavaScript?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Changing object properties\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Reassigning the variable to a new value\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Using the variable inside functions\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Hoisting the variable\"}]",
+            "B", 1, 34);
+
+        seedAssessmentQuestionIfMissing(sRest, "Rate your REST API design experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know GET and POST exist\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can call APIs and read JSON responses\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I design resources, status codes, and error bodies\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I version APIs and handle auth, pagination, and idempotency\",\"value\":4}]",
+            null, 1, 35);
+        seedAssessmentQuestionIfMissing(sRest, "Which HTTP method is typically used to update a resource in place?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"GET\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"PUT\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"OPTIONS\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"HEAD\"}]",
+            "B", 2, 36);
+
+        seedAssessmentQuestionIfMissing(sTest, "Rate your software testing experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I manually click through a feature once\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I write simple unit tests\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I write API tests, mocks, and regression suites\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I design test strategy, coverage, and CI quality gates\",\"value\":4}]",
+            null, 1, 37);
+        seedAssessmentQuestionIfMissing(sTest, "What is the main goal of a regression test?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"To measure how fast the app starts\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"To check that old features still work after a change\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"To generate random user data\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"To deploy the app to production\"}]",
+            "B", 2, 38);
+
+        seedAssessmentQuestionIfMissing(sSec, "Rate your cloud security experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know passwords and MFA matter\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can set simple IAM users and security groups\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I apply least privilege, secrets, and network isolation\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I review architectures for attack paths and incidents\",\"value\":4}]",
+            null, 2, 39);
+        seedAssessmentQuestionIfMissing(sSec, "What does least privilege mean?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Give everyone admin so work is faster\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Give only the access needed for the task\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Never use cloud accounts\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Store passwords in source code for convenience\"}]",
+            "B", 2, 40);
+
+        seedAssessmentQuestionIfMissing(sViz, "Rate your data visualization experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I can make a basic chart in a spreadsheet\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I choose bar/line/pie charts for simple data\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I build dashboards that answer a business question\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I design visual stories and avoid misleading charts\",\"value\":4}]",
+            null, 1, 41);
+        seedAssessmentQuestionIfMissing(sViz, "Which chart is usually best for comparing values across categories?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"A 3D pie chart with many slices\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"A bar chart\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"A word cloud\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A network graph\"}]",
+            "B", 1, 42);
+
+        seedAssessmentQuestionIfMissing(sUx, "Rate your UI/UX design experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I notice when an app feels confusing\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can sketch screens and simple flows\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I wireframe, prototype, and run small usability tests\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I research users and iterate a design system\",\"value\":4}]",
+            null, 1, 43);
+        seedAssessmentQuestionIfMissing(sUx, "What is a wireframe mainly used for?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Final brand colors and illustrations\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Showing layout and flow before visual polish\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Writing production backend code\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Encrypting user passwords\"}]",
+            "B", 1, 44);
+        seedAssessmentQuestionIfMissing(sUx, "Why do designers run usability tests?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"To prove the first idea is always right\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"To watch real people try the product and find friction\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"To replace all user research with analytics only\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"To skip accessibility work\"}]",
+            "B", 2, 45);
+
+        seedAssessmentQuestionIfMissing(sNodeJS, "Rate your Node.js and Express experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I have run a simple Node script\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can create a basic Express route\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I use middleware, async patterns, and npm packages\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I build production APIs with auth and error handling\",\"value\":4}]",
+            null, 1, 46);
+        seedAssessmentQuestionIfMissing(sNodeJS, "What is Express middleware used for?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"To style HTML pages with CSS\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"To run code on a request before or after a route handler\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"To compile TypeScript to Java\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"To create database tables automatically\"}]",
+            "B", 2, 47);
+
+        seedAssessmentQuestionIfMissing(sGraphQL, "Rate your GraphQL experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know GraphQL is an alternative to REST\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can write a simple query\"}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I design schemas and resolvers\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I handle N+1 problems, auth, and subscriptions\",\"value\":4}]",
+            null, 2, 48);
+        seedAssessmentQuestionIfMissing(sGraphQL, "What is a GraphQL resolver?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"A CSS animation helper\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"A function that fetches the data for a schema field\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"A Linux process manager\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A Docker volume driver\"}]",
+            "B", 2, 49);
+
+        seedAssessmentQuestionIfMissing(sCICD, "Rate your CI/CD experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I have seen GitHub Actions or Jenkins mentioned\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can follow a pipeline that already exists\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I write pipelines that test and deploy automatically\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I design gated releases and rollback strategies\",\"value\":4}]",
+            null, 2, 50);
+        seedAssessmentQuestionIfMissing(sCICD, "What does CI usually run first after a new commit?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Delete the production database\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Build and test the change automatically\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Rewrite the product roadmap\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Disable all user accounts\"}]",
+            "B", 1, 51);
+
+        seedAssessmentQuestionIfMissing(sRN, "Rate your React Native experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know it uses React for mobile apps\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can render screens and basic navigation\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I use device APIs and platform-specific code\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I ship and optimize production iOS/Android apps\",\"value\":4}]",
+            null, 2, 52);
+        seedAssessmentQuestionIfMissing(sRN, "What does React Native primarily help you build?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Only desktop Windows apps\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Cross-platform mobile apps with a React-like model\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Kubernetes clusters\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"SQL indexes\"}]",
+            "B", 1, 53);
+
+        seedAssessmentQuestionIfMissing(sFlutter, "Rate your Flutter experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I have heard of Dart and widgets\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can build a simple screen with widgets\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I manage state and navigation in Flutter\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I ship polished cross-platform Flutter apps\",\"value\":4}]",
+            null, 2, 54);
+        seedAssessmentQuestionIfMissing(sFlutter, "What language is used to write Flutter apps?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Ruby\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Dart\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"PHP\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Go\"}]",
+            "B", 1, 55);
+
+        seedAssessmentQuestionIfMissing(sFastApi, "Rate your FastAPI experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know it is a Python web framework\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can create a simple endpoint\"}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I use Pydantic models and async routes\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I deploy FastAPI services with auth and docs\",\"value\":4}]",
+            null, 2, 56);
+        seedAssessmentQuestionIfMissing(sFastApi, "What does FastAPI use to validate request data?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Pydantic models\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"HTML tables\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"CSS variables\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Excel macros\"}]",
+            "A", 2, 57);
+
+        seedAssessmentQuestionIfMissing(sMongoDB, "Rate your MongoDB experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know it stores JSON-like documents\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can insert and find documents\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I use aggregation and indexes\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I design schemas and tune production queries\",\"value\":4}]",
+            null, 2, 58);
+        seedAssessmentQuestionIfMissing(sMongoDB, "What does MongoDB store data as?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Only fixed SQL rows\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Flexible documents (BSON/JSON-like)\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"CSV files only\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Excel worksheets\"}]",
+            "B", 1, 59);
+
+        seedAssessmentQuestionIfMissing(sAnsible, "Rate your Ansible experience.", "SELF_REPORTED",
+            "[{\"label\":\"Beginner\",\"description\":\"I know it automates servers\",\"value\":1}," +
+             "{\"label\":\"Basic\",\"description\":\"I can run a simple playbook\",\"value\":2}," +
+             "{\"label\":\"Intermediate\",\"description\":\"I write roles and inventory for multiple hosts\",\"value\":3}," +
+             "{\"label\":\"Advanced\",\"description\":\"I manage production configuration at scale\",\"value\":4}]",
+            null, 2, 60);
+        seedAssessmentQuestionIfMissing(sAnsible, "What is an Ansible playbook?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"A YAML file describing automation tasks\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"A React component\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"A Kubernetes node type\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A SQL join type\"}]",
+            "A", 2, 61);
+
+        seedAssessmentQuestionIfMissing(sJava, "Which collection keeps unique elements and no duplicates?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"List\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Set\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Array\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"Queue only\"}]",
+            "B", 2, 62);
+        seedAssessmentQuestionIfMissing(sPython, "What does a Python list comprehension return?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"A new list built from an expression\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"A database connection\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"A compiled C binary\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A CSS stylesheet\"}]",
+            "A", 2, 63);
+        seedAssessmentQuestionIfMissing(sSql, "What does an INNER JOIN return?", "KNOWLEDGE",
+            "[{\"optionKey\":\"A\",\"text\":\"Only rows that match in both tables\"}," +
+             "{\"optionKey\":\"B\",\"text\":\"Every row from both tables always\"}," +
+             "{\"optionKey\":\"C\",\"text\":\"Only unmatched rows\"}," +
+             "{\"optionKey\":\"D\",\"text\":\"A deleted table\"}]",
+            "A", 2, 64);
 
         // ===================== COURSES & LESSONS =====================
         Course c1 = seedCourse("Java & Spring Boot Core", "Engineering",
@@ -887,7 +1145,8 @@ public class DataInitializer implements CommandLineRunner {
 
     private void replaceInterestDiscoveryQuestions(
             Career backend, Career frontend, Career fullStack, Career data,
-            Career devops, Career cloud, Career ml, Career mobile
+            Career devops, Career cloud, Career ml, Career mobile,
+            Career qa, Career security, Career analyst, Career ux
     ) {
         Long be = backend.getId();
         Long fe = frontend.getId();
@@ -897,6 +1156,10 @@ public class DataInitializer implements CommandLineRunner {
         Long cl = cloud.getId();
         Long mlId = ml.getId();
         Long mo = mobile.getId();
+        Long qaId = qa.getId();
+        Long sec = security.getId();
+        Long an = analyst.getId();
+        Long uxId = ux.getId();
 
         discoveryQuestionRepository.deleteAll();
         discoveryQuestionRepository.flush();
@@ -905,38 +1168,38 @@ public class DataInitializer implements CommandLineRunner {
             "What kind of Saturday project would you actually enjoy?", 1,
             opts(
                 opt("Fix or automate something so it just works", "You like hidden problems and reliable results", be, 5, dv, 4, cl, 3, fs, 2),
-                opt("Redesign how an app or space looks and feels", "You care about first impressions and ease of use", fe, 5, mo, 5, fs, 2),
-                opt("Dig into numbers or a mystery and explain what you found", "You enjoy patterns, evidence, and stories", ds, 5, mlId, 4),
+                opt("Redesign how an app or space looks and feels", "You care about first impressions and ease of use", fe, 5, mo, 4, uxId, 5),
+                opt("Dig into numbers or a mystery and explain what you found", "You enjoy patterns, evidence, and stories", ds, 5, mlId, 4, an, 5),
                 opt("Build a small thing a friend can try end to end", "You like owning the whole idea-to-result path", fs, 5, mo, 3, be, 2),
-                opt("Set up gadgets, networks, or a home lab", "You like systems, tools, and making environments work", cl, 5, dv, 4, mlId, 2)
+                opt("Set up gadgets, networks, or a home lab", "You like systems, tools, and making environments work", cl, 5, dv, 4, sec, 3)
             )
         );
         seedDiscoveryQuestion(
             "Which compliment would make you happiest?", 2,
             opts(
-                opt("That was rock-solid — I never have to worry about it", "Reliability and correctness matter most", be, 5, cl, 4, dv, 3),
-                opt("This is so easy and nice to use", "People's experience is your measure of success", fe, 5, mo, 5, fs, 2),
-                opt("You helped us see something we would have missed", "Insight and evidence drive you", ds, 5, mlId, 3),
+                opt("That was rock-solid — I never have to worry about it", "Reliability and correctness matter most", be, 5, cl, 4, qaId, 4),
+                opt("This is so easy and nice to use", "People's experience is your measure of success", fe, 5, mo, 4, uxId, 5),
+                opt("You helped us see something we would have missed", "Insight and evidence drive you", ds, 5, mlId, 3, an, 5),
                 opt("You can do the whole thing yourself", "You like end-to-end ownership", fs, 5, mo, 3, be, 2),
-                opt("You kept everything running when it got chaotic", "You like coordinating moving parts", dv, 5, cl, 4, fs, 2)
+                opt("You kept everything running when it got chaotic", "You like coordinating moving parts", dv, 5, cl, 4, sec, 3)
             )
         );
         seedDiscoveryQuestion(
             "How do you like to spend focused time?", 3,
             opts(
                 opt("Quiet deep work on a hidden problem", "Logic, structure, and figuring things out", be, 5, ds, 3, mlId, 3),
-                opt("Visual work you can see immediately", "You want fast, visible feedback", fe, 5, mo, 4),
-                opt("Talking to people, then turning their need into something real", "You enjoy translating ideas into a product", fs, 5, fe, 2, mo, 2),
-                opt("Keeping many moving parts coordinated", "You like process, timing, and reliability", dv, 5, cl, 4, fs, 2),
-                opt("Running small experiments and comparing results", "You like testing hunches with evidence", ds, 4, mlId, 5)
+                opt("Visual work you can see immediately", "You want fast, visible feedback", fe, 5, mo, 4, uxId, 5),
+                opt("Talking to people, then turning their need into something real", "You enjoy translating ideas into a product", fs, 5, uxId, 3, mo, 2),
+                opt("Keeping many moving parts coordinated", "You like process, timing, and reliability", dv, 5, cl, 4, qaId, 3),
+                opt("Running small experiments and comparing results", "You like testing hunches with evidence", ds, 4, mlId, 5, an, 4)
             )
         );
         seedDiscoveryQuestion(
             "What kind of impact would make you proud?", 4,
             opts(
-                opt("People never notice the work because nothing breaks", "Invisible reliability is the win", be, 4, cl, 5, dv, 4),
-                opt("People smile when they use something you shaped", "Human reaction matters more than hidden machinery", fe, 5, mo, 5),
-                opt("A decision was made because of what you uncovered", "You want work that changes minds with evidence", ds, 5, mlId, 3),
+                opt("People never notice the work because nothing breaks", "Invisible reliability is the win", be, 4, cl, 5, dv, 4, qaId, 3),
+                opt("People smile when they use something you shaped", "Human reaction matters more than hidden machinery", fe, 5, mo, 4, uxId, 5),
+                opt("A decision was made because of what you uncovered", "You want work that changes minds with evidence", ds, 5, mlId, 3, an, 5),
                 opt("A friend can open what you shipped and try it today", "Finished products excite you", fs, 5, mo, 3),
                 opt("Something gets smarter over time without extra babysitting", "You like systems that learn and improve", mlId, 5, ds, 3, dv, 2)
             )
@@ -944,21 +1207,81 @@ public class DataInitializer implements CommandLineRunner {
         seedDiscoveryQuestion(
             "When a group project goes wrong, what do you jump to first?", 5,
             opts(
-                opt("The logic or information underneath", "You look for root causes and structure", be, 5, ds, 4),
-                opt("How confusing or unpleasant it felt to use", "You start from the person's experience", fe, 5, mo, 4),
+                opt("The logic or information underneath", "You look for root causes and structure", be, 5, ds, 3, qaId, 3),
+                opt("How confusing or unpleasant it felt to use", "You start from the person's experience", fe, 5, mo, 3, uxId, 5),
                 opt("Who needs what to get unblocked", "You coordinate people and pieces", fs, 4, cl, 3, dv, 2),
-                opt("The process, tools, or environment", "You fix how the work gets done", dv, 5, cl, 4),
-                opt("Whether we measured the right thing", "You check the evidence before guessing", mlId, 4, ds, 5)
+                opt("The process, tools, or environment", "You fix how the work gets done", dv, 5, cl, 4, sec, 3),
+                opt("Whether we measured the right thing", "You check the evidence before guessing", mlId, 4, ds, 4, an, 5)
             )
         );
         seedDiscoveryQuestion(
             "Which class or hobby would you pick if grades did not matter?", 6,
             opts(
                 opt("Logic games, chess, or taking machines apart", "You like how things work under the surface", be, 4, mlId, 3, cl, 2),
-                opt("Art, photography, fashion, or interior design", "Taste and presentation pull you in", fe, 5, mo, 4),
-                opt("Psychology, economics, or sports analytics", "People and patterns fascinate you", ds, 5, mlId, 3),
+                opt("Art, photography, fashion, or interior design", "Taste and presentation pull you in", fe, 4, mo, 3, uxId, 5),
+                opt("Psychology, economics, or sports analytics", "People and patterns fascinate you", ds, 5, mlId, 3, an, 5),
                 opt("Organizing events or running a club smoothly", "You enjoy making groups and systems click", dv, 4, cl, 3, fs, 3),
                 opt("Building robots, apps, or inventions", "Making something new from parts excites you", mlId, 4, mo, 4, fs, 4, be, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which problem sounds most interesting to solve?", 7,
+            opts(
+                opt("An app crashes only for some users", "You enjoy reproducing bugs and proving what broke", qaId, 5, be, 3, fs, 2),
+                opt("A login page feels confusing and crowded", "You care about clarity and first impressions", uxId, 5, fe, 4, mo, 2),
+                opt("A dashboard number does not match last week's report", "You want the truth in the data", an, 5, ds, 4),
+                opt("A server was left open to the internet", "You think about risk and who can get in", sec, 5, cl, 3, dv, 2),
+                opt("A model predicts the wrong customers", "You want to improve how systems learn", mlId, 5, ds, 3)
+            )
+        );
+        seedDiscoveryQuestion(
+            "What would you rather be known for at work?", 8,
+            opts(
+                opt("Catching issues before customers ever see them", "Quality and prevention matter most", qaId, 5, be, 2, dv, 2),
+                opt("Making products feel obvious to use", "You want people to succeed without help", uxId, 5, fe, 4),
+                opt("Turning messy spreadsheets into a clear story", "You like making data useful", an, 5, ds, 4),
+                opt("Keeping accounts and systems safe", "Trust and protection are your standard", sec, 5, cl, 3),
+                opt("Shipping a feature from idea to live demo", "You like owning the full build", fs, 5, mo, 3, be, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "How do you prefer to check your work?", 9,
+            opts(
+                opt("Write steps and try to break it on purpose", "You like systematic testing", qaId, 5, be, 2),
+                opt("Watch someone else try to use it", "You learn from real people using the thing", uxId, 5, fe, 3, mo, 2),
+                opt("Recalculate the numbers from a second source", "You trust evidence over first impressions", an, 5, ds, 4),
+                opt("Ask who can access it and what they can do", "You think in permissions and risk", sec, 5, cl, 3, dv, 2),
+                opt("Run it live and watch logs or metrics", "You like operational proof", dv, 4, cl, 4, mlId, 3)
+            )
+        );
+        seedDiscoveryQuestion(
+            "Which weekly task would you not mind repeating?", 10,
+            opts(
+                opt("Writing and running test cases", "Careful checking feels satisfying", qaId, 5, be, 2),
+                opt("Tweaking layouts, colors, and spacing", "Visual polish is worth the time", uxId, 5, fe, 4),
+                opt("Cleaning a dataset and building a chart", "You like tidy numbers and clear visuals", an, 5, ds, 3),
+                opt("Reviewing access lists and security alerts", "Vigilance feels useful, not boring", sec, 5, cl, 3, dv, 2),
+                opt("Improving a pipeline or deployment", "You like making delivery smoother", dv, 5, cl, 4, mlId, 2)
+            )
+        );
+        seedDiscoveryQuestion(
+            "When you learn something new, what do you want to do with it first?", 11,
+            opts(
+                opt("Build an API or service someone else can call", "You like useful building blocks", be, 5, fs, 3),
+                opt("Put it on a phone or in a polished screen", "You want people to touch it", mo, 5, fe, 4, uxId, 3),
+                opt("See if a dataset or model agrees with it", "You test ideas against evidence", ds, 4, mlId, 5, an, 4),
+                opt("Use it to lock down or monitor a system", "You apply knowledge to protection", sec, 5, cl, 3, dv, 3),
+                opt("Write a checklist so the team can repeat it", "You like quality that scales", qaId, 5, dv, 3)
+            )
+        );
+        seedDiscoveryQuestion(
+            "What frustrates you the most?", 12,
+            opts(
+                opt("Software that looks fine but fails in edge cases", "Hidden defects bother you", qaId, 5, be, 3),
+                opt("Beautiful ideas that are painful to use", "Bad experience is a deal-breaker", uxId, 5, fe, 4, mo, 2),
+                opt("Decisions made on gut feel with no numbers", "You want proof", an, 5, ds, 4, mlId, 3),
+                opt("Accounts left open or passwords shared", "Careless risk is unacceptable", sec, 5, cl, 3),
+                opt("Work that only lives on one person's laptop", "You want reliable, shared systems", dv, 5, cl, 4, fs, 2)
             )
         );
     }
@@ -1028,12 +1351,20 @@ public class DataInitializer implements CommandLineRunner {
 
     private Course seedCourse(String title, String category, String description, String difficulty,
                                int durationHours, double rating, int enrollmentCount) {
+        String normalizedDifficulty = CourseService.normalizeDifficulty(difficulty);
         return courseRepository.findAll().stream()
                 .filter(c -> c.getTitle().equalsIgnoreCase(title))
                 .findFirst()
+                .map(existing -> {
+                    if (!normalizedDifficulty.equals(existing.getDifficulty())) {
+                        existing.setDifficulty(normalizedDifficulty);
+                        return courseRepository.save(existing);
+                    }
+                    return existing;
+                })
                 .orElseGet(() -> courseRepository.save(Course.builder()
                         .title(title).category(category).description(description)
-                        .difficulty(difficulty).durationHours(durationHours)
+                        .difficulty(normalizedDifficulty).durationHours(durationHours)
                         .rating(rating).enrollmentCount(enrollmentCount)
                         .published(true)
                         .build()));

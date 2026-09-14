@@ -79,6 +79,7 @@ export default function CourseEditorPage() {
             setCourseData(prev => ({
               ...prev,
               ...data,
+              difficulty: (data.difficulty || prev.difficulty || 'BEGINNER').toUpperCase(),
               lessons: data.lessons?.length ? data.lessons : prev.lessons,
               quizzes: data.quizzes?.length ? data.quizzes : prev.quizzes,
               assignments: data.assignments?.length ? data.assignments : prev.assignments

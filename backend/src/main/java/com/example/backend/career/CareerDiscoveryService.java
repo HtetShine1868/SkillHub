@@ -26,7 +26,7 @@ import java.util.*;
 @Slf4j
 public class CareerDiscoveryService {
 
-    private static final int TOP_N = 5;
+    private static final int TOP_N = 8;
 
     private final CareerDiscoveryQuestionRepository questionRepository;
 

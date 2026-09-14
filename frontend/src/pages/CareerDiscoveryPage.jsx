@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getDiscoveryQuestions, submitDiscoveryAnswers, getAllCareers } from '../services/careerService'
+import { getDiscoveryQuestions, submitDiscoveryAnswers } from '../services/careerService'
 import './CareerDiscoveryPage.css'
 
 /* Fallback mock questions (used if API call fails) */
@@ -27,13 +27,7 @@ const MOCK_QUESTIONS = [
   }
 ]
 
-const CAREER_LABELS = {
-  1: { name: 'Backend Developer', icon: '🔧', color: '#7c3aed' },
-  2: { name: 'Frontend Developer', icon: '🎨', color: '#0ea5e9' },
-  3: { name: 'Full Stack Engineer', icon: '🚀', color: '#8b5cf6' },
-  4: { name: 'Data Scientist', icon: '📊', color: '#10b981' },
-  5: { name: 'DevOps Engineer', icon: '⚙️', color: '#f59e0b' },
-}
+const CAREER_COLORS = ['#7c3aed', '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899']
 
 const CareerDiscoveryPage = () => {
   const navigate = useNavigate()
@@ -109,36 +103,45 @@ const CareerDiscoveryPage = () => {
         <div className="discovery__results">
           <div className="discovery__results-badge">🎯 Career Discovery Complete</div>
           <h1 className="discovery__results-title">Your Top Career Matches</h1>
-          <p className="discovery__results-sub">Based on your interests and how you like to work, here are your closest career matches:</p>
+          <p className="discovery__results-sub">Based on your interests, here are your closest career matches. Take the skill test on a path to refine your level and roadmap.</p>
           <div className="discovery__match-list">
-            {results.slice(0, 3).map((r, i) => {
+            {results.slice(0, 6).map((r, i) => {
               const careerId = r.careerId || r.id || (i + 1)
               const name = r.careerName || r.name || 'Software Engineer'
               const pct = r.matchPercentage || r.matchPct || (94 - i * 6)
-              const meta = CAREER_LABELS[careerId] || { name, icon: '🌟', color: '#a78bfa' }
+              const icon = r.careerIcon || r.icon || '🌟'
+              const color = CAREER_COLORS[i % CAREER_COLORS.length]
 
               return (
-                <div key={careerId} className="discovery__match-card" style={{ '--accent-color': meta.color }}>
+                <div key={careerId} className="discovery__match-card" style={{ '--accent-color': color }}>
                   <div className="discovery__match-rank">#{i + 1}</div>
-                  <div className="discovery__match-icon">{meta.icon}</div>
+                  <div className="discovery__match-icon">{icon}</div>
                   <div className="discovery__match-info">
-                    <h2 className="discovery__match-name">{meta.name}</h2>
+                    <h2 className="discovery__match-name">{name}</h2>
                     <div className="discovery__match-bar-wrap">
                       <div
                         className="discovery__match-bar-fill"
-                        style={{ width: `${pct}%`, background: meta.color }}
+                        style={{ width: `${pct}%`, background: color }}
                       />
                     </div>
                     <span className="discovery__match-pct">{pct}% Match</span>
                   </div>
-                  <button
-                    id={`btn-select-career-${careerId}`}
-                    className="discovery__match-select"
-                    style={{ background: meta.color }}
-                    onClick={() => navigate(`/careers/${careerId}`)}
-                  >
-                    Explore Path →
-                  </button>
+                  <div className="discovery__match-actions">
+                    <button
+                      id={`btn-select-career-${careerId}`}
+                      className="discovery__match-select"
+                      style={{ background: color }}
+                      onClick={() => navigate(`/assessment?careerId=${careerId}`)}
+                    >
+                      Take skill test →
+                    </button>
+                    <button
+                      className="discovery__match-select discovery__match-select--ghost"
+                      onClick={() => navigate(`/careers/${careerId}`)}
+                    >
+                      Explore
+                    </button>
+                  </div>
                 </div>
               )
             })}

@@ -10,7 +10,30 @@ function isDesktopNav() {
     return typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches
 }
 
-function NavDropdown({ title, items }) {
+function BrandLogo({ to, badge, badgeClass = '' }) {
+    return (
+        <Link to={to} className="navbar__logo">
+            <span className="navbar__logo-mark" aria-hidden="true">S</span>
+            <span className="navbar__logo-text">SkillHub</span>
+            {badge && (
+                <span className={`navbar__role-badge ${badgeClass}`.trim()}>{badge}</span>
+            )}
+        </Link>
+    )
+}
+
+function NavItem({ to, end, icon, children, className = '' }) {
+    return (
+        <li className={className}>
+            <NavLink to={to} end={end} title={typeof children === 'string' ? children : undefined}>
+                {icon && <span className="navbar__icon" aria-hidden="true">{icon}</span>}
+                <span className="navbar__link-label">{children}</span>
+            </NavLink>
+        </li>
+    )
+}
+
+function NavDropdown({ title, icon, items }) {
     const [open, setOpen] = useState(false)
     const [menuPos, setMenuPos] = useState(null)
     const [flyout, setFlyout] = useState(() => isDesktopNav())
@@ -65,7 +88,13 @@ function NavDropdown({ title, items }) {
             }
             const btn = dropdownRef.current.querySelector('.navbar__dropdown-btn')
             const rect = (btn || dropdownRef.current).getBoundingClientRect()
-            setMenuPos({ top: rect.bottom + 8, left: rect.left })
+            const menuWidth = menuRef.current?.offsetWidth || 210
+            let left = rect.right - menuWidth
+            if (left < 12) left = 12
+            if (left + menuWidth > window.innerWidth - 12) {
+                left = Math.max(12, window.innerWidth - menuWidth - 12)
+            }
+            setMenuPos({ top: rect.bottom + 8, left })
         }
 
         place()
@@ -101,8 +130,11 @@ function NavDropdown({ title, items }) {
                 className={`navbar__dropdown-btn ${isActive ? 'active' : ''} ${open ? 'open' : ''}`}
                 onClick={() => setOpen(prev => !prev)}
                 aria-expanded={open}
+                aria-haspopup="true"
+                title={title}
             >
-                <span>{title}</span>
+                {icon && <span className="navbar__icon" aria-hidden="true">{icon}</span>}
+                <span className="navbar__link-label">{title}</span>
                 <span className={`navbar__arrow ${open ? 'open' : ''}`}>▾</span>
             </button>
             {flyout && menu && typeof document !== 'undefined'
@@ -192,11 +224,13 @@ export default function NavBar() {
         return (
             <NavShell
                 compact
-                logo={<Link to="/" className="navbar__logo">SkillHub</Link>}
+                logo={<BrandLogo to="/" />}
                 links={
                     <ul className="navbar__links">
-                        <li><NavLink to="/login">Sign In</NavLink></li>
-                        <li><NavLink to="/register" className="navbar__cta">Get Started</NavLink></li>
+                        <NavItem to="/login">Sign In</NavItem>
+                        <li>
+                            <NavLink to="/register" className="navbar__cta">Get Started</NavLink>
+                        </li>
                     </ul>
                 }
             />
@@ -206,10 +240,11 @@ export default function NavBar() {
     if (isAdmin) {
         const adminMobileLinks = (
             <ul className="navbar__links">
-                <li><NavLink to="/admin" end>Dashboard</NavLink></li>
-                <li><NavLink to="/admin/users">Users & Instructors</NavLink></li>
+                <NavItem to="/admin" end icon="📊">Dashboard</NavItem>
+                <NavItem to="/admin/users" icon="👥">Users & Instructors</NavItem>
                 <NavDropdown
                     title="Career & Skill"
+                    icon="🎯"
                     items={[
                         { to: '/admin/careers', label: 'Careers', icon: '🎯' },
                         { to: '/admin/skills', label: 'Skills', icon: '⚡' },
@@ -218,6 +253,7 @@ export default function NavBar() {
                 />
                 <NavDropdown
                     title="Questions"
+                    icon="📝"
                     items={[
                         { to: '/admin/discovery', label: 'Discovery Qs', icon: '🔍' },
                         { to: '/admin/assessment', label: 'Assessment Qs', icon: '📝' },
@@ -225,31 +261,34 @@ export default function NavBar() {
                 />
                 <NavDropdown
                     title="Courses"
+                    icon="📚"
                     items={[
                         { to: '/admin/courses', label: 'Courses & Lessons', icon: '📚' },
                         { to: '/admin/reviews', label: 'Course Reviews', icon: '⭐' },
                     ]}
                 />
-                <li><NavLink to="/admin/certificates">Certificates</NavLink></li>
+                <NavItem to="/admin/certificates" icon="🏆">Certificates</NavItem>
                 <li className="navbar__msg-link">
-                    <NavLink to="/admin/messages">
-                        Messages
+                    <NavLink to="/admin/messages" title="Messages">
+                        <span className="navbar__icon" aria-hidden="true">💬</span>
+                        <span className="navbar__link-label">Messages</span>
                         {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
                     </NavLink>
                 </li>
-                <li><NavLink to="/admin/skill-exchange">Skill Exchange</NavLink></li>
+                <NavItem to="/admin/skill-exchange" icon="🤝">Skill Exchange</NavItem>
             </ul>
         )
 
         return (
             <NavShell
-                logo={<Link to="/admin" className="navbar__logo">SkillHub <span className="navbar__role-badge">Admin</span></Link>}
+                logo={<BrandLogo to="/admin" badge="Admin" />}
                 links={
                     <ul className="navbar__links">
-                        <li><NavLink to="/admin" end>Dashboard</NavLink></li>
+                        <NavItem to="/admin" end icon="📊">Dashboard</NavItem>
                         <li className="navbar__msg-link">
-                            <NavLink to="/admin/messages">
-                                Messages
+                            <NavLink to="/admin/messages" title="Messages">
+                                <span className="navbar__icon" aria-hidden="true">💬</span>
+                                <span className="navbar__link-label">Messages</span>
                                 {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
                             </NavLink>
                         </li>
@@ -271,16 +310,17 @@ export default function NavBar() {
     if (isInstructor) {
         return (
             <NavShell
-                logo={<Link to="/instructor/dashboard" className="navbar__logo">SkillHub <span className="navbar__role-badge navbar__role-badge--instructor">Instructor</span></Link>}
+                logo={<BrandLogo to="/instructor/dashboard" badge="Instructor" badgeClass="navbar__role-badge--instructor" />}
                 links={
                     <ul className="navbar__links">
-                        <li><NavLink to="/instructor/dashboard" end>Dashboard</NavLink></li>
-                        <li><NavLink to="/instructor/courses/create">+ Create Course</NavLink></li>
-                        <li><NavLink to="/courses">Explore Catalog</NavLink></li>
-                        <li><NavLink to="/skill-exchange">Skill Exchange</NavLink></li>
+                        <NavItem to="/instructor/dashboard" end icon="📊">Dashboard</NavItem>
+                        <NavItem to="/instructor/courses/create" icon="＋">Create Course</NavItem>
+                        <NavItem to="/courses" icon="📚">Explore Catalog</NavItem>
+                        <NavItem to="/skill-exchange" icon="🤝">Skill Exchange</NavItem>
                         <li className="navbar__msg-link">
-                            <NavLink to="/instructor/dashboard?tab=messages">
-                                Messages
+                            <NavLink to="/instructor/dashboard?tab=messages" title="Messages">
+                                <span className="navbar__icon" aria-hidden="true">💬</span>
+                                <span className="navbar__link-label">Messages</span>
                                 {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
                             </NavLink>
                         </li>
@@ -302,13 +342,14 @@ export default function NavBar() {
 
     return (
         <NavShell
-            logo={<Link to="/dashboard" className="navbar__logo">SkillHub</Link>}
+            logo={<BrandLogo to="/dashboard" />}
             links={
                 <ul className="navbar__links">
-                    <li><NavLink to="/dashboard">Dashboard</NavLink></li>
-                    <li><NavLink to="/onboarding">Career</NavLink></li>
+                    <NavItem to="/dashboard" icon="🏠">Dashboard</NavItem>
+                    <NavItem to="/onboarding" icon="🎯">Career</NavItem>
                     <NavDropdown
                         title="My Learning"
+                        icon="📖"
                         items={[
                             { to: '/my-learning', label: 'My Courses', icon: '📚', end: true },
                             { to: '/my-learning?tab=roadmap', label: 'My Roadmap', icon: '🗺️' },
@@ -316,11 +357,12 @@ export default function NavBar() {
                             { to: '/my-certificates', label: 'Certificates', icon: '🏆' },
                         ]}
                     />
-                    <li><NavLink to="/courses">Courses</NavLink></li>
-                    <li><NavLink to="/skill-exchange">Skill Exchange</NavLink></li>
+                    <NavItem to="/courses" icon="📚">Courses</NavItem>
+                    <NavItem to="/skill-exchange" icon="🤝">Skill Exchange</NavItem>
                     <li className="navbar__msg-link">
-                        <NavLink to="/chat">
-                            Messages
+                        <NavLink to="/chat" title="Messages">
+                            <span className="navbar__icon" aria-hidden="true">💬</span>
+                            <span className="navbar__link-label">Messages</span>
                             {unreadCount > 0 && <span className="navbar__msg-badge">{unreadCount}</span>}
                         </NavLink>
                     </li>

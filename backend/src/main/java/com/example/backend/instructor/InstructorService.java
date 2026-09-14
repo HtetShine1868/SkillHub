@@ -46,7 +46,7 @@ public class InstructorService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .category(request.getCategory() != null ? request.getCategory() : "General")
-                .difficulty(request.getDifficulty() != null ? request.getDifficulty() : "BEGINNER")
+                .difficulty(CourseService.normalizeDifficulty(request.getDifficulty()))
                 .durationHours(request.getDurationHours() != null ? request.getDurationHours() : 10)
                 .thumbnailUrl(request.getThumbnailUrl())
                 .published(isPub)
@@ -68,7 +68,7 @@ public class InstructorService {
         if (request.getTitle() != null) course.setTitle(request.getTitle());
         if (request.getDescription() != null) course.setDescription(request.getDescription());
         if (request.getCategory() != null) course.setCategory(request.getCategory());
-        if (request.getDifficulty() != null) course.setDifficulty(request.getDifficulty());
+        if (request.getDifficulty() != null) course.setDifficulty(CourseService.normalizeDifficulty(request.getDifficulty()));
         if (request.getDurationHours() != null) course.setDurationHours(request.getDurationHours());
         if (request.getThumbnailUrl() != null) course.setThumbnailUrl(request.getThumbnailUrl());
         if (request.getStatus() != null) course.setStatus(request.getStatus());

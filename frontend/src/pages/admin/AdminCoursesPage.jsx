@@ -274,7 +274,7 @@ export default function AdminCoursesPage() {
                                                 )}
                                             </td>
                                             <td>{c.category}</td>
-                                            <td><span className={`admin-badge ${DIFF[c.difficulty] || 'admin-badge--blue'}`}>{c.difficulty}</span></td>
+                                            <td><span className={`admin-badge ${DIFF[(c.difficulty || '').toUpperCase()] || 'admin-badge--blue'}`}>{c.difficulty}</span></td>
                                             <td>
                                                 <span className={`admin-badge ${cStatus === 'PUBLISHED' ? 'admin-badge--green' : cStatus === 'PENDING_APPROVAL' ? 'admin-badge--orange' : cStatus === 'REJECTED' ? 'admin-badge--red' : 'admin-badge--blue'}`}>
                                                     {cStatus === 'PENDING_APPROVAL' ? 'Pending Review' : cStatus}
